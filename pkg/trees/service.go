@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -191,4 +192,20 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 	maxTreeId, _ = s.Store.GetMaxId()
 	s.Log.Printf("# Exit GetMaxId() maxTreeId: %d", maxTreeId)
 	return ctx.JSON(http.StatusOK, maxTreeId)
+}
+
+func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
+	s.Log.Printf("trace: entering SearchTreesByName() pattern:%v\n", pattern)
+
+	var search string = ""
+	search = strings.TrimSpace(pattern)
+	if (search == "" || search == "*") {
+		search = "%"
+	}
+	list, err:= s.Store.SearchTreesByName(search)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
+	}
+	return ctx.JSON(http.StatusOK, list)
+
 }

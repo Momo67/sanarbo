@@ -150,8 +150,19 @@ func (P PGX) Delete(id int32) error {
 }
 
 func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
-	//TODO implement me
-	panic("implement me")
+	P.log.Printf("trace : entering SearchTreesByName(%s)", pattern)
+	var res []*TreeList
+
+	err := pgxscan.Get(context.Background(), P.con, res, treesSearchByName, pattern)
+	if err != nil {
+		return nil, GetErrorF("error : SearchTreesByName query failed", err)
+	}
+	if res == nil {
+		P.log.Println("info : SearchTreesByName returned no results ")
+		return nil, errors.New("records not found")
+	}
+
+	return res, nil
 }
 
 func (P PGX) IsTreeActive(id int32) bool {
