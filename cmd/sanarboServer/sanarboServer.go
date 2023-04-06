@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"runtime"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goserver"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/tools"
 	"github.com/lao-tseu-is-alive/sanarbo/pkg/trees"
@@ -55,7 +55,7 @@ var sqlMigrations embed.FS
 var dbConn database.DB
 
 type ServiceExample struct {
-	Log *log.Logger
+	Log golog.MyLogger
 	//Store       Storage
 	dbConn      database.DB
 	JwtSecret   []byte
@@ -66,7 +66,7 @@ type ServiceExample struct {
 // you should use the jwt token returned from LoginUser  in github.com/lao-tseu-is-alive/go-cloud-k8s-user-group'
 // and share the same secret with the above component
 func (s ServiceExample) login(ctx echo.Context) error {
-	s.Log.Printf("trace: entering %v login()", ctx.Request().Method)
+	s.Log.Debug("entering login() \n##request: %+v", ctx.Request())
 	username := ctx.FormValue("login")
 	fakePassword := ctx.FormValue("pass")
 
@@ -100,15 +100,14 @@ func (s ServiceExample) login(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-	msg := fmt.Sprintf("LoginUser(%s) succesfull login for user id (%d)", claims.Username, claims.Id)
-	s.Log.Printf(msg)
+	s.Log.Info("LoginUser(%s) succesfull login for user id (%d)", claims.Username, claims.Id)
 	return ctx.JSON(http.StatusOK, echo.Map{
 		"token": token.String(),
 	})
 }
 
 func (s ServiceExample) restricted(ctx echo.Context) error {
-	s.Log.Println("trace: entering restricted zone()")
+	s.Log.Debug("trace: entering restricted zone()")
 	// get the current user from JWT TOKEN
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := goserver.JwtCustomClaims{}
@@ -152,25 +151,31 @@ func checkHealthy(string) bool {
 }
 
 func main() {
-	l := log.New(os.Stdout, fmt.Sprintf("%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
-	l.Printf("INFO: 'Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
-	l.Printf("INFO: 'Repository url: https://%s'", version.REPOSITORY)
+	prefix := fmt.Sprintf("%s ", version.APP)
+	l, err := golog.NewLogger("zap", golog.DebugLevel, prefix)
+	if err != nil {
+		log.Fatalf("💥💥 error log.NewLogger error: %v\n", err)
+	}
+	l.Debug("Starting %s v:%s", version.APP, version.VERSION)
+	l.Info("Starting %s v:%s", version.APP, version.VERSION)
+	l.Warn("Starting %s v:%s", version.APP, version.VERSION)
+	l.Error("Starting %s v:%s", version.APP, version.VERSION)
 	secret, err := config.GetJwtSecretFromEnv()
 	if err != nil {
-		l.Fatalf("💥💥 ERROR: 'in NewGoHttpServer config.GetJwtSecretFromEnv() got error: %v'\n", err)
+		l.Fatal("💥💥 error doing config.GetJwtSecretFromEnv() error: %v\n", err)
 	}
 	tokenDuration, err := config.GetJwtDurationFromEnv(60)
 	if err != nil {
-		l.Fatalf("💥💥 ERROR: 'in NewGoHttpServer config.GetJwtDurationFromEnv() got error: %v'\n", err)
+		l.Fatal("💥💥 error doing config.GetJwtDurationFromEnv() error: %v\n", err)
 	}
 	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
 		tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
 	if err != nil {
-		l.Fatalf("💥💥 error doing config.GetPgDbDsnUrlFromEnv. error: %v\n", err)
+		l.Fatal("💥💥 error doing config.GetPgDbDsnUrlFromEnv error: %v\n", err)
 	}
 	dbConn, err = database.GetInstance("pgx", dbDsn, runtime.NumCPU(), l)
 	if err != nil {
-		l.Fatalf("💥💥 error doing users.GetPgxConn(postgres, dbDsn  : %v\n", err)
+		l.Fatal("💥💥 error doing database.GetInstance(\"pgx\", dbDsn)  : %v\n", err)
 	}
 	defer dbConn.Close()
 
@@ -179,16 +184,16 @@ func main() {
 	// https://github.com/golang-migrate/migrate/blob/master/database/postgres/TUTORIAL.md
 	d, err := iofs.New(sqlMigrations, defaultSqlDbMigrationsPath)
 	if err != nil {
-		l.Fatalf("💥💥 error doing iofs.New for db migrations  error: %v\n", err)
+		l.Fatal("💥💥 error doing iofs.New for db migrations  error: %v\n", err)
 	}
 	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(dbDsn, "postgres", "pgx", 1))
 	if err != nil {
-		l.Fatalf("💥💥 error doing migrate.NewWithSourceInstance(iofs, dbURL:%s)  error: %v\n", dbDsn, err)
+		l.Fatal("💥💥 error doing migrate.NewWithSourceInstance(iofs, dbURL:%s)  error: %v\n", dbDsn, err)
 	}
 	err = m.Up()
 	if err != nil {
 		if err != migrate.ErrNoChange {
-			l.Fatalf("💥💥 error doing migrate.Up error: %v\n", err)
+			l.Fatal("💥💥 error doing migrate.Up error: %v\n", err)
 		}
 	}
 
@@ -201,9 +206,9 @@ func main() {
 
 	listenAddr, err := config.GetPortFromEnv(defaultPort)
 	if err != nil {
-		l.Fatalf("💥💥 ERROR: 'calling GetPortFromEnv got error: %v'\n", err)
+		l.Fatal("💥💥 error calling GetPortFromEnv error: %v'\n", err)
 	}
-	l.Printf("INFO: 'Will start HTTP server listening on port %s'", listenAddr)
+	l.Info("'Will start HTTP server listening on port %s'", listenAddr)
 	server := goserver.NewGoHttpServer(listenAddr, l, defaultWebRootDir, content, defaultSecuredApi)
 	e := server.GetEcho()
 	e.GET("/readiness", server.GetReadinessHandler(checkReady, "Connection to DB"))
@@ -215,7 +220,7 @@ func main() {
 
 	objStore, err := trees.GetStorageInstance("pgx", dbConn, l)
 	if err != nil {
-		l.Fatalf("💥💥 ERROR: 'calling objects.GetStorageInstance got error: %v'\n", err)
+		l.Fatal("💥💥 error doing objects.GetStorageInstance error: %v'\n", err)
 	}
 	// now with restricted group reference you can register your secured handlers defined in OpenApi objects.yaml
 	objService := trees.Service{
@@ -228,12 +233,12 @@ func main() {
 
 	loginExample := fmt.Sprintf("curl -v -X POST -d 'login=%s' -d 'pass=%s' http://localhost%s/login", defaultUsername, defaultFakeStupidPass, listenAddr)
 	getSecretExample := fmt.Sprintf(" curl -v  -H \"Authorization: Bearer ${TOKEN}\" http://localhost%s%s/secret |jq\n", listenAddr, defaultSecuredApi)
-	l.Printf("INFO: from another terminal just try :\n %s", loginExample)
-	l.Printf("INFO: then type export TOKEN=your_token_above_goes_here   \n %s", getSecretExample)
+	l.Info("From another terminal just try :\n %s", loginExample)
+	l.Info("Then type export TOKEN=your_token_above_goes_here   \n %s", getSecretExample)
 
 	err = server.StartServer()
 	if err != nil {
-		l.Fatalf("💥💥 ERROR: 'calling echo.Start(%s) got error: %v'\n", listenAddr, err)
+		l.Error("💥💥 ERROR: 'calling echo.Start(%s) got error: %v'\n", listenAddr, err)
 	}
 
 }
