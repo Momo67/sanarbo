@@ -43,7 +43,7 @@ const (
 
 	treesDelete = "DELETE FROM tree_mobile WHERE id = $1;"
 
-	treesSearchByName = "SELECT * FROM tree_mobile WHERE name LIKE $1;"
+	treesSearchByName = "SELECT id, name, description, is_active, create_time, creator, external_id FROM tree_mobile WHERE name LIKE $1;"
 
 	treesIsActive = "SELECT isactive FROM tree_mobile WHERE id = $1;"
 
