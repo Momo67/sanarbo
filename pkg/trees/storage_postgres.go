@@ -2,12 +2,18 @@ package trees
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/georgysavva/scany/pgxscan"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
+)
+
+const (
+	noRecords = "records not found"
 )
 
 type PGX struct {
@@ -26,7 +32,7 @@ func (P PGX) List(offset, limit int) ([]*TreeList, error) {
 	}
 	if res == nil {
 		P.log.Info("List returned no results ")
-		return nil, errors.New("records not found")
+		return nil, errors.New(noRecords)
 	}
 
 	return res, nil
@@ -43,7 +49,7 @@ func (P PGX) Get(id int32) (*Tree, error) {
 	}
 	if res == (&Tree{}) {
 		P.log.Info("Get(%d) returned no results ", id)
-		return nil, errors.New("records not found")
+		return nil, errors.New(noRecords)
 	}
 	return res, nil
 }
@@ -152,14 +158,17 @@ func (P PGX) Delete(id int32) error {
 func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
 	P.log.Debug("entering SearchTreesByName(%s)", pattern)
 	var res []*TreeList
+	var search string = ""
 
-	err := pgxscan.Get(context.Background(), P.con, res, treesSearchByName, pattern)
+	search = strings.TrimSpace(pattern)
+	search = strings.ReplaceAll(search, "*", "%")
+	err := pgxscan.Select(context.Background(), P.con, &res, treesSearchByName, search)
 	if err != nil {
 		return nil, GetErrorF("error : SearchTreesByName query failed", err)
 	}
 	if res == nil {
 		P.log.Info("SearchTreesByName returned no results ")
-		return nil, errors.New("records not found")
+		return nil, errors.New(noRecords)
 	}
 
 	return res, nil
@@ -185,4 +194,18 @@ func (P PGX) IsUserAdmin(id int32) bool {
 	} else {
 		return false
 	}
+}
+
+func CompareTree(t1, t2 *TreeList, attr string) bool {
+	if t1 == t2 {
+		return true
+	}
+
+	inrec, _ := json.Marshal(t1)
+	var m1 map[string]interface{}
+	json.Unmarshal(inrec, &m1)
+	var m2 map[string]interface{}
+	inrec, _ = json.Marshal(t2)
+	json.Unmarshal(inrec, &m2)
+	return m1[attr] == m2[attr]
 }
