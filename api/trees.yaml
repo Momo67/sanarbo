@@ -303,11 +303,43 @@ components:
         idvalidation:
           type: integer
           format: int32
+        idtobechecked:
+          type: integer
+          format: int32
+        idnote:
+          type: integer
+          format: int32
+        circonference:
+          type: integer
+          format: int32
+        identourage:
+          type: integer
+          format: int32
+        idchkentourage:
+          type: integer
+          format: int32
         entouragerem:
           type: string
-        envracinairerem:
+        idrevsurface:
+          type: integer
+          format: int32
+        idchkrevsurface:
+          type: integer
+          format: int32
+        revsurfacerem:
           type: string
+        idetatsanitairepied:
+          type: integer
+          format: int32
+        idetatsanitairetronc:
+          type: integer
+          format: int32
+        idetatsanitairecouronne:
+          type: integer
+          format: int32
         etatsanitairerem:
+          type: string
+        envracinairerem:
           type: string
   responses:
     UnauthorizedError:

@@ -39,10 +39,21 @@ type Tree struct {
 
 // TreeAttributes defines model for TreeAttributes.
 type TreeAttributes struct {
-	Entouragerem     *string `json:"entouragerem,omitempty"`
-	Envracinairerem  *string `json:"envracinairerem,omitempty"`
-	Etatsanitairerem *string `json:"etatsanitairerem,omitempty"`
-	Idvalidation     int32   `json:"idvalidation"`
+	Circonference           *int32  `json:"circonference,omitempty"`
+	Entouragerem            *string `json:"entouragerem,omitempty"`
+	Envracinairerem         *string `json:"envracinairerem,omitempty"`
+	Etatsanitairerem        *string `json:"etatsanitairerem,omitempty"`
+	Idchkentourage          *int32  `json:"idchkentourage,omitempty"`
+	Idchkrevsurface         *int32  `json:"idchkrevsurface,omitempty"`
+	Identourage             *int32  `json:"identourage,omitempty"`
+	Idetatsanitairecouronne *int32  `json:"idetatsanitairecouronne,omitempty"`
+	Idetatsanitairepied     *int32  `json:"idetatsanitairepied,omitempty"`
+	Idetatsanitairetronc    *int32  `json:"idetatsanitairetronc,omitempty"`
+	Idnote                  *int32  `json:"idnote,omitempty"`
+	Idrevsurface            *int32  `json:"idrevsurface,omitempty"`
+	Idtobechecked           *int32  `json:"idtobechecked,omitempty"`
+	Idvalidation            int32   `json:"idvalidation"`
+	Revsurfacerem           *string `json:"revsurfacerem,omitempty"`
 }
 
 // TreeList defines model for TreeList.
