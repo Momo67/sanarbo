@@ -48,7 +48,7 @@ const (
 	treesIsActive = "SELECT isactive FROM tree_mobile WHERE id = $1;"
 
 	treesCreateTable = `
-	CREATE TABLE IF NOT EXISTS
+	CREATE TABLE IF NOT EXISTS tree_mobile
 	(
 	  id                      serial            CONSTRAINT tree_mobile_pk   primary key,
 	  name                    text  not null constraint name_min_length check (length(btrim(name)) > 2),
