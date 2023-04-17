@@ -2,11 +2,12 @@ package trees
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"strings"
 
 	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 )
 
 type Service struct {
-	Log         *log.Logger
+	Log         golog.MyLogger
 	Store       Storage
 	JwtSecret   []byte
 	JwtDuration int
@@ -30,7 +31,7 @@ type JwtCustomClaims struct {
 }
 
 func (s Service) List(ctx echo.Context, params ListParams) error {
-	s.Log.Printf("trace: entering List() params:%v\n", params)
+	s.Log.Debug("entering List() params:%v\n", params)
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
@@ -55,7 +56,7 @@ func (s Service) List(ctx echo.Context, params ListParams) error {
 }
 
 func (s Service) Create(ctx echo.Context) error {
-	s.Log.Println("trace: entering Create()")
+	s.Log.Debug("entering Create()")
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
@@ -88,19 +89,19 @@ func (s Service) Create(ctx echo.Context) error {
 	if (TreeAttributes{}) == newTree.TreeAttributes {
 		return ctx.JSON(http.StatusBadRequest, "Tree tree_attributes cannot be empty")
 	}
-	s.Log.Printf("# Create() newTree : %#v\n", newTree)
+	s.Log.Info("# Create() newTree : %#v\n", newTree)
 	treeCreated, err := s.Store.Create(*newTree)
 	if err != nil {
 		msg := fmt.Sprintf("Create had an error saving tree:%#v, err:%#v", *newTree, err)
-		s.Log.Printf(msg)
+		s.Log.Error(msg)
 		return ctx.JSON(http.StatusBadRequest, msg)
 	}
-	s.Log.Printf("# Create() Tree %#v\n", treeCreated)
+	s.Log.Info("# Create() Tree %#v\n", treeCreated)
 	return ctx.JSON(http.StatusCreated, treeCreated)
 }
 
 func (s Service) Delete(ctx echo.Context, objectId int32) error {
-	s.Log.Printf("trace: entering Delete(%d)\n", objectId)
+	s.Log.Debug("entering Delete(%d)\n", objectId)
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
@@ -115,13 +116,13 @@ func (s Service) Delete(ctx echo.Context, objectId int32) error {
 	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Delete(%d) cannot delete this id, it does not exist !", objectId)
-		s.Log.Printf(msg)
+		s.Log.Error(msg)
 		return ctx.JSON(http.StatusNotFound, msg)
 	} else {
 		err := s.Store.Delete(objectId)
 		if err != nil {
 			msg := fmt.Sprintf("Delete(%d) got an error: %#v ", objectId, err)
-			s.Log.Printf(msg)
+			s.Log.Error(msg)
 			return echo.NewHTTPError(http.StatusInternalServerError, msg)
 		}
 		return ctx.NoContent(http.StatusNoContent)
@@ -129,7 +130,7 @@ func (s Service) Delete(ctx echo.Context, objectId int32) error {
 }
 
 func (s Service) Get(ctx echo.Context, objectId int32) error {
-	s.Log.Printf("trace: entering Get(%d)", objectId)
+	s.Log.Debug("entering Get(%d)", objectId)
 
 	tree, err := s.Store.Get(objectId)
 	if err != nil {
@@ -139,7 +140,7 @@ func (s Service) Get(ctx echo.Context, objectId int32) error {
 }
 
 func (s Service) Update(ctx echo.Context, objectId int32) error {
-	s.Log.Printf("trace: entering Update(%d)\n", objectId)
+	s.Log.Debug("entering Update(%d)\n", objectId)
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
@@ -154,7 +155,7 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
-		s.Log.Printf(msg)
+		s.Log.Error(msg)
 		return ctx.JSON(http.StatusNotFound, msg)
 	}
 	tree := new(Tree)
@@ -186,9 +187,25 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 }
 
 func (s Service) GetMaxId(ctx echo.Context) error {
-	s.Log.Println("trace: entering GetMaxId()")
+	s.Log.Debug("entering GetMaxId()")
 	var maxTreeId int32 = 0
 	maxTreeId, _ = s.Store.GetMaxId()
-	s.Log.Printf("# Exit GetMaxId() maxTreeId: %d", maxTreeId)
+	s.Log.Info("# Exit GetMaxId() maxTreeId: %d", maxTreeId)
 	return ctx.JSON(http.StatusOK, maxTreeId)
+}
+
+func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
+	s.Log.Debug("entering SearchTreesByName() pattern:%v\n", pattern)
+
+	var search string = ""
+	search = strings.TrimSpace(pattern)
+	if (search == "" || search == "*") {
+		search = "%"
+	}
+	list, err:= s.Store.SearchTreesByName(search)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
+	}
+	return ctx.JSON(http.StatusOK, list)
+
 }

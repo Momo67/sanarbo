@@ -2,19 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/labstack/echo/v4"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/gohttpclient"
-	"github.com/stretchr/testify/assert"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/labstack/echo/v4"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/gohttpclient"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -35,7 +36,7 @@ type testStruct struct {
 
 func TestService_login(t *testing.T) {
 	type fields struct {
-		Log         *log.Logger
+		Log         golog.MyLogger
 		dbConn      database.DB
 		JwtSecret   []byte
 		JwtDuration int
@@ -68,7 +69,7 @@ func TestService_login(t *testing.T) {
 
 func TestService_restricted(t *testing.T) {
 	type fields struct {
-		Log         *log.Logger
+		Log         golog.MyLogger
 		dbConn      database.DB
 		JwtSecret   []byte
 		JwtDuration int

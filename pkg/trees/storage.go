@@ -3,9 +3,9 @@ package trees
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
 // Storage is an interface to different implementation of persistence for Trees
@@ -34,7 +34,7 @@ type Storage interface {
 	IsUserAdmin(id int32) bool
 }
 
-func GetStorageInstance(dbDriver string, db database.DB, l *log.Logger) (Storage, error) {
+func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {
 	var store Storage
 	switch dbDriver {
 	case "pgx":

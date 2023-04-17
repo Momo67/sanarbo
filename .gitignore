@@ -16,5 +16,6 @@
 /.env
 /sanarbo.conf
 /.idea
+/.node-version
 .vscode
 *.log

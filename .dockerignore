@@ -3,6 +3,7 @@
 .env
 .env_sample
 .gitignore
+.node-version
 Dockerfile
 Makefile
 scripts/*
