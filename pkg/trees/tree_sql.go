@@ -2,7 +2,7 @@ package trees
 
 const (
 	treesList = `
-	SELECT id, name, description, is_active, create_time, creator, external_id
+	SELECT id, name, description, is_active, create_time, creator, external_id, ST_AsText(geom) as geom
 	FROM tree_mobile
 	LIMIT $1 OFFSET $2;`
 
@@ -10,7 +10,7 @@ const (
 	SELECT id, name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator,
 			create_time, creator, last_modification_time, last_modification_user, ST_AsText(geom) as geom, tree_attributes
 	FROM tree_mobile
-	WHERE id = $1`
+	WHERE id = $1;`
 	
 	treesGetMaxId = "SELECT MAX(id) FROM tree_mobile;"
 
@@ -43,12 +43,12 @@ const (
 
 	treesDelete = "DELETE FROM tree_mobile WHERE id = $1;"
 
-	treesSearchByName = "SELECT * FROM tree_mobile WHERE name LIKE $1;"
+	treesSearchByName = "SELECT id, name, description, is_active, create_time, creator, external_id FROM tree_mobile WHERE name LIKE $1;"
 
 	treesIsActive = "SELECT isactive FROM tree_mobile WHERE id = $1;"
 
 	treesCreateTable = `
-	CREATE TABLE IF NOT EXISTS ${TABLE_NAME}
+	CREATE TABLE IF NOT EXISTS tree_mobile
 	(
 	  id                      serial            CONSTRAINT tree_mobile_pk   primary key,
 	  name                    text  not null constraint name_min_length check (length(btrim(name)) > 2),

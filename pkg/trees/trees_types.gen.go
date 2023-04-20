@@ -62,6 +62,7 @@ type TreeList struct {
 	Creator     int32     `json:"creator"`
 	Description *string   `json:"description,omitempty"`
 	ExternalId  *int32    `json:"external_id,omitempty"`
+	Geom        string    `json:"geom"`
 	Id          int32     `json:"id"`
 	IsActive    bool      `json:"is_active"`
 	Name        string    `json:"name"`
