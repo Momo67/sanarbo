@@ -34,7 +34,7 @@ const swissProjection = new OlProjection({
 const format = new WKT();
 
 const features = props.data.map(d=> format.readFeature(d.geom, {
-  featureProjection: swissProjection
+  featureProjection: 'EPSG:2056'
 }))
 
 
