@@ -1,12 +1,14 @@
 <script setup>
 import {useFetch} from "../composables/FetchData.js";
+import OlMap from "../components/OlMap.vue";
+import { onMounted, ref } from "vue";
 
 // env variables
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 const urlTrees = backendUrl + "/goapi/v1/trees"
 const auth = 'Bearer ' + import.meta.env.VITE_JWT_SECRET
 
-// fetch options
+// Fetch options
 const options = {
   credentials: 'include',
   headers: {
@@ -14,22 +16,29 @@ const options = {
   }
 }
 
-// fetch data
-const {data} = useFetch(urlTrees, options);
+let trees = ref([])
 
 
+// Fetch data
+onMounted(() => {
+  let {data} = useFetch(urlTrees, options);
+  trees = data
+
+})
 
 
 </script>
 
 <template>
-  <ul>
-    <li v-for="tree in data">
-      {{tree.geom}}
-    </li>
-  </ul>
+
+
+<OlMap :data="trees">
+</OlMap>
+
+
 </template>
 
 <style scoped>
+
 
 </style>

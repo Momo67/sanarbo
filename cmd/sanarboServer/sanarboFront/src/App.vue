@@ -1,12 +1,13 @@
 <script setup>
-import Map from "./components/Map.vue";
+import MapView from "./views/MapView.vue";
 
 </script>
 
 <template>
-  <div>
-    <h1>Sanarbo</h1>
-  </div>
+
+  <h1>Sanarbo</h1>
+  <MapView></MapView>
+
 </template>
 
 <style scoped>
