@@ -14,7 +14,8 @@ INSERT INTO tree_mobile
     is_active, 
     inactivation_time, 
     inactivation_reason, 
-    comment, is_validated, 
+    comment, 
+    is_validated, 
     id_validator, 
     create_time, 
     creator, 
@@ -55,21 +56,4 @@ VALUES
     "etatsanitairerem":"Taille. Racines un peu rouillées... Ca mériterait un coup de pinceau...",
     "envracinairerem":""}'
     )
-
-/*
-    '{"idvalidation":1,
-      "idtobechecked":4,
-      "idnote":1,
-      "circonference":666,
-      "identourage":4,
-      "idchkentourage":2,
-      "entouragerem":"a soigner",
-      "idrevsurface":5,
-      "idchkrevsurface":2,
-      "revsurfacerem":"",
-      "idetatsanitairepied":2,
-      "idetatsanitairetronc":1,
-      "idetatsanitairecouronne":1,
-      "etatsanitairerem":"Taille. Racines un peu rouillées... Ca mériterait un coup de pinceau...",
-      "envracinairerem":,""}'
-*/    
+    
