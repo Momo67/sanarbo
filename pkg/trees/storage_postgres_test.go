@@ -21,6 +21,7 @@ const (
 
 type WorkingEnv struct {
 	l golog.MyLogger
+	logLevel golog.Level
 	dbConn database.DB
 	storage Storage
 }
@@ -30,19 +31,8 @@ func TestSearchTreesByName(t *testing.T) {
 		t string
 	}
 
-	var w = WorkingEnv{}
-	err := w.GetLogger(golog.DebugLevel, fmt.Sprintf("%s ", version.APP))
-	if err != nil {
-		t.Fatalf("got error when getting logger, err: %v", err)
-	}
-	err = w.GetDb()
-	if err != nil {
-		t.Fatalf("got error when getting db, err: %v", err)
-	}
-	err = w.GetStorage()
-	if err != nil {
-		t.Fatalf("got error when getting storage, err: %v", err)
-	}
+	w := WorkingEnv{}
+	w.Init()
 	defer w.dbConn.Close()
 
 	tests := []struct {
@@ -84,8 +74,29 @@ func TestSearchTreesByName(t *testing.T) {
 	}
 }
 
-func (w *WorkingEnv) GetLogger(level golog.Level, prefix string) error {
-	log, err := golog.NewLogger("zap", level, prefix)
+func (w *WorkingEnv) Init() error {
+	if w.logLevel == 0 {
+		w.logLevel = golog.DebugLevel
+	}
+
+	err := w.GetLogger()
+	if err != nil {
+		return fmt.Errorf("got error when getting logger, err: %v", err)
+	}
+	err = w.GetDb()
+	if err != nil {
+		return fmt.Errorf("got error when getting db, err: %v", err)
+	}
+	err = w.GetStorage()
+	if err != nil {
+		return fmt.Errorf("got error when getting storage, err: %v", err)
+	}
+
+	return nil
+}
+
+func (w *WorkingEnv) GetLogger() error {
+	log, err := golog.NewLogger("zap", w.logLevel, fmt.Sprintf("%s ", version.APP))
 	if err != nil {
 		return fmt.Errorf("got no logger error: %v", err)
 	} else {
