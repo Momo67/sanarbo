@@ -10,6 +10,7 @@ import { OSM } from 'ol/source';
 import proj4 from 'proj4'
 import OlProjection from 'ol/proj/Projection'
 import {register} from 'ol/proj/proj4';
+import 'ol/ol.css'
 
 
 // Define props
@@ -45,6 +46,7 @@ const vector = new VectorLayer({
     features: features
 })
 });
+
 
 
 
