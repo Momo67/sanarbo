@@ -14,16 +14,16 @@ import (
 )
 
 const (
-	defaultDBPort              = 5432
-	defaultDBIp                = "127.0.0.1"
-	defaultDBSslMode           = "prefer"
+	defaultDBPort    = 5432
+	defaultDBIp      = "127.0.0.1"
+	defaultDBSslMode = "prefer"
 )
 
 type WorkingEnv struct {
-	l golog.MyLogger
+	l        golog.MyLogger
 	logLevel golog.Level
-	dbConn database.DB
-	storage Storage
+	dbConn   database.DB
+	storage  Storage
 }
 
 func TestSearchTreesByName(t *testing.T) {
@@ -32,30 +32,30 @@ func TestSearchTreesByName(t *testing.T) {
 	}
 
 	w := WorkingEnv{}
-	w.Init()
+	assertWorkingEnvOK(t, w.Init())
 	defer w.dbConn.Close()
 
 	tests := []struct {
-		name		string
-		args		args
-		wantRes		[]*TreeList
-		wantErr		error
+		name    string
+		args    args
+		wantRes []*TreeList
+		wantErr error
 	}{
 		{
-			name: "it should return an object with name attribute matching pattern containing *",
-			args: 	args{t: "*Tre*"},
+			name:    "it should return an object with name attribute matching pattern containing *",
+			args:    args{t: "*Tre*"},
 			wantRes: []*TreeList{{Name: "MyNewTree"}},
 			wantErr: nil,
 		},
 		{
-			name: "it should return an object with name attribute matching pattern containing %",
-			args: 	args{t: "%%Tre%%"},
+			name:    "it should return an object with name attribute matching pattern containing %",
+			args:    args{t: "%%Tre%%"},
 			wantRes: []*TreeList{{Name: "MyNewTree"}},
 			wantErr: nil,
 		},
 		{
-			name: "should return an error if no tree found",
-			args: args{t: "666"},
+			name:    "should return an error if no tree found",
+			args:    args{t: "666"},
 			wantRes: nil,
 			wantErr: ErrNoRecordFound,
 		},
@@ -129,6 +129,13 @@ func (w *WorkingEnv) GetStorage() error {
 		w.storage = treesStorage
 	}
 	return nil
+}
+
+func assertWorkingEnvOK(t testing.TB, got error) {
+	t.Helper()
+	if got != nil {
+		t.Fatal("unable to get a working env")
+	}
 }
 
 func assertName(t testing.TB, list TreeList, want string) {
