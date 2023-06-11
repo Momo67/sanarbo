@@ -30,13 +30,15 @@ const swissProjection = new OlProjection({
 });
 
 
-
 // Read features from props
 const format = new WKT();
+
+console.log(props.data.value)
 
 const features = props.data.map(d=> format.readFeature(d.geom, {
   featureProjection: 'EPSG:2056'
 }))
+
 
 
 
@@ -49,10 +51,8 @@ const vector = new VectorLayer({
 
 
 
-
 onMounted(() => {
 
- 
 // Create map
 const map = new Map({
     view: new View({
@@ -63,9 +63,9 @@ const map = new Map({
     layers: [
       new TileLayer({
         source: new OSM(),
-      }), 
+      }),
       vector
-      
+
     ],
     target: 'map',
   });
