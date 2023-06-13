@@ -5,8 +5,8 @@ import TileLayer from 'ol/layer/Tile.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
 import {WKT} from "ol/format.js";
-import {onMounted, defineProps, onBeforeMount, ref, reactive, toRaw, computed, unref} from "vue";
-import { OSM } from 'ol/source';
+import {onMounted, ref} from "vue";
+import {OSM} from 'ol/source';
 import proj4 from 'proj4'
 import OlProjection from 'ol/proj/Projection'
 import {register} from 'ol/proj/proj4';

@@ -2,7 +2,6 @@
 import {reactive, ref} from "vue";
 
 
-
 const loginUrl = import.meta.env.VITE_BACKEND_LOGIN_URL;
 const emit = defineEmits(['userLoggedIn'])
 const token = ref(null);
