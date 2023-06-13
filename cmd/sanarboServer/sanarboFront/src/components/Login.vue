@@ -59,14 +59,10 @@ const submitForm = async () => {
 }
 
 
-
-
-
-
 </script>
 
 <template>
-    <v-form v-model="valid" @submit.prevent @submit="submitForm">
+    <v-form @submit.prevent @submit="submitForm">
       <v-container>
         <v-row>
           <v-col

@@ -1,16 +1,18 @@
 import {reactive, toRefs} from "vue";
 
-export const useFetch = (url, options) => {
+export const useFetch = async (url, options) => {
     const state = reactive(
         {
             isLoading: true,
             hasError: false,
             errorMessage: '',
-            data: null,
+            data: [],
         }
     )
 
-    const fetchData = async() => {
+
+
+    const fetchData = async () => {
         state.isLoading = true;
 
         try {
@@ -31,7 +33,7 @@ export const useFetch = (url, options) => {
         }
     };
 
-        fetchData();
+        await fetchData();
 
         return {...toRefs(state)};
     }

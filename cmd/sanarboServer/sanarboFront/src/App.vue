@@ -1,6 +1,6 @@
 <script setup>
 import Login from "./components/Login.vue";
-import OlMapView from "./views/MapView.vue";
+import OlMap from "./components/OlMap.vue";
 import {reactive} from "vue";
 
 const authState = reactive({
@@ -22,7 +22,7 @@ const handleUserLoggedIn = (receivedToken) => {
   <div>
     <template  v-if="authState.isLoggedIn">
       <!-- Render Map -->
-      <OlMapView :token="authState.token"/>
+      <OlMap :token="authState.token"/>
     </template>
     <template v-else>
       <!-- Render the login page -->

@@ -53,40 +53,20 @@ let trees = ref([])
 
 
 
-// const features = trees.value.map(d=> format.readFeature(d.geom, {
-//   featureProjection: 'EPSG:2056'
-// }))
-
-onBeforeMount( async () => {
+onBeforeMount( () => {
 
 
-  const { data } = await useFetch(urlTrees, options);
+  const { data } = useFetch(urlTrees, options);
   trees.value = data;
-//
-// // Define vector layer
-//   const vector = new VectorLayer({
-//     source: new VectorSource({
-//       features: features
-//     })
-//   });
 
 });
-
-
-
-
-
-
 
 
 
 </script>
 
 <template>
-<ul>
-  <li v-for="item in trees" :key="item.id">{{ item.name }}</li>
-</ul>
-
+<OlMap :data="trees"></OlMap>
 </template>
 
 
