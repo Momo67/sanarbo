@@ -24,17 +24,17 @@ const options = {
   headers: headers
 }
 
-const trees = ref([]);
-const treesError = ref(false);
+let errorFetch = ref(false);
+let errorFetchMessage = ref('');
+let fetchIsLoading = ref(true);
 
-
-const map = ref(null);
 
 onMounted(   async () => {
 
-  const {hasError, data} = await useFetch(urlTrees, options);
-  trees.value =  data;
-  treesError.value =  hasError;
+  const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
+  errorFetch.value = hasError.value;
+  fetchIsLoading.value = isLoading.value;
+  errorFetchMessage.value = errorMessage.value;
 
 
   // Define projection
@@ -50,6 +50,7 @@ onMounted(   async () => {
   });
 
 
+  // wkt to OL features
   const wktFormat = new WKT();
 
   const features = data.value.map((d) =>
@@ -64,7 +65,6 @@ onMounted(   async () => {
       features: features
     })
   });
-
 
 
   const mapInstance = new Map({
@@ -83,22 +83,14 @@ onMounted(   async () => {
   });
 
 });
-
-
-
-
-
-
-
-
-
-
-
 </script>
 
 
 <template>
-    <div id="map">
+
+  <div id="map">
+    <div v-if="fetchIsLoading">Loading...</div>
+    <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>
 </template>
 
