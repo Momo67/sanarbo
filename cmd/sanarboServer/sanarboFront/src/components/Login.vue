@@ -33,9 +33,7 @@ const authenticateUser = async () => {
 
   // Store the JWT token in local storage
   const data = await response.json();
-
-  //localStorage.setItem('token', data.token);
-
+  
   // Return the JWT token
   return data.token;
 }

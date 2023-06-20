@@ -1,14 +1,17 @@
 <script setup>
-import {onMounted, reactive} from 'vue';
+import {onMounted, reactive, ref} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 
 
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlTrees = backendUrl + "trees"
 
+
+const emit = defineEmits(['formSubmitted'])
 const props = defineProps({
-  newTree: Boolean,
-  treeId: Number
+  showForm: Boolean,
+  treeId: Number,
+  newTreeGeometry: String
 })
 
 
@@ -17,36 +20,52 @@ const Tree = reactive({
   creator: '',
   description: '',
   id: '',
-  name:'',
+  name: '',
+  geom: props.newTreeGeometry,
+  tree_attributes: {},
 });
+
+
+// Get local storage token
+const token = localStorage.getItem('token');
+const headers = {
+  'Authorization': 'Bearer ' + token,
+  'Content-Type': 'application/json',
+}
+
+const options = {
+  headers : headers
+}
+
+
+
 
 onMounted(async () => {
 
   if (!props.newTree) {
-    const token = localStorage.getItem('token');
-    const headers = {'Authorization': 'Bearer ' + token}
-    const options = {
-      headers: headers
-    }
-
     const {data} = await useFetch(urlTrees + '/' + props.treeId, options)
     Tree.create_time = data.value.create_time;
     Tree.creator = data.value.creator;
     Tree.description = data.value.description;
     Tree.id = data.value.id;
     Tree.name = data.value.name;
+    Tree.tree_attributes = data.value.tree_attributes;
+    Tree.geom = data.value.geom;
+
   }
 })
 
+const submitForm = async (event) => {
+    const options = {
+      headers: headers,
+      method: 'PUT',
+      body: JSON.stringify(Tree)
+    }
 
-
-
-
-const submitForm = () => {
-  // Handle form submission logic here
-  console.log(Tree);
+    await useFetch(urlTrees + '/' + props.treeId, options)
+    // Emit a custom event to notify the parent component and pass the token
+    emit('formSubmitted');
 };
-
 
 
 </script>
@@ -81,7 +100,8 @@ const submitForm = () => {
           <v-text-field v-model="Tree.name" label="Nom"></v-text-field>
         </v-col>
       </v-row>
-      <v-btn type="submit" color="primary">Sauvegarder</v-btn>
+
+      <v-btn type="submit" color="primary" @click="submitForm">Sauvegarder</v-btn>
     </v-container>
   </v-form>
 </template>

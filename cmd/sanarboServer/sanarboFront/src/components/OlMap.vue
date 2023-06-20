@@ -14,16 +14,16 @@ import 'ol/ol.css'
 import {useFetch} from "../composables/FetchData.js";
 import Tree from "./Tree.vue";
 import {Select} from "ol/interaction.js";
-
+import {click} from "ol/events/condition.js";
 
 
 // Fetch data
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlTrees = backendUrl + "trees"
-const props = defineProps({
-  token: String
-})
-const headers = {'Authorization': 'Bearer ' + props.token}
+const token = localStorage.getItem('token');
+
+const headers = {'Authorization': 'Bearer ' + token}
+
 const options = {
   headers: headers
 }
@@ -34,24 +34,36 @@ const fetchIsLoading = ref(true);
 
 const showForm = ref(false);
 const treeId = ref(null);
-const newTree = ref(true);
 
+// wkt format
+const wktFormat = new WKT();
 
-const selectInteraction = new Select();
+// Interactions
+const selectInteraction = new Select({
+  condition : click
+});
+
 selectInteraction.on('select', (event) => {
       if (event.selected.length > 0) {
         showForm.value = true;
         const selectedFeature = event.selected[0];
         treeId.value = selectedFeature.get('id');
-        newTree.value = false;
 
       } else {
         showForm.value = false;
-        newTree.value = true;
       }
-
 }
 )
+
+
+// Handle form submission
+const formSubmitted = ref(false);
+const handleFormSubmitted = () => {
+  formSubmitted.value = true;
+  showForm.value = false;
+}
+
+
 
 onMounted(   async () => {
 
@@ -74,8 +86,6 @@ onMounted(   async () => {
   });
 
 
-  // wkt to OL features
-const wktFormat = new WKT();
 
 const features = data.value.map((d) => {
 
@@ -87,8 +97,6 @@ const features = data.value.map((d) => {
 
   return feature
 });
-
-
 
 
 // Define vector layer
@@ -116,8 +124,6 @@ const map = new Map({
 
   map.addInteraction(selectInteraction)
 
-
-
 });
 </script>
 
@@ -136,12 +142,11 @@ const map = new Map({
       </v-card-title>
 
       <v-card-text>
-        <Tree :new-tree="newTree" :tree-id="treeId"></Tree>
+        <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' :tree-id='treeId' ></Tree>
       </v-card-text>
 
-      <v-card-actions>
-        <v-btn color="secondary" @click="showForm = false">Close</v-btn>
-      </v-card-actions>
+      <v-btn type="cancel" color="secondary" @click="showForm = false">Annuler</v-btn>
+
     </v-card>
   </v-dialog>
 </template>
