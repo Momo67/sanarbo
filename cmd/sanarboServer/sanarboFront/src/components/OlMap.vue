@@ -55,14 +55,18 @@ selectInteraction.on('select', (event) => {
 }
 )
 
-
-// Handle form submission
+// Handle form submission / cancel
 const formSubmitted = ref(false);
 const handleFormSubmitted = () => {
   formSubmitted.value = true;
   showForm.value = false;
 }
 
+const formCanceled = ref(false);
+const handleFormCanceled = () => {
+  formCanceled.value = true;
+  showForm.value = false;
+}
 
 
 onMounted(   async () => {
@@ -142,11 +146,8 @@ const map = new Map({
       </v-card-title>
 
       <v-card-text>
-        <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' :tree-id='treeId' ></Tree>
+        <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' @formCanceled="handleFormCanceled" :tree-id='treeId' ></Tree>
       </v-card-text>
-
-      <v-btn type="cancel" color="secondary" @click="showForm = false">Annuler</v-btn>
-
     </v-card>
   </v-dialog>
 </template>

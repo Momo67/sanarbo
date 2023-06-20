@@ -7,7 +7,7 @@ const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlTrees = backendUrl + "trees"
 
 
-const emit = defineEmits(['formSubmitted'])
+const emit = defineEmits(['formSubmitted', 'formCancelled'])
 const props = defineProps({
   showForm: Boolean,
   treeId: Number,
@@ -34,45 +34,46 @@ const headers = {
 }
 
 const options = {
-  headers : headers
+  headers: headers
 }
-
-
 
 
 onMounted(async () => {
 
-  if (!props.newTree) {
-    const {data} = await useFetch(urlTrees + '/' + props.treeId, options)
-    Tree.create_time = data.value.create_time;
-    Tree.creator = data.value.creator;
-    Tree.description = data.value.description;
-    Tree.id = data.value.id;
-    Tree.name = data.value.name;
-    Tree.tree_attributes = data.value.tree_attributes;
-    Tree.geom = data.value.geom;
+  const {data} = await useFetch(urlTrees + '/' + props.treeId, options)
+  Tree.create_time = data.value.create_time;
+  Tree.creator = data.value.creator;
+  Tree.description = data.value.description;
+  Tree.id = data.value.id;
+  Tree.name = data.value.name;
+  Tree.tree_attributes = data.value.tree_attributes;
+  Tree.geom = data.value.geom;
 
-  }
+
 })
 
 const submitForm = async (event) => {
-    const options = {
-      headers: headers,
-      method: 'PUT',
-      body: JSON.stringify(Tree)
-    }
+  const options = {
+    headers: headers,
+    method: 'PUT',
+    body: JSON.stringify(Tree)
+  }
 
-    await useFetch(urlTrees + '/' + props.treeId, options)
-    // Emit a custom event to notify the parent component and pass the token
-    emit('formSubmitted');
+  await useFetch(urlTrees + '/' + props.treeId, options)
+  // Emit a custom event to notify the parent component and pass the token
+  emit('formSubmitted');
 };
+
+const handleFormCanceled = () => {
+  emit('formCanceled')
+}
 
 
 </script>
 
 
 <template>
-  <v-form @submit="submitForm">
+  <v-form @submit.prevent="submitForm">
     <v-container>
       <v-row>
         <v-col cols="12" md="6">
@@ -101,7 +102,16 @@ const submitForm = async (event) => {
         </v-col>
       </v-row>
 
-      <v-btn type="submit" color="primary" @click="submitForm">Sauvegarder</v-btn>
+      <v-row>
+        <v-col cols="2" md="1">
+          <v-btn type="submit" color="primary" @click="submitForm">Sauvegarder</v-btn>
+        </v-col>
+        <v-col cols="2" md="1">
+          <v-btn type="button" color="secondary" @click="handleFormCanceled">Annuler</v-btn>
+        </v-col>
+
+      </v-row>
+
     </v-container>
   </v-form>
 </template>
