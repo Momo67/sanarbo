@@ -7,7 +7,7 @@ const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlTrees = backendUrl + "trees"
 
 
-const emit = defineEmits(['formSubmitted', 'formCancelled'])
+const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
   showForm: Boolean,
   treeId: Number,
