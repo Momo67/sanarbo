@@ -60,12 +60,13 @@ const formSubmitted = ref(false);
 const handleFormSubmitted = () => {
   formSubmitted.value = true;
   showForm.value = false;
+  selectInteraction.getFeatures().clear();
+
 }
 
-const formCanceled = ref(false);
 const handleFormCanceled = () => {
-  formCanceled.value = true;
   showForm.value = false;
+  selectInteraction.getFeatures().clear();
 }
 
 
@@ -138,7 +139,6 @@ const map = new Map({
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>
 
-
   <v-dialog v-model="showForm">
     <v-card>
       <v-card-title>
@@ -146,7 +146,7 @@ const map = new Map({
       </v-card-title>
 
       <v-card-text>
-        <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' @formCanceled="handleFormCanceled" :tree-id='treeId' ></Tree>
+        <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' @formCanceled="handleFormCanceled" :tree-id="treeId" ></Tree>
       </v-card-text>
     </v-card>
   </v-dialog>

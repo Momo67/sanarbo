@@ -52,6 +52,7 @@ onMounted(async () => {
 
 })
 
+
 const submitForm = async (event) => {
   const options = {
     headers: headers,
@@ -60,9 +61,11 @@ const submitForm = async (event) => {
   }
 
   await useFetch(urlTrees + '/' + props.treeId, options)
-  // Emit a custom event to notify the parent component and pass the token
+
+  // Emit a custom event to notify the parent component
   emit('formSubmitted');
 };
+
 
 const handleFormCanceled = () => {
   emit('formCanceled')
@@ -73,6 +76,9 @@ const handleFormCanceled = () => {
 
 
 <template>
+  <div>
+
+
   <v-form @submit.prevent="submitForm">
     <v-container>
       <v-row>
@@ -114,4 +120,5 @@ const handleFormCanceled = () => {
 
     </v-container>
   </v-form>
+  </div>
 </template>
