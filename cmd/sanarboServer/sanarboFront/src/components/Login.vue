@@ -33,7 +33,7 @@ const authenticateUser = async () => {
 
   // Store the JWT token in local storage
   const data = await response.json();
-  
+
   // Return the JWT token
   return data.token;
 }
@@ -96,7 +96,7 @@ const submitForm = async () => {
           </v-col>
 
         </v-row>
-        <v-btn type="submit" block class="mt-2">Se connecter</v-btn>
+        <v-btn type="submit" block class="mt-2" color="secondary">Se connecter</v-btn>
       </v-container>
     </v-form>
 </template>

@@ -20,7 +20,7 @@ import {click} from "ol/events/condition.js";
 // Fetch data
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlTrees = backendUrl + "trees"
-const token = localStorage.getItem('token');
+const token = sessionStorage.getItem('token');
 
 const headers = {'Authorization': 'Bearer ' + token}
 

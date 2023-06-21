@@ -26,8 +26,8 @@ const Tree = reactive({
 });
 
 
-// Get local storage token
-const token = localStorage.getItem('token');
+// Get session storage token
+const token = sessionStorage.getItem('token');
 const headers = {
   'Authorization': 'Bearer ' + token,
   'Content-Type': 'application/json',
