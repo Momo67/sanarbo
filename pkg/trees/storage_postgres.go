@@ -16,10 +16,15 @@ const (
 	noRecords = "records not found"
 )
 
+var ErrNoRecordFound = errors.New(noRecords)
+
+
 type PGX struct {
 	con *pgxpool.Pool
 	log golog.MyLogger
 }
+
+//var NoRecordFound = errors.New(noRecords)
 
 func (P PGX) List(offset, limit int) ([]*TreeList, error) {
 	P.log.Debug("entering List(%d, %d)", offset, limit)
@@ -168,7 +173,7 @@ func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
 	}
 	if res == nil {
 		P.log.Info("SearchTreesByName returned no results ")
-		return nil, errors.New(noRecords)
+		return nil, ErrNoRecordFound
 	}
 
 	return res, nil
