@@ -109,10 +109,10 @@ const handleFormCanceled = () => {
       </v-row>
 
       <v-row>
-        <v-col cols="2" md="1">
+        <v-col cols="12" md="4">
           <v-btn type="submit" color="primary" @click="submitForm">Sauvegarder</v-btn>
         </v-col>
-        <v-col cols="2" md="1">
+        <v-col cols="12" md="4">
           <v-btn type="button" color="secondary" @click="handleFormCanceled">Annuler</v-btn>
         </v-col>
 
