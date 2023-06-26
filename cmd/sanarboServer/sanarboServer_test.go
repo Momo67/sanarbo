@@ -140,7 +140,7 @@ func Test_checkReady(t *testing.T) {
 	}
 }
 
-// TestMainExec is instantiating the "real" main code using the env variable (in your .env files if you use the Makefile rule)
+// TestMainExec is instantiating the "real" main code using the env variable (in your .env.development.local files if you use the Makefile rule)
 func TestMainExec(t *testing.T) {
 	listenPort, err := config.GetPortFromEnv(defaultPort)
 	if err != nil {
