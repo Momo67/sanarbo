@@ -1,0 +1,4 @@
+id,etat,sort_order,is_active
+1,En ordre,10,1
+2,Blessé,20,1
+3,Malade,30,1

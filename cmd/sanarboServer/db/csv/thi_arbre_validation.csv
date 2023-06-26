@@ -1,0 +1,12 @@
+id,validation,sort_order,is_active
+1,Existant,10,1
+2,Supprimé,20,1
+3,A repositionner,0,0
+4,A replanter,0,0
+5,En attente de soins,30,1
+6,En attente d'abattage,40,1
+7,En attente de remplacement,50,1
+8,En attente de tomographie,60,1
+9,A surveiller,70,1
+10,En demande d'abattage,39,1
+11,En attente de projet,55,1

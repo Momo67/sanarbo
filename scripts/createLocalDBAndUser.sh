@@ -31,7 +31,7 @@ if DB_PASSWORD=$(openssl rand -base64 32); then
   echo "## Will try to create postgres user "
   echo "## username       : ${DB_NAME}"
   echo "## password       : ${DB_PASSWORD}"
-  CREATE_USER="psql -c \"CREATE USER ${DB_NAME} WITH PASSWORD '${DB_PASSWORD}';\""
+  CREATE_USER="psql -c \"CREATE USER ${DB_NAME} WITH PASSWORD '${DB_PASSWORD}' IN ROLE the pg_read_server_files;\""
   echo "about to run : ${CREATE_USER}"
   su -c "${CREATE_USER}" postgres
   echo "## Will try to create database ${DB_NAME} with owner=${DB_NAME}"
