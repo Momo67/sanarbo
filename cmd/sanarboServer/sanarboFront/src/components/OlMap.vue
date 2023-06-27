@@ -40,7 +40,6 @@ const wktFormat = new WKT();
 
 // Interactions
 const selectInteraction = new Select({
-  condition : click
 });
 
 selectInteraction.on('select', (event) => {
