@@ -11,7 +11,6 @@ const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
   showForm: Boolean,
   treeId: Number,
-  newTreeGeometry: String
 })
 
 
@@ -21,9 +20,12 @@ const Tree = reactive({
   description: '',
   id: '',
   name: '',
-  geom: props.newTreeGeometry,
+  geom: '',
   tree_attributes: {},
 });
+
+
+
 
 
 // Get session storage token
@@ -48,8 +50,6 @@ onMounted(async () => {
   Tree.name = data.value.name;
   Tree.tree_attributes = data.value.tree_attributes;
   Tree.geom = data.value.geom;
-
-
 })
 
 
@@ -79,46 +79,108 @@ const handleFormCanceled = () => {
   <div>
 
 
-  <v-form @submit.prevent="submitForm">
-    <v-container>
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-text-field v-model="Tree.id" label="ID"></v-text-field>
-        </v-col>
-        <v-col cols="12" md="6">
+    <v-form @submit.prevent="submitForm">
+      <v-container>
+        <h2>{{Tree.name}}</h2>
+        <v-row>
+
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.idtobechecked"
+                label="À contrôler"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.idvalidation"
+                label="Statut"
+            ></v-text-field>
+          </v-col>
+
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.idnote"
+                label="Note"
+            ></v-text-field>
+          </v-col>
+        </v-row>
+
+        <h3>Environnement</h3>
+        <v-row>
+          <v-col cols="12" md="12">
+            <v-text-field
+                v-model="Tree.tree_attributes.circonference"
+                label="Circonférence">
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.identourage"
+                label="Entourage / cadre"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field v-model="Tree.tree_attributes.idchkentourage" label="ID chk entourage"></v-text-field>
+          </v-col>
+        </v-row>
+
+        <h3>État sanitaire</h3>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.idetatsanitairepied"
+                label="Pied"></v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
           <v-text-field
-              v-model="Tree.create_time"
-              label="Date de création"
-              type="datetime"
-          ></v-text-field>
+              v-model="Tree.tree_attributes.idetatsanitairetronc"
+              label="Tronc"></v-text-field>
         </v-col>
-        <v-col cols="12" md="6">
-          <v-text-field v-model="Tree.creator" label="Créateur"></v-text-field>
-        </v-col>
-      </v-row>
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-text-field v-model="Tree.description" label="Description"></v-text-field>
-        </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.idetatsanitairecouronne"
+                label="Couronne"></v-text-field>
+          </v-col>
+        </v-row>
 
-      </v-row>
-      <v-row>
-        <v-col cols="12" md="6">
-          <v-text-field v-model="Tree.name" label="Nom"></v-text-field>
-        </v-col>
-      </v-row>
+        <v-row>
+          <v-col cols="12" md="4">
+            <v-text-field v-model="Tree.tree_attributes.entouragerem" label="Entourage remarque"></v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.entouragerem"
+                label="Remarque entourage"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" md="4">
+            <v-text-field
+                v-model="Tree.tree_attributes.idchkrevsurface"
+                label="Remarque"
+            ></v-text-field>
+          </v-col>
+        </v-row>
 
-      <v-row>
-        <v-col cols="12" md="4">
-          <v-btn type="submit" color="primary" @click="submitForm">Sauvegarder</v-btn>
-        </v-col>
-        <v-col cols="12" md="4">
-          <v-btn type="button" color="secondary" @click="handleFormCanceled">Annuler</v-btn>
-        </v-col>
 
-      </v-row>
+        <v-row>
+          <v-col cols="12" md="12">
+            <v-text-field
+                v-model="Tree.tree_attributes.etatsanitairerem"
+                label="Remarque état sanitaire">
+            </v-text-field>
+          </v-col>
+        </v-row>
 
-    </v-container>
-  </v-form>
+        <v-row>
+          <v-col cols="12" md="2">
+            <v-btn type="submit" color="primary" @click="submitForm">Sauvegarder</v-btn>
+          </v-col>
+          <v-col cols="12" md="2">
+            <v-btn type="button" color="secondary" @click="handleFormCanceled">Annuler</v-btn>
+          </v-col>
+        </v-row>
+
+      </v-container>
+    </v-form>
   </div>
 </template>

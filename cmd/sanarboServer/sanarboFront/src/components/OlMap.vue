@@ -141,10 +141,6 @@ const map = new Map({
 
   <v-dialog v-model="showForm">
     <v-card>
-      <v-card-title>
-        Formulaire
-      </v-card-title>
-
       <v-card-text>
         <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' @formCanceled="handleFormCanceled" :tree-id="treeId" ></Tree>
       </v-card-text>
