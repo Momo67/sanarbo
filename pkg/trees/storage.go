@@ -32,6 +32,8 @@ type Storage interface {
 	IsTreeActive(id int32) bool
 
 	IsUserAdmin(id int32) bool
+
+	GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error)
 }
 
 func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {

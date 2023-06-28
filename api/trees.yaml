@@ -187,6 +187,45 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - JWTAuth: []
+  /dico/{table}:
+    get:
+      summary: Get dico values for the table passed in parameter
+      description: get dico values
+      parameters:
+        - name: table
+          in: path
+          description: name of the dico table
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - "validation"
+              - "to_be_checked"
+              - "note"
+              - "entourage"
+              - "check"
+              - "rev_surface"
+              - "etat_sanitaire"
+              - "etat_sanitaire_rem"
+      responses:
+        '200':
+          description: get dico successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreeDico"
+        '404':
+          description: get dico response when table was not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - JWTAuth: []
 components:
   schemas:
     Tree:
@@ -345,6 +384,22 @@ components:
           type: string
         envracinairerem:
           type: string
+    TreeDico:
+      required:
+        - id
+        - value
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        value:
+          type: string
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          format: int32
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

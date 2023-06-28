@@ -209,3 +209,14 @@ func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
 	return ctx.JSON(http.StatusOK, list)
 
 }
+
+func (s Service) GetDicoTable(ctx echo.Context, table GetDicoTableParamsTable) error {
+	s.Log.Debug("entering GetDicoValidation(%s)", table)
+
+	treedico, err := s.Store.GetDicoTable(table)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving dico(%s) :%v", table, err))
+	}
+	return ctx.JSON(http.StatusOK, treedico)
+
+}
