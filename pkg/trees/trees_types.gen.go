@@ -11,6 +11,18 @@ const (
 	JWTAuthScopes = "JWTAuth.Scopes"
 )
 
+// Defines values for GetDicoTableParamsTable.
+const (
+	Check            GetDicoTableParamsTable = "check"
+	Entourage        GetDicoTableParamsTable = "entourage"
+	EtatSanitaire    GetDicoTableParamsTable = "etat_sanitaire"
+	EtatSanitaireRem GetDicoTableParamsTable = "etat_sanitaire_rem"
+	Note             GetDicoTableParamsTable = "note"
+	RevSurface       GetDicoTableParamsTable = "rev_surface"
+	ToBeChecked      GetDicoTableParamsTable = "to_be_checked"
+	Validation       GetDicoTableParamsTable = "validation"
+)
+
 // Error defines model for Error.
 type Error struct {
 	Code    int32  `json:"code"`
@@ -56,6 +68,14 @@ type TreeAttributes struct {
 	Revsurfacerem           *string `json:"revsurfacerem,omitempty"`
 }
 
+// TreeDico defines model for TreeDico.
+type TreeDico struct {
+	Id        int32  `json:"id"`
+	IsActive  *bool  `json:"is_active,omitempty"`
+	SortOrder *int32 `json:"sort_order,omitempty"`
+	Value     string `json:"value"`
+}
+
 // TreeList defines model for TreeList.
 type TreeList struct {
 	CreateTime  time.Time `json:"create_time"`
@@ -67,6 +87,9 @@ type TreeList struct {
 	IsActive    bool      `json:"is_active"`
 	Name        string    `json:"name"`
 }
+
+// GetDicoTableParamsTable defines parameters for GetDicoTable.
+type GetDicoTableParamsTable string
 
 // ListParams defines parameters for List.
 type ListParams struct {
