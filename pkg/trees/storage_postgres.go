@@ -214,3 +214,46 @@ func CompareTree(t1, t2 *TreeList, attr string) bool {
 	json.Unmarshal(inrec, &m2)
 	return m1[attr] == m2[attr]
 }
+
+func (P PGX) GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error) {
+	P.log.Debug("entering GetDico(%s)", table)
+	var res []*TreeDico
+	var query string = ""
+
+	switch table {
+	case Validation:
+		query = treesDicoGetValidation
+	case ToBeChecked:
+		query = treesDicoGetToBeChecked
+	case Note:
+		query = treesDicoGetNote
+	case Entourage:
+		query = treesDicoGetEntourage
+	case Check:
+		query = treesDicoGetChk
+	case RevSurface:
+		query = treesDicoGetRevSurface
+	case EtatSanitaire:
+		query = treesDicoGetEtatSanitaire
+	case EtatSanitaireRem:
+		query = treesDicoGetEtatSanitaireRem
+	default:
+		return nil, errors.New("error : GetDico table unknown")
+	}
+
+	if query != "" {
+		err := pgxscan.Select(context.Background(), P.con, &res, query)
+		if err != nil {
+			P.log.Error("GetDico pgxscan.Select unexpectedly failed, error : %v", err)
+			return nil, err
+		}
+		if res == nil {
+			P.log.Info("GetDico returned no results ")
+			return nil, errors.New(noRecords)
+		}
+	
+		return res, nil
+	} else {
+		return nil, errors.New("error : GetDico table not specified")
+	}
+}

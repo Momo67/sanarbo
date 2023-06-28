@@ -13,6 +13,9 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Get dico values for the table passed in parameter
+	// (GET /dico/{table})
+	GetDicoTable(ctx echo.Context, table GetDicoTableParamsTable) error
 	// List returns a list of trees
 	// (GET /trees)
 	List(ctx echo.Context, params ListParams) error
@@ -33,6 +36,24 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GetDicoTable converts echo context to params.
+func (w *ServerInterfaceWrapper) GetDicoTable(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "table" -------------
+	var table GetDicoTableParamsTable
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "table", runtime.ParamLocationPath, ctx.Param("table"), &table)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter table: %s", err))
+	}
+
+	ctx.Set(JWTAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetDicoTable(ctx, table)
+	return err
 }
 
 // List converts echo context to params.
@@ -155,6 +176,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/dico/:table", wrapper.GetDicoTable)
 	router.GET(baseURL+"/trees", wrapper.List)
 	router.POST(baseURL+"/trees", wrapper.Create)
 	router.DELETE(baseURL+"/trees/:treeId", wrapper.Delete)

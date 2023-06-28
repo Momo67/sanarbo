@@ -69,4 +69,20 @@ const (
 	);
 	ALTER TABLE tree_mobile OWNER TO postgres;
 	COMMENT ON TABLE tree_mobile is 'tree_mobile is the main table of the sanarbo application';`
+
+	treesDicoGetValidation = "SELECT id, validation as value FROM thi_arbre_validation WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesDicoGetToBeChecked = "SELECT id, to_be_checked as value FROM thi_arbre_to_be_checked WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesDicoGetNote = "SELECT id, note::varchar(2) as value FROM thi_arbre_note WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesDicoGetEntourage = "SELECT id, entourage as value FROM thi_arbre_entourage WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesDicoGetChk = "SELECT id, status as value FROM thi_arbre_chk WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesDicoGetRevSurface = "SELECT id, rev_surface as value FROM thi_arbre_rev_surface WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesDicoGetEtatSanitaire = "SELECT id, etat as value FROM thi_arbre_etat_sanitaire WHERE is_active = TRUE ORDER BY sort_order;"
+	
+	treesDicoGetEtatSanitaireRem = "SELECT id, remarque as value FROM thi_arbre_etat_sanitaire_remarque WHERE is_active = TRUE ORDER BY sort_order;"
 )
