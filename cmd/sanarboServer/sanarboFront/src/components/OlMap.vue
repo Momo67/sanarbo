@@ -138,7 +138,11 @@ const map = new Map({
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>
 
-  <v-dialog v-model="showForm">
+  <v-dialog
+      v-model="showForm"
+      scrollable
+      width="auto"
+  >
     <v-card>
       <v-card-text>
         <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' @formCanceled="handleFormCanceled" :tree-id="treeId" ></Tree>
