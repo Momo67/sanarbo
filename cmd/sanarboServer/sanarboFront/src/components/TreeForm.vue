@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref} from 'vue';
+import {onMounted, reactive, ref} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 
 
@@ -10,11 +10,11 @@ const urlTrees = backendUrl + "trees";
 const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
   showForm: {type: Boolean, required: false, default: false},
-  treeId: {type: String, required: false, default: ''},
+  treeId: {type: Number, required: false, default: ''},
 })
 
 
-const Tree = ref({
+const Tree = reactive({
   create_time: '',
   creator: '',
   description: '',
@@ -74,13 +74,13 @@ onMounted(async () => {
 
 
   const tree = await useFetch(urlTrees + '/' + props.treeId, options)
-  Tree.value.create_time = tree.data.value.create_time;
-  Tree.value.creator = tree.data.value.creator;
-  Tree.value.description = tree.data.value.description;
-  Tree.value.id = tree.data.value.id;
-  Tree.value.name = tree.data.value.name;
-  Tree.value.tree_attributes = tree.data.value.tree_attributes;
-  Tree.value.geom = tree.data.value.geom;
+  Tree.create_time = tree.data.value.create_time;
+  Tree.creator = tree.data.value.creator;
+  Tree.description = tree.data.value.description;
+  Tree.id = tree.data.value.id;
+  Tree.name = tree.data.value.name;
+  Tree.tree_attributes = tree.data.value.tree_attributes;
+  Tree.geom = tree.data.value.geom;
 })
 
 
