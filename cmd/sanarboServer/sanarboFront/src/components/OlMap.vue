@@ -12,9 +12,8 @@ import OlProjection from 'ol/proj/Projection'
 import {register} from 'ol/proj/proj4';
 import 'ol/ol.css'
 import {useFetch} from "../composables/FetchData.js";
-import Tree from "./Tree.vue";
+import TreeForm from "./TreeForm.vue";
 import {Select} from "ol/interaction.js";
-import {click} from "ol/events/condition.js";
 
 
 // Fetch data
@@ -39,8 +38,7 @@ const treeId = ref(null);
 const wktFormat = new WKT();
 
 // Interactions
-const selectInteraction = new Select({
-});
+const selectInteraction = new Select({});
 
 selectInteraction.on('select', (event) => {
       if (event.selected.length > 0) {
@@ -51,7 +49,7 @@ selectInteraction.on('select', (event) => {
       } else {
         showForm.value = false;
       }
-}
+    }
 )
 
 // Handle form submission / cancel
@@ -69,7 +67,7 @@ const handleFormCanceled = () => {
 }
 
 
-onMounted(   async () => {
+onMounted(async () => {
 
   const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
   errorFetch.value = hasError.value;
@@ -90,30 +88,29 @@ onMounted(   async () => {
   });
 
 
+  const features = data.value.map((d) => {
 
-const features = data.value.map((d) => {
+    let feature = wktFormat.readFeature(d.geom, {
+      featureProjection: swissProjection,
+    })
 
-  let feature = wktFormat.readFeature(d.geom, {
-    featureProjection: swissProjection,
-  })
+    feature.set('id', d.id)
 
-  feature.set('id', d.id)
-
-  return feature
-});
+    return feature
+  });
 
 
 // Define vector layer
-const vectorLayer = new VectorLayer({
+  const vectorLayer = new VectorLayer({
     source: new VectorSource({
       features: features
     })
   });
 
 
-const map = new Map({
+  const map = new Map({
     view: new View({
-      center: 	[2537850.0, 1152445.0],
+      center: [2537850.0, 1152445.0],
       zoom: 12,
       projection: swissProjection
     }),
@@ -145,7 +142,8 @@ const map = new Map({
   >
     <v-card>
       <v-card-text>
-        <Tree :showForm='showForm' @formSubmitted='handleFormSubmitted' @formCanceled="handleFormCanceled" :tree-id="treeId" ></Tree>
+        <TreeForm :showForm='showForm' :tree-id="treeId" @formCanceled="handleFormCanceled"
+                  @formSubmitted='handleFormSubmitted'></TreeForm>
       </v-card-text>
     </v-card>
   </v-dialog>

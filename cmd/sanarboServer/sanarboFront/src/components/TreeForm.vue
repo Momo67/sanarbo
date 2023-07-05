@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, ref} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 
 
@@ -9,12 +9,12 @@ const urlTrees = backendUrl + "trees";
 
 const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
-  showForm: Boolean,
-  treeId: Number,
+  showForm: {type: Boolean, required: false, default: false},
+  treeId: {type: String, required: false, default: ''},
 })
 
 
-const Tree = reactive({
+const Tree = ref({
   create_time: '',
   creator: '',
   description: '',
@@ -35,7 +35,6 @@ const Dict = ref({
   "etat_sanitaire": {},
   "etat_sanitaire_rem": {}
 })
-
 
 
 // Get session storage token
@@ -75,17 +74,18 @@ onMounted(async () => {
 
 
   const tree = await useFetch(urlTrees + '/' + props.treeId, options)
-  Tree.create_time = tree.data.value.create_time;
-  Tree.creator = tree.data.value.creator;
-  Tree.description = tree.data.value.description;
-  Tree.id = tree.data.value.id;
-  Tree.name = tree.data.value.name;
-  Tree.tree_attributes = tree.data.value.tree_attributes;
-  Tree.geom = tree.data.value.geom;
+  Tree.value.create_time = tree.data.value.create_time;
+  Tree.value.creator = tree.data.value.creator;
+  Tree.value.description = tree.data.value.description;
+  Tree.value.id = tree.data.value.id;
+  Tree.value.name = tree.data.value.name;
+  Tree.value.tree_attributes = tree.data.value.tree_attributes;
+  Tree.value.geom = tree.data.value.geom;
 })
 
 
-const submitForm = async (event) => {
+// eslint-disable-next-line no-unused-vars
+const submitForm = async () => {
 
   const options = {
     headers: headers,
@@ -109,59 +109,42 @@ const handleFormCanceled = () => {
 
 <template>
   <div>
-
     <v-form @submit.prevent="submitForm">
-
-
-
-
       <v-container>
-
         <h2> Arbre - {{ Tree.name }}</h2>
         <v-row class="py-5">
-
           <v-col cols="12" md="12">
             <v-select
-                label="À contrôler"
-                :items="Dict.to_be_checked.data"
                 v-model.number="Tree.tree_attributes.idtobechecked"
+                :items="Dict.to_be_checked.data"
                 item-title="value"
                 item-value="id"
+                label="À contrôler"
             >
             </v-select>
-
-
           </v-col>
           <v-col cols="12" md="12">
-
             <v-select
-                label="Statut"
-                :items="Dict.validation.data"
                 v-model.number="Tree.tree_attributes.idvalidation"
+                :items="Dict.validation.data"
                 item-title="value"
                 item-value="id"
+                label="Statut"
             >
             </v-select>
-
-
           </v-col>
-
           <v-col cols="12" md="12">
-
             <v-select
-                label="Note"
-                :items="Dict.note.data"
                 v-model.number="Tree.tree_attributes.idnote"
+                :items="Dict.note.data"
                 item-title="value"
                 item-value="id"
+                label="Note"
             >
             </v-select>
-
-
           </v-col>
         </v-row>
       </v-container>
-
 
       <v-container>
         <h2>Environnement</h2>
@@ -177,88 +160,71 @@ const handleFormCanceled = () => {
 
           <v-card
               class="mx-auto"
-              width="100%"
               prepend-icon="mdi-circle-box-outline"
+              width="100%"
           >
-            <template v-slot:title>
+            <template #title>
               Entourage / Cadre
             </template>
-
             <v-col cols="12" md="12">
-
               <v-select
-                  label="Type"
-                  :items="Dict.entourage.data"
                   v-model.number="Tree.tree_attributes.identourage"
+                  :items="Dict.entourage.data"
                   item-title="value"
                   item-value="id"
+                  label="Type"
               >
               </v-select>
-
-
             </v-col>
             <v-col cols="12" md="12">
-
-
               <v-select
-                  label="Statut"
-                  :items="Dict.check.data"
                   v-model.number="Tree.tree_attributes.idchkentourage"
+                  :items="Dict.check.data"
                   item-title="value"
                   item-value="id"
+                  label="Statut"
               >
               </v-select>
-
-
             </v-col>
-
-
             <v-col cols="12" md="12">
               <v-text-field
                   v-model="Tree.tree_attributes.entouragerem"
                   label="Remarque entourage"
                   type="string"
               ></v-text-field>
-
-
             </v-col>
           </v-card>
 
 
           <v-card
               class="mx-auto"
-              width="100%"
               prepend-icon="mdi-texture-box"
+              width="100%"
           >
-            <template v-slot:title>
+            <template #title>
               Revêtement
             </template>
-
-
             <v-col cols="12" md="12">
-
               <v-select
-                  label="Type"
-                  :items="Dict.rev_surface.data"
                   v-model.number="Tree.tree_attributes.idrevsurface"
+                  :items="Dict.rev_surface.data"
                   item-title="value"
                   item-value="id"
+                  label="Type"
               >
               </v-select>
             </v-col>
             <v-col cols="12" md="12">
               <v-select
-                  label="Statut"
-                  :items="Dict.check.data"
                   v-model.number="Tree.tree_attributes.idchkrevsurface"
+                  :items="Dict.check.data"
                   item-title="value"
                   item-value="id"
+                  label="Statut"
               >
               </v-select>
             </v-col>
-
             <v-col cols="12" md="12">
-
               <v-text-field
                   v-model="Tree.tree_attributes.revsurfacerem"
                   label="Remarque revêtement"
@@ -266,49 +232,39 @@ const handleFormCanceled = () => {
               ></v-text-field>
             </v-col>
           </v-card>
-
         </v-row>
 
 
         <h2 class="pt-10">État sanitaire</h2>
         <v-row class="py-5">
           <v-col cols="12" md="12">
-
-
             <v-select
-                label="Pied"
-                :items="Dict.etat_sanitaire.data"
                 v-model.number="Tree.tree_attributes.idetatsanitairepied"
+                :items="Dict.etat_sanitaire.data"
                 item-title="value"
                 item-value="id"
+                label="Pied"
             >
-
             </v-select>
-
-
           </v-col>
-
-
           <v-col cols="12" md="12">
             <v-select
-                label="Tronc"
-                :items="Dict.etat_sanitaire.data"
                 v-model.number="Tree.tree_attributes.idetatsanitairetronc"
+                :items="Dict.etat_sanitaire.data"
                 item-title="value"
                 item-value="id"
+                label="Tronc"
             >
-
             </v-select>
           </v-col>
           <v-col cols="12" md="12">
             <v-select
-                label="Couronne"
-                :items="Dict.etat_sanitaire.data"
                 v-model.number="Tree.tree_attributes.idetatsanitairecouronne"
+                :items="Dict.etat_sanitaire.data"
                 item-title="value"
                 item-value="id"
+                label="Couronne"
             >
-
             </v-select>
           </v-col>
           <v-col cols="12" md="12">
@@ -317,24 +273,17 @@ const handleFormCanceled = () => {
                 label="Remarque état sanitaire">
             </v-text-field>
           </v-col>
-
-
-
         </v-row>
-
-
         <v-row>
           <v-col cols="12" md="2">
-            <v-btn type="submit" color="primary" @click="submitForm">Sauver</v-btn>
+            <v-btn color="primary" type="submit" @click="submitForm">Sauver</v-btn>
           </v-col>
           <v-col cols="12" md="2">
-            <v-btn type="button" color="secondary" @click="handleFormCanceled">Annuler</v-btn>
+            <v-btn color="secondary" type="button" @click="handleFormCanceled">Annuler</v-btn>
           </v-col>
         </v-row>
-
       </v-container>
     </v-form>
-
   </div>
 </template>
 
