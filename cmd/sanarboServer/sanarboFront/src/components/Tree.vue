@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, reactive, ref} from 'vue';
+import {onBeforeMount, onMounted, reactive, ref} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 
 
@@ -25,6 +25,17 @@ const Tree = reactive({
   tree_attributes: {},
 });
 
+const Dict = ref({
+  "validation" : {},
+  "to_be_checked": {},
+  "note": {},
+  "check": {},
+  "entourage" : {},
+  "rev_surface": {},
+  "etat_sanitaire": {},
+  "etat_sanitaire_rem": {}
+})
+
 
 // Get session storage token
 const token = sessionStorage.getItem('token');
@@ -37,21 +48,50 @@ const options = {
   headers: headers
 }
 
+onBeforeMount(async () => {
+
+})
+
+
 
 onMounted(async () => {
 
-  const {data} = await useFetch(urlTrees + '/' + props.treeId, options)
-  Tree.create_time = data.value.create_time;
-  Tree.creator = data.value.creator;
-  Tree.description = data.value.description;
-  Tree.id = data.value.id;
-  Tree.name = data.value.name;
-  Tree.tree_attributes = data.value.tree_attributes;
-  Tree.geom = data.value.geom;
+  const dict_validation = await useFetch(backendUrl + 'dico/validation', options);
+  const dict_to_be_checked = await useFetch(backendUrl + 'dico/to_be_checked', options);
+  const dict_note = await useFetch(backendUrl + 'dico/note', options);
+  const dict_entourage = await useFetch(backendUrl + 'dico/entourage', options);
+  const dict_check = await useFetch(backendUrl + 'dico/check', options);
+  const rev_surface = await useFetch(backendUrl + 'dico/rev_surface', options);
+  const rev_etat_sanitaire = await useFetch(backendUrl + 'dico/etat_sanitaire', options);
+  const rev_etat_sanitaire_rem = await useFetch(backendUrl + 'dico/etat_sanitaire', options);
+
+
+  Dict.value = {
+    "validation" : dict_validation,
+    "to_be_checked": dict_to_be_checked,
+    "note": dict_note,
+    "check": dict_check,
+    "entourage" : dict_entourage,
+    "rev_surface": rev_surface,
+    "etat_sanitaire": rev_etat_sanitaire,
+    "etat_sanitaire_rem": rev_etat_sanitaire_rem
+  }
+
+  console.log(Dict.value.validation.data)
+
+  const tree = await useFetch(urlTrees + '/' + props.treeId, options)
+  Tree.create_time = tree.data.value.create_time;
+  Tree.creator = tree.data.value.creator;
+  Tree.description = tree.data.value.description;
+  Tree.id = tree.data.value.id;
+  Tree.name = tree.data.value.name;
+  Tree.tree_attributes = tree.data.value.tree_attributes;
+  Tree.geom = tree.data.value.geom;
 })
 
 
 const submitForm = async (event) => {
+
   const options = {
     headers: headers,
     method: 'PUT',
@@ -81,63 +121,69 @@ const handleFormCanceled = () => {
 
 
 
+
       <v-container>
         <h2>Arbre - {{Tree.name}}</h2>
         <v-row class="py-5">
 
               <v-col cols="12" md="12">
-                <v-text-field
-                    v-model.number="Tree.tree_attributes.idtobechecked"
+                <v-select
                     label="À contrôler"
-                    type="number"
+                    :items="Dict.to_be_checked.data"
+                    v-model.number="Tree.tree_attributes.idtobechecked"
+                    item-title="value"
+                    item-value="id"
                 >
-
                   <template v-slot:prepend>
                     <p>À contrôler</p>
                   </template>
+                </v-select>
 
-                </v-text-field>
+
+
+
               </v-col>
               <v-col cols="12" md="12">
-                <v-text-field
-                    v-model.number="Tree.tree_attributes.idvalidation"
-                    label="Statut"
-                    type="number"
-                >
 
+                <v-select
+                    label="Statut"
+                    :items="Dict.validation.data"
+                    v-model.number="Tree.tree_attributes.idvalidation"
+                    item-title="value"
+                    item-value="id"
+                >
                   <template v-slot:prepend>
                     <p>Statut</p>
                   </template>
+                </v-select>
 
 
-                </v-text-field>
+
               </v-col>
 
               <v-col cols="12" md="12">
-                <v-text-field
-                    v-model.number="Tree.tree_attributes.idnote"
-                    label="Note"
-                    type="number"
-                >
 
+                <v-select
+                    label="Note"
+                    :items="Dict.note.data"
+                    v-model.number="Tree.tree_attributes.idnote"
+                    item-title="value"
+                    item-value="id"
+                >
                   <template v-slot:prepend>
                     <p>Note</p>
                   </template>
+                </v-select>
 
 
-                </v-text-field>
               </v-col>
             </v-row>
-
       </v-container>
 
 
 
 
       <v-container>
-
-
-
         <h2 >Environnement</h2>
         <v-row class="py-5">
           <v-col cols="12" md="12">
@@ -147,33 +193,49 @@ const handleFormCanceled = () => {
                 type="number"
             >
               <template v-slot:prepend>
-                <p>Circonférence</p>
+                <p>Circonférence [cm]</p>
               </template>
 
             </v-text-field>
           </v-col>
           <v-col cols="12" md="4">
 
-            <v-text-field
+
+
+            <v-select
+                label="Entourage / Cadre"
+                :items="Dict.entourage.data"
                 v-model.number="Tree.tree_attributes.identourage"
-                label="Entourage / cadre"
-                type="number"
+                item-title="value"
+                item-value="id"
             >
-
               <template v-slot:prepend>
-                <p>Entourage / cadre</p>
+                <p>Entourage / Cadre</p>
               </template>
+            </v-select>
 
-            </v-text-field>
+
+
           </v-col>
           <v-col cols="12" md="4">
-            <v-text-field
+
+
+
+            <v-select
+                label="Statut"
+                :items="Dict.check.data"
                 v-model.number="Tree.tree_attributes.idchkentourage"
-                label="ID chk entourage"
-                type="number"
-            ></v-text-field>
+                item-title="value"
+                item-value="id"
+            >
+            </v-select>
+
 
           </v-col>
+
+
+
+
 
           <v-col cols="12" md="4">
 
@@ -182,28 +244,34 @@ const handleFormCanceled = () => {
               label="Remarque entourage"
               type="string"
           ></v-text-field>
+
+
           </v-col>
 
 
         <v-col cols="12" md="4">
-          <v-text-field
-              v-model.number="Tree.tree_attributes.idrevsurface"
+
+          <v-select
               label="Revêtement de surface"
-              type="number"
+              :items="Dict.rev_surface.data"
+              v-model.number="Tree.tree_attributes.idrevsurface"
+              item-title="value"
+              item-value="id"
           >
             <template v-slot:prepend>
               <p>Revêtement de surface</p>
             </template>
-
-          </v-text-field>
+          </v-select>
         </v-col>
         <v-col cols="12" md="4">
-          <v-text-field
+          <v-select
+              label="Statut"
+              :items="Dict.check.data"
               v-model.number="Tree.tree_attributes.idchkrevsurface"
-              label="ID chk revsurface"
-              type="number"
-          ></v-text-field>
-
+              item-title="value"
+              item-value="id"
+          >
+          </v-select>
         </v-col>
 
         <v-col cols="12" md="4">
@@ -217,55 +285,55 @@ const handleFormCanceled = () => {
 
         </v-row>
 
-
-
-
-
-
-
-
-
         <h2 class="pt-10">État sanitaire</h2>
         <v-row class="py-5">
           <v-col cols="12" md="4">
-            <v-text-field
-                v-model.number="Tree.tree_attributes.idetatsanitairepied"
-                label="Pied">
 
+
+            <v-select
+                label="Statut"
+                :items="Dict.etat_sanitaire.data"
+                v-model.number="Tree.tree_attributes.idetatsanitairepied"
+                item-title="value"
+                item-value="id"
+            >
 
               <template v-slot:prepend>
                 <p>Pied</p>
               </template>
+            </v-select>
 
 
-            </v-text-field>
           </v-col>
 
 
-
-
-
-
           <v-col cols="12" md="4">
-          <v-text-field
-              v-model.number="Tree.tree_attributes.idetatsanitairetronc"
-              label="Tronc">
-            <template v-slot:prepend>
-              <p>Tronc</p>
-            </template>
+            <v-select
+                label="Statut"
+                :items="Dict.etat_sanitaire.data"
+                v-model.number="Tree.tree_attributes.idetatsanitairetronc"
+                item-title="value"
+                item-value="id"
+            >
 
-          </v-text-field>
+              <template v-slot:prepend>
+                <p>Tronc</p>
+              </template>
+            </v-select>
         </v-col>
           <v-col cols="12" md="4">
-            <v-text-field
+            <v-select
+                label="Statut"
+                :items="Dict.etat_sanitaire.data"
                 v-model.number="Tree.tree_attributes.idetatsanitairecouronne"
-                label="Couronne">
+                item-title="value"
+                item-value="id"
+            >
 
               <template v-slot:prepend>
                 <p>Couronne</p>
               </template>
-
-            </v-text-field>
+            </v-select>
           </v-col>
           <v-col cols="12" md="12">
             <v-text-field
@@ -274,7 +342,6 @@ const handleFormCanceled = () => {
             </v-text-field>
           </v-col>
         </v-row>
-
 
 
         <v-row>
@@ -288,5 +355,6 @@ const handleFormCanceled = () => {
 
       </v-container>
     </v-form>
+
   </div>
 </template>
