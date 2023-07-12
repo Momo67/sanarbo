@@ -15,6 +15,8 @@ const props = defineProps({
 
 
 const Tree = reactive({
+  external_id: '',
+  is_active: '',
   create_time: '',
   creator: '',
   description: '',
@@ -74,6 +76,8 @@ onMounted(async () => {
 
 
   const tree = await useFetch(urlTrees + '/' + props.treeId, options)
+  Tree.external_id = tree.data.value.external_id;
+  Tree.is_active = tree.data.value.is_active;
   Tree.create_time = tree.data.value.create_time;
   Tree.creator = tree.data.value.creator;
   Tree.description = tree.data.value.description;
@@ -111,7 +115,9 @@ const handleFormCanceled = () => {
   <div>
     <v-form @submit.prevent="submitForm">
       <v-container>
-        <h2> Arbre - {{ Tree.name }}</h2>
+        <h2> Arbre - {{ Tree.external_id }}</h2>
+        <div>{{ Tree.name }}</div>
+        <div style="font-style: italic">{{ Tree.description }}</div>
         <v-row class="py-5">
           <v-col cols="12" md="12">
             <v-select
