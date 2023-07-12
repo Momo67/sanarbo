@@ -85,4 +85,42 @@ const (
 	treesDicoGetEtatSanitaire = "SELECT id, etat as value FROM thi_arbre_etat_sanitaire WHERE is_active = TRUE ORDER BY sort_order;"
 	
 	treesDicoGetEtatSanitaireRem = "SELECT id, remarque as value FROM thi_arbre_etat_sanitaire_remarque WHERE is_active = TRUE ORDER BY sort_order;"
+
+	treesInsertFromGoeland = `SELECT thi_arbre.idvalidation, 'INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes) 
+	VALUES (''' 
+		|| REPLACE(thing.name, '''', '''''')
+		|| ''',' || COALESCE('''' || REPLACE(thing.description, '''', '''''') || '''', 'NULL') 
+		|| ',' || thing.idthing
+		|| ',''t'''
+		|| ',NULL'
+		|| ',NULL'
+		|| ',NULL'
+		|| ',' || COALESCE(thing.isvalidated,'f')
+		|| ',NULL'
+		|| ',''' || thing.datecreated || ''''
+		|| ',' || thing.idcreator
+		|| ',''' || thing.datelastmodif || ''''
+		|| ',' || thing.idmodificator
+		|| ',ST_GeomFromText(''POINT(2' || to_char((thing_position.mineo/100.00), 'FM9999999.99') || ' 1' || to_char((thing_position.minsn/100.00), 'FM9999999.99') || ')'', 2056)'
+		|| ',''' || json_build_object('idvalidation', COALESCE(thi_arbre.idvalidation::text,'')::integer,
+									  'idtobechecked', COALESCE(thi_arbre.idtobechecked::text,'')::integer,
+									  'idnote', COALESCE(thi_arbre.idnote::text,'')::integer,
+									  'circonference', COALESCE(thi_arbre.circonference::varchar(10),'')::integer,
+									  'identourage', COALESCE(thi_arbre.identourage::text,'')::integer,
+									  'idchkentourage', COALESCE(thi_arbre.idchkentourage::text,'')::integer,
+									  'entouragerem', COALESCE(thi_arbre.entouragerem::text,''),
+									  'idrevsurface', COALESCE(thi_arbre.idrevsurface::text,'')::integer,
+									  'idchkrevsurface', COALESCE(thi_arbre.idchkrevsurface::text,'')::integer,
+									  'revsurfacerem', COALESCE(thi_arbre.revsurfacerem::text,''),
+									  'idetatsanitairepied', COALESCE(thi_arbre.idetatsanitairepied::text,'')::integer,
+									  'idetatsanitairetronc', COALESCE(thi_arbre.idetatsanitairetronc::text,'')::integer,
+									  'idetatsanitairecouronne', COALESCE(thi_arbre.idetatsanitairecouronne::text,'')::integer,
+									  'etatsanitairerem', COALESCE(thi_arbre.etatsanitairerem::text,''),
+									  'envracinairerem', COALESCE(thi_arbre.envracinairerem::text,''))
+		|| ''');'
+	FROM thi_arbre
+	INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
+	INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
+	WHERE thi_arbre.idvalidation = 5
+	LIMIT 1;`
 )
