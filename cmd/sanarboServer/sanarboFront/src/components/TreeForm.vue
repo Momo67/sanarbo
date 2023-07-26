@@ -11,10 +11,13 @@ const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
   showForm: {type: Boolean, required: false, default: false},
   treeId: {type: Number, required: false, default: ''},
+  dictionaries: {type: Object, required: true, default: null}
 })
 
 
 const Tree = reactive({
+  external_id: '',
+  is_active: '',
   create_time: '',
   creator: '',
   description: '',
@@ -23,18 +26,6 @@ const Tree = reactive({
   geom: '',
   tree_attributes: {},
 });
-
-
-const Dict = ref({
-  "validation": {},
-  "to_be_checked": {},
-  "note": {},
-  "check": {},
-  "entourage": {},
-  "rev_surface": {},
-  "etat_sanitaire": {},
-  "etat_sanitaire_rem": {}
-})
 
 
 // Get session storage token
@@ -51,29 +42,9 @@ const options = {
 
 onMounted(async () => {
 
-  const dict_validation = await useFetch(backendUrl + 'dico/validation', options);
-  const dict_to_be_checked = await useFetch(backendUrl + 'dico/to_be_checked', options);
-  const dict_note = await useFetch(backendUrl + 'dico/note', options);
-  const dict_entourage = await useFetch(backendUrl + 'dico/entourage', options);
-  const dict_check = await useFetch(backendUrl + 'dico/check', options);
-  const rev_surface = await useFetch(backendUrl + 'dico/rev_surface', options);
-  const etat_sanitaire = await useFetch(backendUrl + 'dico/etat_sanitaire', options);
-  const etat_sanitaire_rem = await useFetch(backendUrl + 'dico/etat_sanitaire_rem', options);
-
-
-  Dict.value = {
-    "validation": dict_validation,
-    "to_be_checked": dict_to_be_checked,
-    "note": dict_note,
-    "check": dict_check,
-    "entourage": dict_entourage,
-    "rev_surface": rev_surface,
-    "etat_sanitaire": etat_sanitaire,
-    "etat_sanitaire_rem": etat_sanitaire_rem
-  }
-
-
   const tree = await useFetch(urlTrees + '/' + props.treeId, options)
+  Tree.external_id = tree.data.value.external_id;
+  Tree.is_active = tree.data.value.is_active;
   Tree.create_time = tree.data.value.create_time;
   Tree.creator = tree.data.value.creator;
   Tree.description = tree.data.value.description;
@@ -111,12 +82,14 @@ const handleFormCanceled = () => {
   <div>
     <v-form @submit.prevent="submitForm">
       <v-container>
-        <h2> Arbre - {{ Tree.name }}</h2>
+        <h2> Arbre - {{ Tree.external_id }}</h2>
+        <div>{{ Tree.name }}</div>
+        <div style="font-style: italic">{{ Tree.description }}</div>
         <v-row class="py-5">
           <v-col cols="12" md="12">
             <v-select
                 v-model.number="Tree.tree_attributes.idtobechecked"
-                :items="Dict.to_be_checked.data"
+                :items="dictionaries.to_be_checked.data"
                 item-title="value"
                 item-value="id"
                 label="À contrôler"
@@ -126,7 +99,7 @@ const handleFormCanceled = () => {
           <v-col cols="12" md="12">
             <v-select
                 v-model.number="Tree.tree_attributes.idvalidation"
-                :items="Dict.validation.data"
+                :items="dictionaries.validation.data"
                 item-title="value"
                 item-value="id"
                 label="Statut"
@@ -136,7 +109,7 @@ const handleFormCanceled = () => {
           <v-col cols="12" md="12">
             <v-select
                 v-model.number="Tree.tree_attributes.idnote"
-                :items="Dict.note.data"
+                :items="dictionaries.note.data"
                 item-title="value"
                 item-value="id"
                 label="Note"
@@ -169,7 +142,7 @@ const handleFormCanceled = () => {
             <v-col cols="12" md="12">
               <v-select
                   v-model.number="Tree.tree_attributes.identourage"
-                  :items="Dict.entourage.data"
+                  :items="dictionaries.entourage.data"
                   item-title="value"
                   item-value="id"
                   label="Type"
@@ -179,7 +152,7 @@ const handleFormCanceled = () => {
             <v-col cols="12" md="12">
               <v-select
                   v-model.number="Tree.tree_attributes.idchkentourage"
-                  :items="Dict.check.data"
+                  :items="dictionaries.check.data"
                   item-title="value"
                   item-value="id"
                   label="Statut"
@@ -209,7 +182,7 @@ const handleFormCanceled = () => {
             <v-col cols="12" md="12">
               <v-select
                   v-model.number="Tree.tree_attributes.idrevsurface"
-                  :items="Dict.rev_surface.data"
+                  :items="dictionaries.rev_surface.data"
                   item-title="value"
                   item-value="id"
                   label="Type"
@@ -219,7 +192,7 @@ const handleFormCanceled = () => {
             <v-col cols="12" md="12">
               <v-select
                   v-model.number="Tree.tree_attributes.idchkrevsurface"
-                  :items="Dict.check.data"
+                  :items="dictionaries.check.data"
                   item-title="value"
                   item-value="id"
                   label="Statut"
@@ -244,7 +217,7 @@ const handleFormCanceled = () => {
           <v-col cols="12" md="12">
             <v-select
                 v-model.number="Tree.tree_attributes.idetatsanitairepied"
-                :items="Dict.etat_sanitaire.data"
+                :items="dictionaries.etat_sanitaire.data"
                 item-title="value"
                 item-value="id"
                 label="Pied"
@@ -254,7 +227,7 @@ const handleFormCanceled = () => {
           <v-col cols="12" md="12">
             <v-select
                 v-model.number="Tree.tree_attributes.idetatsanitairetronc"
-                :items="Dict.etat_sanitaire.data"
+                :items="dictionaries.etat_sanitaire.data"
                 item-title="value"
                 item-value="id"
                 label="Tronc"
@@ -264,7 +237,7 @@ const handleFormCanceled = () => {
           <v-col cols="12" md="12">
             <v-select
                 v-model.number="Tree.tree_attributes.idetatsanitairecouronne"
-                :items="Dict.etat_sanitaire.data"
+                :items="dictionaries.etat_sanitaire.data"
                 item-title="value"
                 item-value="id"
                 label="Couronne"

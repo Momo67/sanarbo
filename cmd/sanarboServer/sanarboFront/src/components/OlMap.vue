@@ -66,6 +66,40 @@ const handleFormCanceled = () => {
   selectInteraction.getFeatures().clear();
 }
 
+const dictionaries = ref({
+  "validation": {},
+  "to_be_checked": {},
+  "note": {},
+  "check": {},
+  "entourage": {},
+  "rev_surface": {},
+  "etat_sanitaire": {},
+  "etat_sanitaire_rem": {}
+})
+
+const fetchDictionaries = async () => {
+  const dict_validation = await useFetch(backendUrl + 'dico/validation', options);
+  const dict_to_be_checked = await useFetch(backendUrl + 'dico/to_be_checked', options);
+  const dict_note = await useFetch(backendUrl + 'dico/note', options);
+  const dict_entourage = await useFetch(backendUrl + 'dico/entourage', options);
+  const dict_check = await useFetch(backendUrl + 'dico/check', options);
+  const rev_surface = await useFetch(backendUrl + 'dico/rev_surface', options);
+  const etat_sanitaire = await useFetch(backendUrl + 'dico/etat_sanitaire', options);
+  const etat_sanitaire_rem = await useFetch(backendUrl + 'dico/etat_sanitaire_rem', options);
+
+
+  dictionaries.value = {
+    "validation": dict_validation,
+    "to_be_checked": dict_to_be_checked,
+    "note": dict_note,
+    "check": dict_check,
+    "entourage": dict_entourage,
+    "rev_surface": rev_surface,
+    "etat_sanitaire": etat_sanitaire,
+    "etat_sanitaire_rem": etat_sanitaire_rem
+  }
+}
+
 
 onMounted(async () => {
 
@@ -74,6 +108,7 @@ onMounted(async () => {
   fetchIsLoading.value = isLoading.value;
   errorFetchMessage.value = errorMessage.value;
 
+  fetchDictionaries();
 
   // Define projection
   proj4.defs(
@@ -142,7 +177,7 @@ onMounted(async () => {
   >
     <v-card>
       <v-card-text>
-        <TreeForm :showForm='showForm' :tree-id="treeId" @formCanceled="handleFormCanceled"
+        <TreeForm :showForm='showForm' :tree-id="treeId" :dictionaries="dictionaries" @formCanceled="handleFormCanceled"
                   @formSubmitted='handleFormSubmitted'></TreeForm>
       </v-card-text>
     </v-card>
