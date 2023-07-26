@@ -4,6 +4,8 @@ import View from 'ol/View.js';
 import TileLayer from 'ol/layer/Tile.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
+import OlSourceWMTS from 'ol/source/WMTS';
+import OlTileGridWMTS from 'ol/tilegrid/WMTS';
 import {WKT} from "ol/format.js";
 import {onMounted, ref} from "vue";
 import {OSM} from 'ol/source';
@@ -14,6 +16,7 @@ import 'ol/ol.css'
 import {useFetch} from "../composables/FetchData.js";
 import TreeForm from "./TreeForm.vue";
 import {Select} from "ol/interaction.js";
+import {Fill, Stroke, Style, Circle as CircleStyle, Text as TextStyle} from 'ol/style.js';
 
 
 // Fetch data
@@ -124,36 +127,146 @@ onMounted(async () => {
 
 
   const features = data.value.map((d) => {
-
     let feature = wktFormat.readFeature(d.geom, {
       featureProjection: swissProjection,
     })
 
     feature.set('id', d.id)
+    feature.set('idthing', d.external_id)
+    feature.set('idvalidation', d.tree_att_light.idvalidation)
 
     return feature
   });
 
+  const getValidationColor = (idvalidation) => {
+    let color = '';
+    switch (idvalidation) {
+      case 1:   //Existant
+        color = '#00FF00';
+        break;
+      case 5:   //En attente de soins
+        color = '#FF00FF';
+        break;
+      case 6:   //En attente d'abattage
+        color = '#FFFF00';
+        break;
+      case 7:   //En attente de remplacement
+        color = '#00FFFF';
+        break;
+      case 8:   //En attente de tomographie
+        color = '#0000FF';
+        break;
+      case 9:   //A surveiller
+        color = '#FF0000';
+        break;
+      case 10:  //En demande d'abattage
+        color = '#FF7D00';
+        break;
+      case 11:  //En attente de projet
+        color = '#009696';
+        break;
+      default:
+        color = 'white';
+        break;
+    };
+    return color;
+  };
 
 // Define vector layer
   const vectorLayer = new VectorLayer({
     source: new VectorSource({
       features: features
-    })
+    }),
+    style: function(feature, resolution) {
+      const color = getValidationColor(feature.get('idvalidation'));
+      return new Style({
+        image: new CircleStyle({
+          radius: 5/(resolution+0.5),
+          fill: new Fill({color: color}),
+          stroke: new Stroke({width: 1, color: color}),
+        }),
+      });
+    }
   });
 
+  const textLayer = new VectorLayer({
+    source: new VectorSource({features: features}),
+    style: function(feature, resolution) {
+      return new Style({
+        text: new TextStyle({
+          text: String(feature.get('idthing')),
+          font: '10px Arial',
+          offsetY: -25/(resolution+1),
+          fill: new Fill({color: 'rgb(255, 255, 255)'}),
+          stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
+          scale: 1/(resolution+0.5)
+        })
+      });
+    },
+    maxResolution: 0.2,
+    visible: true
+  });
+
+  const ortho2016 = new TileLayer({
+    source: new OlSourceWMTS({
+      layer: 'orthophotos_ortho_lidar_2016',
+      url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2016/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
+      tileGrid: new OlTileGridWMTS({
+        origin: [2420000, 1350000],
+        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
+        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      }),
+      requestEncoding: 'REST'
+    }),
+    visible: true
+  });
+
+  const ortho2012 = new TileLayer({
+    source: new OlSourceWMTS({
+      layer: 'orthophotos_ortho_lidar_2012',
+      url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2012/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
+      tileGrid: new OlTileGridWMTS({
+        origin: [2420000, 1350000],
+        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
+        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      }),
+      requestEncoding: 'REST'
+    }),
+    visible: false
+  });
+
+  const swissLayer = new TileLayer({
+    source: new OlSourceWMTS({
+      layer: 'fonds_geo_carte_nationale_msgroup',
+      url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2014/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
+      tileGrid: new OlTileGridWMTS({
+        origin: [2420000, 1350000],
+        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
+        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      }),
+      requestEncoding: 'REST'
+    }),
+    visible: false
+  });
 
   const map = new Map({
+    controls: [],
     view: new View({
       center: [2537850.0, 1152445.0],
-      zoom: 12,
+      zoom: 18,
       projection: swissProjection
     }),
     layers: [
+      /*
       new TileLayer({
         source: new OSM(),
       }),
-      vectorLayer
+      */
+      ortho2012,
+      ortho2016,
+      swissLayer,
+      vectorLayer,
+      textLayer
     ],
     target: 'map',
   });
@@ -165,7 +278,7 @@ onMounted(async () => {
 
 
 <template>
-  <div id="map">
+  <div id="map" ref="map">
     <div v-if="fetchIsLoading">Loading...</div>
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>

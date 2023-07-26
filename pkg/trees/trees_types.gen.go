@@ -49,6 +49,11 @@ type Tree struct {
 	TreeAttributes       TreeAttributes `json:"tree_attributes"`
 }
 
+// TreeAttLight defines model for TreeAttLight.
+type TreeAttLight struct {
+	Idvalidation int32 `json:"idvalidation"`
+}
+
 // TreeAttributes defines model for TreeAttributes.
 type TreeAttributes struct {
 	Circonference           *int32  `json:"circonference,omitempty"`
@@ -78,14 +83,15 @@ type TreeDico struct {
 
 // TreeList defines model for TreeList.
 type TreeList struct {
-	CreateTime  time.Time `json:"create_time"`
-	Creator     int32     `json:"creator"`
-	Description *string   `json:"description,omitempty"`
-	ExternalId  *int32    `json:"external_id,omitempty"`
-	Geom        string    `json:"geom"`
-	Id          int32     `json:"id"`
-	IsActive    bool      `json:"is_active"`
-	Name        string    `json:"name"`
+	CreateTime   time.Time    `json:"create_time"`
+	Creator      int32        `json:"creator"`
+	Description  *string      `json:"description,omitempty"`
+	ExternalId   *int32       `json:"external_id,omitempty"`
+	Geom         string       `json:"geom"`
+	Id           int32        `json:"id"`
+	IsActive     bool         `json:"is_active"`
+	Name         string       `json:"name"`
+	TreeAttLight TreeAttLight `json:"tree_att_light"`
 }
 
 // GetDicoTableParamsTable defines parameters for GetDicoTable.

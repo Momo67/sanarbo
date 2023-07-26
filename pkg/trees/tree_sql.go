@@ -2,7 +2,7 @@ package trees
 
 const (
 	treesList = `
-	SELECT id, name, description, is_active, create_time, creator, external_id, ST_AsText(geom) as geom
+	SELECT id, name, description, is_active, create_time, creator, external_id, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation') as tree_att_light
 	FROM tree_mobile
 	LIMIT $1 OFFSET $2;`
 
