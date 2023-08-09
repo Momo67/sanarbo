@@ -343,9 +343,13 @@ components:
           type: string
     TreeAttributes:
       required:
+        - idthing
         - idvalidation
       type: object
       properties:
+        idthing:
+          type: integer
+          format: int32
         idvalidation:
           type: integer
           format: int32

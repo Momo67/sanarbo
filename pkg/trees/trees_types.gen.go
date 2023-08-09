@@ -68,6 +68,7 @@ type TreeAttributes struct {
 	Idetatsanitairetronc    *int32  `json:"idetatsanitairetronc,omitempty"`
 	Idnote                  *int32  `json:"idnote,omitempty"`
 	Idrevsurface            *int32  `json:"idrevsurface,omitempty"`
+	Idthing                 int32   `json:"idthing"`
 	Idtobechecked           *int32  `json:"idtobechecked,omitempty"`
 	Idvalidation            int32   `json:"idvalidation"`
 	Revsurfacerem           *string `json:"revsurfacerem,omitempty"`
