@@ -7,7 +7,7 @@ import VectorSource from 'ol/source/Vector.js';
 import OlSourceWMTS from 'ol/source/WMTS';
 import OlTileGridWMTS from 'ol/tilegrid/WMTS';
 import {WKT} from "ol/format.js";
-import {onMounted, ref} from "vue";
+import {onMounted, ref, watch} from "vue";
 import {OSM} from 'ol/source';
 import proj4 from 'proj4'
 import OlProjection from 'ol/proj/Projection'
@@ -17,6 +17,7 @@ import {useFetch} from "../composables/FetchData.js";
 import TreeForm from "./TreeForm.vue";
 import {Select} from "ol/interaction.js";
 import {Fill, Stroke, Style, Circle as CircleStyle, Text as TextStyle} from 'ol/style.js';
+import Geolocation from 'ol/Geolocation.js';
 
 
 // Fetch data
@@ -103,6 +104,47 @@ const fetchDictionaries = async () => {
   }
 }
 
+const layers = ref([
+  {title: 'Lidar 2016', value: 'orthophotos_ortho_lidar_2016'},
+  {title: 'Lidar 2012', value: 'orthophotos_ortho_lidar_2012'},
+  {title: 'Plan Ville', value: 'plan_ville'},
+  {title: 'Carte nationale', value: 'fonds_geo_carte_nationale_msgroup'},
+]);
+
+const selectedLayer = ref(null);
+
+const chooseLayer = (selected) => {
+  const map_layers = map.getLayers();
+  map_layers.forEach((layer) => {
+    const layerName = layer.get('source').layer_;
+    if (layer.get('type') === 'base') {
+      if (layerName === selected) {
+        layer.setVisible(true);
+      } else {
+        layer.setVisible(false);
+      }
+    }
+  });
+}
+
+const getSelectedLayer = () => {
+  let selectedLayer = "";
+  const map_layers = map.getLayers();
+  map_layers.forEach((layer) => {
+    const layerName = layer.get('source').layer_;
+    if (layer.get('type') === 'base') {
+      if (layer.getVisible()) {
+        selectedLayer = layerName;
+      }
+    }
+  });
+  return selectedLayer;
+}
+
+const trackingEnabled = ref(true);
+const showTracking = ref(true);
+
+let map = null;
 
 onMounted(async () => {
 
@@ -172,7 +214,7 @@ onMounted(async () => {
     return color;
   };
 
-// Define vector layer
+  // Define vector layer
   const vectorLayer = new VectorLayer({
     source: new VectorSource({
       features: features
@@ -198,7 +240,7 @@ onMounted(async () => {
           font: '10px Arial',
           offsetY: -25/(resolution+1),
           fill: new Fill({color: 'rgb(255, 255, 255)'}),
-          stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
+          //stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
           scale: 1/(resolution+0.5)
         })
       });
@@ -208,6 +250,8 @@ onMounted(async () => {
   });
 
   const ortho2016 = new TileLayer({
+    title: 'orthophotos_ortho_lidar_2016',
+    type: 'base',
     source: new OlSourceWMTS({
       layer: 'orthophotos_ortho_lidar_2016',
       url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2016/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
@@ -222,6 +266,8 @@ onMounted(async () => {
   });
 
   const ortho2012 = new TileLayer({
+    title: 'orthophotos_ortho_lidar_2012',
+    type: 'base',
     source: new OlSourceWMTS({
       layer: 'orthophotos_ortho_lidar_2012',
       url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2012/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
@@ -235,7 +281,25 @@ onMounted(async () => {
     visible: false
   });
 
+  const planVille = new TileLayer({
+    title: 'plan_ville',
+    type: 'base',
+    source: new OlSourceWMTS({
+      layer: 'plan_ville',
+      url: `https://tilesmn95.lausanne.ch/tiles/1.0.0/fonds_geo_osm_bdcad_couleur/default/2021/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
+      tileGrid: new OlTileGridWMTS({
+        origin: [2420000, 1350000],
+        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
+        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+      }),
+      requestEncoding: 'REST'
+    }),
+    visible: false
+  });
+
   const swissLayer = new TileLayer({
+    title: 'fonds_geo_carte_nationale_msgroup',
+    type: 'base',
     source: new OlSourceWMTS({
       layer: 'fonds_geo_carte_nationale_msgroup',
       url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2014/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
@@ -249,10 +313,10 @@ onMounted(async () => {
     visible: false
   });
 
-  const map = new Map({
+  map = new Map({
     controls: [],
     view: new View({
-      center: [2537850.0, 1152445.0],
+      center: [2537633.0, 1152618.0],
       zoom: 18,
       projection: swissProjection
     }),
@@ -264,6 +328,7 @@ onMounted(async () => {
       */
       ortho2012,
       ortho2016,
+      planVille,
       swissLayer,
       vectorLayer,
       textLayer
@@ -272,16 +337,61 @@ onMounted(async () => {
   });
 
   map.addInteraction(selectInteraction)
+  selectedLayer.value = getSelectedLayer();
+
+  const geolocation = new Geolocation({
+  // enableHighAccuracy must be set to true to have the heading value.
+    trackingOptions: {
+      enableHighAccuracy: true,
+    },
+    projection: map.getView().getProjection(),
+  });
+
+  geolocation.setTracking(trackingEnabled.value);
+
+  geolocation.on('change:position', () => {
+    map.getView().animate({
+      center: geolocation.getPosition(),
+      //duration: 2000,
+    });
+  });
+
 
 });
 </script>
 
 
 <template>
-  <div id="map" ref="map">
-    <div v-if="fetchIsLoading">Loading...</div>
-    <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
-  </div>
+  <v-container grid-list-xs fluid>
+        <v-select
+          v-model="selectedLayer"
+          :items="layers"
+          label="Choix des couches"
+          @update:model-value="chooseLayer"
+        ></v-select>
+
+<!--
+        <v-card>
+-->        
+          <div id="map" ref="mymap">
+            <div v-if="fetchIsLoading">Loading...</div>
+            <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
+          </div>
+<!--
+        </v-card>
+-->        
+        
+        <v-card
+          width="100px"
+        >
+          <v-card-text>
+            Salut poilu!
+          </v-card-text>
+        </v-card>
+        <v-btn color="success" fab small>
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
+  </v-container>
 
   <v-dialog
       v-model="showForm"
