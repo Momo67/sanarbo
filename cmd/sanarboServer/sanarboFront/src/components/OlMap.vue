@@ -1,4 +1,5 @@
 <script setup>
+import {onMounted, ref} from "vue";
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -7,17 +8,17 @@ import VectorSource from 'ol/source/Vector.js';
 import OlSourceWMTS from 'ol/source/WMTS';
 import OlTileGridWMTS from 'ol/tilegrid/WMTS';
 import {WKT} from "ol/format.js";
-import {onMounted, ref, watch} from "vue";
 import {OSM} from 'ol/source';
-import proj4 from 'proj4'
 import OlProjection from 'ol/proj/Projection'
 import {register} from 'ol/proj/proj4';
-import 'ol/ol.css'
 import {useFetch} from "../composables/FetchData.js";
-import TreeForm from "./TreeForm.vue";
 import {Select} from "ol/interaction.js";
 import {Fill, Stroke, Style, Circle as CircleStyle, Text as TextStyle} from 'ol/style.js';
 import Geolocation from 'ol/Geolocation.js';
+import Control from 'ol/control/Control.js';
+import proj4 from 'proj4'
+import 'ol/ol.css'
+import TreeForm from "./TreeForm.vue";
 
 
 // Fetch data
@@ -45,16 +46,15 @@ const wktFormat = new WKT();
 const selectInteraction = new Select({});
 
 selectInteraction.on('select', (event) => {
-      if (event.selected.length > 0) {
-        showForm.value = true;
-        const selectedFeature = event.selected[0];
-        treeId.value = selectedFeature.get('id');
+  if (event.selected.length > 0) {
+    showForm.value = true;
+    const selectedFeature = event.selected[0];
+    treeId.value = selectedFeature.get('id');
 
-      } else {
-        showForm.value = false;
-      }
-    }
-)
+  } else {
+    showForm.value = false;
+  }
+});
 
 // Handle form submission / cancel
 const formSubmitted = ref(false);
@@ -141,10 +141,16 @@ const getSelectedLayer = () => {
   return selectedLayer;
 }
 
-const trackingEnabled = ref(true);
-const showTracking = ref(true);
-
 let map = null;
+let geolocation = null;
+
+//Tracking
+const trackingEnabled = ref(false);
+const trackingOnClick = () => {
+  trackingEnabled.value = !trackingEnabled.value;
+  geolocation.setTracking(trackingEnabled.value);
+}
+
 
 onMounted(async () => {
 
@@ -336,62 +342,96 @@ onMounted(async () => {
     target: 'map',
   });
 
+  const myControl = new Control({
+    element: document.getElementById("expandCustomControl")
+  });
+  map.addControl(myControl);
+
   map.addInteraction(selectInteraction)
   selectedLayer.value = getSelectedLayer();
 
-  const geolocation = new Geolocation({
-  // enableHighAccuracy must be set to true to have the heading value.
+  geolocation = new Geolocation({
+    // enableHighAccuracy must be set to true to have the heading value.
     trackingOptions: {
       enableHighAccuracy: true,
     },
     projection: map.getView().getProjection(),
   });
-
   geolocation.setTracking(trackingEnabled.value);
-
   geolocation.on('change:position', () => {
     map.getView().animate({
       center: geolocation.getPosition(),
       //duration: 2000,
     });
   });
-
-
 });
 </script>
 
 
 <template>
+  <!--
   <v-container grid-list-xs fluid>
-        <v-select
-          v-model="selectedLayer"
-          :items="layers"
-          label="Choix des couches"
-          @update:model-value="chooseLayer"
-        ></v-select>
+  -->
 
-<!--
-        <v-card>
--->        
-          <div id="map" ref="mymap">
-            <div v-if="fetchIsLoading">Loading...</div>
-            <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
-          </div>
-<!--
-        </v-card>
--->        
-        
-        <v-card
-          width="100px"
-        >
-          <v-card-text>
-            Salut poilu!
-          </v-card-text>
-        </v-card>
-        <v-btn color="success" fab small>
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
+  <v-container id="expandCustomControl" fluid class="ol-custom tracking-control">
+    <v-btn :class="{ 'btn-tracking-on': trackingEnabled, 'btn-tracking-off': !trackingEnabled }" :icon="trackingEnabled ? 'mdi-crosshairs-gps' : 'mdi-crosshairs'" density="default" @click="trackingOnClick"></v-btn>
+  <!--
+    <v-menu
+      :close-on-content-click="false"
+      bottom
+      offset-y
+      nudge-bottom="10"
+      nudge-left="5"
+      content-class="testContentClass"
+    >
+      <template #activator="props">
+        <v-btn color="primary" aria-expanded="true" density="compact" icon="mdi-chevron-up" v-bind="props"></v-btn>
+      </template>
+
+      <v-container id="insideMenuExpansionPanel" @click.stop>
+        <v-row class="mt-1 ml-1">
+          <span>Custom Controls</span>
+        </v-row>
+        <v-row>
+          <v-divider class="mx-2"/>
+        </v-row>
+        <v-row>
+          <v-hover v-slot="{ hover }">
+            <v-autocomplete
+              dense
+              rounded
+              solo
+              hide-details
+              :style="{ 'width': hover ? '350px' : '150px' }"
+              class="mx-2 mt-2"/>
+          </v-hover>
+        </v-row>
+        <v-row justify="start" class="my-0">
+          <v-col>
+            <v-switch v-model="testSwitchValue" inset :label="`Switch : ${testSwitchValue}`"/>
+          </v-col>
+        </v-row>
+      </v-container>
+    </v-menu>
+      -->
   </v-container>
+
+
+  <v-select
+    v-model="selectedLayer"
+    :items="layers"
+    label="Choix des couches"
+    @update:model-value="chooseLayer"
+  ></v-select>
+
+  <div id="map" ref="mymap">
+    <div v-if="fetchIsLoading">Loading...</div>
+    <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
+  </div>
+
+  <!--
+  </v-container>
+  -->
 
   <v-dialog
       v-model="showForm"
@@ -412,5 +452,47 @@ onMounted(async () => {
 #map {
   width: 100vw;
   height: 100vh;
+}
+
+#insideMenuExpansionPanel {
+  border-radius: 25px;
+}
+
+.testContentClass {
+  border-radius: 25px;
+  background-color: rgba(240, 248, 255, 0.6);
+}
+
+#expandCustomControl {
+  position: relative; /* important to ensure the custom control is positioned relative to the top left corner of the map div */
+  /*
+  top: 32px;
+  left: 0.1em;
+  */
+  /*
+  max-width: 60px;
+  max-height: 400px;
+  */
+  max-width: auto;
+  max-height: auto;
+  margin: 0px; /* important to ensure the custom control is not centered since the container has margin: auto by default */
+}
+
+.ol-custom.tracking-control {
+  z-index: 1000;
+  top: 1.0em;
+  left: -moz-calc(100% - 32px);
+  left: -webkit-calc(100% - 32px);
+  left: calc(100% - 100px);
+}
+
+.btn-tracking-on {
+  background-color: red;
+  color: white;
+}
+
+.btn-tracking-off {
+  background-color: white;
+  color: black;
 }
 </style>
