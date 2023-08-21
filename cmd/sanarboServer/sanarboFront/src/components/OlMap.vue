@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref} from "vue";
+import {onMounted, ref, reactive} from "vue";
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -8,17 +8,17 @@ import VectorSource from 'ol/source/Vector.js';
 import OlSourceWMTS from 'ol/source/WMTS';
 import OlTileGridWMTS from 'ol/tilegrid/WMTS';
 import {WKT} from "ol/format.js";
-import {OSM} from 'ol/source';
 import OlProjection from 'ol/proj/Projection'
 import {register} from 'ol/proj/proj4';
 import {useFetch} from "../composables/FetchData.js";
 import {Select} from "ol/interaction.js";
 import {Fill, Stroke, Style, Circle as CircleStyle, Text as TextStyle} from 'ol/style.js';
-import Geolocation from 'ol/Geolocation.js';
 import Control from 'ol/control/Control.js';
-import proj4 from 'proj4'
+import proj4 from 'proj4';
 import 'ol/ol.css'
 import TreeForm from "./TreeForm.vue";
+import TrackingControl from "./TrackingControl.vue";
+import LayersControl from "./LayersControl.vue";
 
 
 // Fetch data
@@ -114,6 +114,7 @@ const layers = ref([
 const selectedLayer = ref(null);
 
 const chooseLayer = (selected) => {
+  selectedLayer.value = selected;
   const map_layers = map.getLayers();
   map_layers.forEach((layer) => {
     const layerName = layer.get('source').layer_;
@@ -141,16 +142,33 @@ const getSelectedLayer = () => {
   return selectedLayer;
 }
 
-let map = null;
-let geolocation = null;
+// Define projection
+proj4.defs(
+    'EPSG:2056',
+    '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs');
 
+register(proj4);
+
+const swissProjection = reactive(new OlProjection({
+  code: 'EPSG:2056',
+  units: 'm',
+}));
+
+let map = null;
+const view = new View({
+  center: [2537633.0, 1152618.0],
+  zoom: 18,
+  projection: swissProjection
+});
+
+const setPosition = (position) => {
+  view.animate({
+    center: position,
+    duration: 2000,
+  });
+}
 //Tracking
 const trackingEnabled = ref(false);
-const trackingOnClick = () => {
-  trackingEnabled.value = !trackingEnabled.value;
-  geolocation.setTracking(trackingEnabled.value);
-}
-
 
 onMounted(async () => {
 
@@ -160,19 +178,6 @@ onMounted(async () => {
   errorFetchMessage.value = errorMessage.value;
 
   fetchDictionaries();
-
-  // Define projection
-  proj4.defs(
-      'EPSG:2056',
-      '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs');
-
-  register(proj4);
-
-  const swissProjection = new OlProjection({
-    code: 'EPSG:2056',
-    units: 'm',
-  });
-
 
   const features = data.value.map((d) => {
     let feature = wktFormat.readFeature(d.geom, {
@@ -321,11 +326,7 @@ onMounted(async () => {
 
   map = new Map({
     controls: [],
-    view: new View({
-      center: [2537633.0, 1152618.0],
-      zoom: 18,
-      projection: swissProjection
-    }),
+    view: view,
     layers: [
       /*
       new TileLayer({
@@ -350,20 +351,6 @@ onMounted(async () => {
   map.addInteraction(selectInteraction)
   selectedLayer.value = getSelectedLayer();
 
-  geolocation = new Geolocation({
-    // enableHighAccuracy must be set to true to have the heading value.
-    trackingOptions: {
-      enableHighAccuracy: true,
-    },
-    projection: map.getView().getProjection(),
-  });
-  geolocation.setTracking(trackingEnabled.value);
-  geolocation.on('change:position', () => {
-    map.getView().animate({
-      center: geolocation.getPosition(),
-      //duration: 2000,
-    });
-  });
 });
 </script>
 
@@ -373,9 +360,9 @@ onMounted(async () => {
   <v-container grid-list-xs fluid>
   -->
 
+  <!--
   <v-container id="expandCustomControl" fluid class="ol-custom tracking-control">
     <v-btn :class="{ 'btn-tracking-on': trackingEnabled, 'btn-tracking-off': !trackingEnabled }" :icon="trackingEnabled ? 'mdi-crosshairs-gps' : 'mdi-crosshairs'" density="default" @click="trackingOnClick"></v-btn>
-  <!--
     <v-menu
       :close-on-content-click="false"
       bottom
@@ -413,14 +400,19 @@ onMounted(async () => {
         </v-row>
       </v-container>
     </v-menu>
-      -->
   </v-container>
+      -->
 
+  <div id="expandCustomControl" >
+    <TrackingControl :tracking-enabled="trackingEnabled" :projection="swissProjection" class="ol-custom tracking-control" @position-changed="setPosition"></TrackingControl>
+    <LayersControl :layers="layers" :current-layer="'orthophotos_ortho_lidar_2016'" class="ol-custom layers-control" @selected-layer="chooseLayer"></LayersControl>
+  </div>  
 
   <v-select
     v-model="selectedLayer"
     :items="layers"
     label="Choix des couches"
+    width="100%"
     @update:model-value="chooseLayer"
   ></v-select>
 
@@ -440,11 +432,17 @@ onMounted(async () => {
   >
     <v-card>
       <v-card-text>
-        <TreeForm :showForm='showForm' :tree-id="treeId" :dictionaries="dictionaries" @formCanceled="handleFormCanceled"
-                  @formSubmitted='handleFormSubmitted'></TreeForm>
+        <TreeForm 
+          :show-form='showForm' 
+          :tree-id="treeId" 
+          :dictionaries="dictionaries" 
+          @form-canceled="handleFormCanceled"
+          @form-submitted='handleFormSubmitted'>
+        </TreeForm>
       </v-card-text>
     </v-card>
   </v-dialog>
+
 </template>
 
 
@@ -454,31 +452,14 @@ onMounted(async () => {
   height: 100vh;
 }
 
-#insideMenuExpansionPanel {
-  border-radius: 25px;
-}
-
-.testContentClass {
-  border-radius: 25px;
-  background-color: rgba(240, 248, 255, 0.6);
-}
-
 #expandCustomControl {
-  position: relative; /* important to ensure the custom control is positioned relative to the top left corner of the map div */
-  /*
-  top: 32px;
-  left: 0.1em;
-  */
-  /*
-  max-width: 60px;
-  max-height: 400px;
-  */
   max-width: auto;
   max-height: auto;
   margin: 0px; /* important to ensure the custom control is not centered since the container has margin: auto by default */
 }
 
 .ol-custom.tracking-control {
+  position: relative;
   z-index: 1000;
   top: 1.0em;
   left: -moz-calc(100% - 32px);
@@ -486,13 +467,12 @@ onMounted(async () => {
   left: calc(100% - 100px);
 }
 
-.btn-tracking-on {
-  background-color: red;
-  color: white;
-}
-
-.btn-tracking-off {
-  background-color: white;
-  color: black;
+.ol-custom.layers-control {
+  position: relative;
+  z-index: 1000;
+  top: 0.5em;
+  left: -moz-calc(100% - 32px);
+  left: -webkit-calc(100% - 32px);
+  left: calc(100% - 100px);
 }
 </style>
