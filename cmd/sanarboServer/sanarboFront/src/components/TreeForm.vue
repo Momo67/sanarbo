@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 
 
@@ -10,7 +10,7 @@ const urlTrees = backendUrl + "trees";
 const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
   showForm: {type: Boolean, required: false, default: false},
-  treeId: {type: Number, required: false, default: ''},
+  treeId: {type: Number, required: false, default: 0},
   dictionaries: {type: Object, required: true, default: null}
 })
 
