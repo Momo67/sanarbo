@@ -19,6 +19,8 @@ import 'ol/ol.css'
 import TreeForm from "./TreeForm.vue";
 import TrackingControl from "./TrackingControl.vue";
 import LayersControl from "./LayersControl.vue";
+import { tile_layers, default_tile_grid} from "./layers.js"
+import { DEFAULT_BASE_LAYER } from '../config.js';
 
 
 // Fetch data
@@ -104,14 +106,32 @@ const fetchDictionaries = async () => {
   }
 }
 
+/*
 const layers = ref([
   {title: 'Lidar 2016', value: 'orthophotos_ortho_lidar_2016'},
   {title: 'Lidar 2012', value: 'orthophotos_ortho_lidar_2012'},
   {title: 'Plan Ville', value: 'plan_ville'},
   {title: 'Carte nationale', value: 'fonds_geo_carte_nationale_msgroup'},
 ]);
+*/
 
-const selectedLayer = ref(null);
+const layers = ref([]);
+const selectedLayer = ref(DEFAULT_BASE_LAYER);
+
+tile_layers.forEach((layer) => {
+  let new_layer = new TileLayer({
+    title: layer.title,
+    type: layer.type,
+    source: new OlSourceWMTS({
+      layer: layer.layer,
+      url: layer.url,
+      tileGrid: new OlTileGridWMTS(default_tile_grid),
+      requestEncoding: layer.requestEncoding
+    }),
+    visible: layer.visible
+  });
+  layers.value.push(new_layer);
+});
 
 const chooseLayer = (selected) => {
   selectedLayer.value = selected;
@@ -128,18 +148,14 @@ const chooseLayer = (selected) => {
   });
 }
 
-const getSelectedLayer = () => {
-  let selectedLayer = "";
+const setDefaultBaseLayer = () => {
   const map_layers = map.getLayers();
   map_layers.forEach((layer) => {
     const layerName = layer.get('source').layer_;
-    if (layer.get('type') === 'base') {
-      if (layer.getVisible()) {
-        selectedLayer = layerName;
-      }
+    if ((layerName === DEFAULT_BASE_LAYER) && (layer.get('type') === 'base')) {
+      layer.setVisible(true);
     }
   });
-  return selectedLayer;
 }
 
 // Define projection
@@ -241,6 +257,7 @@ onMounted(async () => {
       });
     }
   });
+  layers.value.push(vectorLayer);
 
   const textLayer = new VectorLayer({
     source: new VectorSource({features: features}),
@@ -259,7 +276,9 @@ onMounted(async () => {
     maxResolution: 0.2,
     visible: true
   });
+  layers.value.push(textLayer);
 
+/*  
   const ortho2016 = new TileLayer({
     title: 'orthophotos_ortho_lidar_2016',
     type: 'base',
@@ -323,16 +342,16 @@ onMounted(async () => {
     }),
     visible: false
   });
-
+*/
   map = new Map({
     controls: [],
     view: view,
+    layers: layers.value,
+    /*
     layers: [
-      /*
       new TileLayer({
         source: new OSM(),
       }),
-      */
       ortho2012,
       ortho2016,
       planVille,
@@ -340,6 +359,7 @@ onMounted(async () => {
       vectorLayer,
       textLayer
     ],
+    */
     target: 'map',
   });
 
@@ -349,7 +369,7 @@ onMounted(async () => {
   map.addControl(myControl);
 
   map.addInteraction(selectInteraction)
-  selectedLayer.value = getSelectedLayer();
+  setDefaultBaseLayer();
 
 });
 </script>
@@ -405,12 +425,14 @@ onMounted(async () => {
 
   <div id="expandCustomControl" >
     <TrackingControl :tracking-enabled="trackingEnabled" :projection="swissProjection" class="ol-custom tracking-control" @position-changed="setPosition"></TrackingControl>
-    <LayersControl :layers="layers" :current-layer="'orthophotos_ortho_lidar_2016'" class="ol-custom layers-control" @selected-layer="chooseLayer"></LayersControl>
+    <LayersControl :layers="tile_layers" :current-layer="'orthophotos_ortho_lidar_2016'" class="ol-custom layers-control" @selected-layer="chooseLayer"></LayersControl>
   </div>  
 
   <v-select
     v-model="selectedLayer"
-    :items="layers"
+    :items="tile_layers"
+    item-title="title"
+    item-value="layer"
     label="Choix des couches"
     width="100%"
     @update:model-value="chooseLayer"
