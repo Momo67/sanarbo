@@ -46,7 +46,9 @@ onMounted(() => {
         <template #activator="{ props }">
           <v-btn v-bind="props" :class="{ 'btn-showlayers-on': showLayers, 'btn-showlayers-off': !showLayers }" icon="mdi-layers-outline" density="default" @click="showLayersOnClick"></v-btn>
         </template>
-        <span>Sélection couche de base</span>
+        <slot name="tooltip">
+          <span>Sélection couche de base</span>
+        </slot>
       </v-tooltip>
     </v-container>
     <v-container v-show="showLayers" class="layers-selection">
