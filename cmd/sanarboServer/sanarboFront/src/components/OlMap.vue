@@ -106,15 +106,6 @@ const fetchDictionaries = async () => {
   }
 }
 
-/*
-const layers = ref([
-  {title: 'Lidar 2016', value: 'orthophotos_ortho_lidar_2016'},
-  {title: 'Lidar 2012', value: 'orthophotos_ortho_lidar_2012'},
-  {title: 'Plan Ville', value: 'plan_ville'},
-  {title: 'Carte nationale', value: 'fonds_geo_carte_nationale_msgroup'},
-]);
-*/
-
 const layers = ref([]);
 const selectedLayer = ref(DEFAULT_BASE_LAYER);
 
@@ -278,88 +269,10 @@ onMounted(async () => {
   });
   layers.value.push(textLayer);
 
-/*  
-  const ortho2016 = new TileLayer({
-    title: 'orthophotos_ortho_lidar_2016',
-    type: 'base',
-    source: new OlSourceWMTS({
-      layer: 'orthophotos_ortho_lidar_2016',
-      url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2016/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
-      tileGrid: new OlTileGridWMTS({
-        origin: [2420000, 1350000],
-        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
-        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      }),
-      requestEncoding: 'REST'
-    }),
-    visible: true
-  });
-
-  const ortho2012 = new TileLayer({
-    title: 'orthophotos_ortho_lidar_2012',
-    type: 'base',
-    source: new OlSourceWMTS({
-      layer: 'orthophotos_ortho_lidar_2012',
-      url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2012/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
-      tileGrid: new OlTileGridWMTS({
-        origin: [2420000, 1350000],
-        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
-        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      }),
-      requestEncoding: 'REST'
-    }),
-    visible: false
-  });
-
-  const planVille = new TileLayer({
-    title: 'plan_ville',
-    type: 'base',
-    source: new OlSourceWMTS({
-      layer: 'plan_ville',
-      url: `https://tilesmn95.lausanne.ch/tiles/1.0.0/fonds_geo_osm_bdcad_couleur/default/2021/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
-      tileGrid: new OlTileGridWMTS({
-        origin: [2420000, 1350000],
-        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
-        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      }),
-      requestEncoding: 'REST'
-    }),
-    visible: false
-  });
-
-  const swissLayer = new TileLayer({
-    title: 'fonds_geo_carte_nationale_msgroup',
-    type: 'base',
-    source: new OlSourceWMTS({
-      layer: 'fonds_geo_carte_nationale_msgroup',
-      url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2014/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
-      tileGrid: new OlTileGridWMTS({
-        origin: [2420000, 1350000],
-        resolutions: [50, 20, 10, 5, 2.5, 1, 0.5, 0.25, 0.1, 0.05],
-        matrixIds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
-      }),
-      requestEncoding: 'REST'
-    }),
-    visible: false
-  });
-*/
   map = new Map({
     controls: [],
     view: view,
     layers: layers.value,
-    /*
-    layers: [
-      new TileLayer({
-        source: new OSM(),
-      }),
-      ortho2012,
-      ortho2016,
-      planVille,
-      swissLayer,
-      vectorLayer,
-      textLayer
-    ],
-    */
     target: 'map',
   });
 
@@ -376,56 +289,10 @@ onMounted(async () => {
 
 
 <template>
-  <!--
-  <v-container grid-list-xs fluid>
-  -->
-
-  <!--
-  <v-container id="expandCustomControl" fluid class="ol-custom tracking-control">
-    <v-btn :class="{ 'btn-tracking-on': trackingEnabled, 'btn-tracking-off': !trackingEnabled }" :icon="trackingEnabled ? 'mdi-crosshairs-gps' : 'mdi-crosshairs'" density="default" @click="trackingOnClick"></v-btn>
-    <v-menu
-      :close-on-content-click="false"
-      bottom
-      offset-y
-      nudge-bottom="10"
-      nudge-left="5"
-      content-class="testContentClass"
-    >
-      <template #activator="props">
-        <v-btn color="primary" aria-expanded="true" density="compact" icon="mdi-chevron-up" v-bind="props"></v-btn>
-      </template>
-
-      <v-container id="insideMenuExpansionPanel" @click.stop>
-        <v-row class="mt-1 ml-1">
-          <span>Custom Controls</span>
-        </v-row>
-        <v-row>
-          <v-divider class="mx-2"/>
-        </v-row>
-        <v-row>
-          <v-hover v-slot="{ hover }">
-            <v-autocomplete
-              dense
-              rounded
-              solo
-              hide-details
-              :style="{ 'width': hover ? '350px' : '150px' }"
-              class="mx-2 mt-2"/>
-          </v-hover>
-        </v-row>
-        <v-row justify="start" class="my-0">
-          <v-col>
-            <v-switch v-model="testSwitchValue" inset :label="`Switch : ${testSwitchValue}`"/>
-          </v-col>
-        </v-row>
-      </v-container>
-    </v-menu>
-  </v-container>
-      -->
 
   <div id="expandCustomControl" >
     <TrackingControl :tracking-enabled="trackingEnabled" :projection="swissProjection" class="ol-custom tracking-control" @position-changed="setPosition"></TrackingControl>
-    <LayersControl :layers="tile_layers" :current-layer="'orthophotos_ortho_lidar_2016'" class="ol-custom layers-control" @selected-layer="chooseLayer"></LayersControl>
+    <LayersControl :layers="tile_layers" :current-layer="selectedLayer" class="ol-custom layers-control" @selected-layer="chooseLayer"></LayersControl>
   </div>  
 
   <v-select
@@ -442,10 +309,6 @@ onMounted(async () => {
     <div v-if="fetchIsLoading">Loading...</div>
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>
-
-  <!--
-  </v-container>
-  -->
 
   <v-dialog
       v-model="showForm"
