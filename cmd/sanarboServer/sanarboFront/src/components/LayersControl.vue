@@ -116,9 +116,9 @@ onMounted(() => {
 
 .layer-icon-selected {
   position: relative;
-  left: -moz-calc(100% - 8px);
-  left: -webkit-calc(100% - 8px);
-  left: calc(100% - 8px);
+  left: -moz-calc(30%);
+  left: -webkit-calc(30%);
+  left: calc(30%);
   color: green;
 }
 
