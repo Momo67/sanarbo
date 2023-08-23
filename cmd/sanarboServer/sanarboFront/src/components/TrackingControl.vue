@@ -45,7 +45,12 @@ onMounted(() => {
 <template>
   <div>
     <v-container fluid class="ol-custom tracking-control">
-      <v-btn :class="{ 'btn-tracking-on': trackingEnabled, 'btn-tracking-off': !trackingEnabled }" :icon="trackingEnabled ? 'mdi-crosshairs-gps' : 'mdi-crosshairs'" density="default" @click="trackingOnClick"></v-btn>
+      <v-tooltip top>
+        <template #activator="{ props }">
+          <v-btn v-bind="props" :class="{ 'btn-tracking-on': trackingEnabled, 'btn-tracking-off': !trackingEnabled }" :icon="trackingEnabled ? 'mdi-crosshairs-gps' : 'mdi-crosshairs'" density="default" @click="trackingOnClick"></v-btn>
+        </template>
+        <span>{{  trackingEnabled ? 'Suvi GPS activé' : 'Suvi GPS désactivé' }}</span>
+      </v-tooltip>
     </v-container>
   </div>
 </template>
