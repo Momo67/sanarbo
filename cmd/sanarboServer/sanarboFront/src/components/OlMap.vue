@@ -124,6 +124,83 @@ tile_layers.forEach((layer) => {
   layers.value.push(new_layer);
 });
 
+const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
+const hiddenFeatureSource = new VectorSource();
+const hiddenFeatureLayer = new VectorLayer({
+  source: hiddenFeatureSource,
+  visible: false
+});
+layers.value.push(hiddenFeatureLayer);
+const featureSource = new VectorSource();
+const vectorLayer = new VectorLayer({
+  source: featureSource,
+  style: function (feature, resolution) {
+    const color = getValidationColor(feature.get('idvalidation'));
+    return new Style({
+      image: new CircleStyle({
+        radius: 5 / (resolution + 0.5),
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ width: 1, color: color }),
+      }),
+    });
+  },
+  visible: true
+});
+layers.value.push(vectorLayer);
+
+const textLayer = new VectorLayer({
+  source: featureSource,
+  style: function (feature, resolution) {
+    return new Style({
+      text: new TextStyle({
+        text: String(feature.get('idthing')),
+        font: '10px Arial',
+        offsetY: -25 / (resolution + 1),
+        fill: new Fill({ color: 'rgb(255, 255, 255)' }),
+        //stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
+        scale: 1 / (resolution + 0.5)
+      })
+    });
+  },
+  maxResolution: 0.2,
+  visible: true
+});
+layers.value.push(textLayer);
+
+const getValidationColor = (idvalidation) => {
+  let color = '';
+  switch (idvalidation) {
+    case 1:   //Existant
+      color = '#00FF00';
+      break;
+    case 5:   //En attente de soins
+      color = '#FF00FF';
+      break;
+    case 6:   //En attente d'abattage
+      color = '#FFFF00';
+      break;
+    case 7:   //En attente de remplacement
+      color = '#00FFFF';
+      break;
+    case 8:   //En attente de tomographie
+      color = '#0000FF';
+      break;
+    case 9:   //A surveiller
+      color = '#FF0000';
+      break;
+    case 10:  //En demande d'abattage
+      color = '#FF7D00';
+      break;
+    case 11:  //En attente de projet
+      color = '#009696';
+      break;
+    default:
+      color = 'white';
+      break;
+  };
+  return color;
+};
+
 const chooseLayer = (selected) => {
   selectedLayer.value = selected;
   const map_layers = map.getLayers();
@@ -198,6 +275,7 @@ onMounted(async () => {
     return feature
   });
 
+  /*
   const getValidationColor = (idvalidation) => {
     let color = '';
     switch (idvalidation) {
@@ -231,8 +309,10 @@ onMounted(async () => {
     };
     return color;
   };
+  */
 
   // Define vector layer
+  /*
   const vectorLayer = new VectorLayer({
     source: new VectorSource({
       features: features
@@ -268,6 +348,7 @@ onMounted(async () => {
     visible: true
   });
   layers.value.push(textLayer);
+  */
 
   map = new Map({
     controls: [],
