@@ -124,48 +124,75 @@ tile_layers.forEach((layer) => {
   layers.value.push(new_layer);
 });
 
-const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
 const hiddenFeatureSource = new VectorSource();
 const hiddenFeatureLayer = new VectorLayer({
   source: hiddenFeatureSource,
   visible: false
 });
 layers.value.push(hiddenFeatureLayer);
+
+const arbreStyle = (feature, resolution) => {
+  const color = getValidationColor(feature.get('idvalidation'));
+  return new Style({
+    image: new CircleStyle({
+      radius: 5 / (resolution + 0.5),
+      fill: new Fill({ color: color }),
+      stroke: new Stroke({ width: 1, color: color }),
+    }),
+  });
+}
 const featureSource = new VectorSource();
 const vectorLayer = new VectorLayer({
+  id: 'arbre_layer',
   source: featureSource,
-  style: function (feature, resolution) {
-    const color = getValidationColor(feature.get('idvalidation'));
-    return new Style({
-      image: new CircleStyle({
-        radius: 5 / (resolution + 0.5),
-        fill: new Fill({ color: color }),
-        stroke: new Stroke({ width: 1, color: color }),
-      }),
-    });
-  },
+  style: arbreStyle,
   visible: true
 });
 layers.value.push(vectorLayer);
 
+const arbreIdStyle = (feature, resolution) => {
+  return new Style({
+    text: new TextStyle({
+      text: String(feature.get('idthing')),
+      font: '10px Arial',
+      offsetY: -25 / (resolution + 1),
+      fill: new Fill({ color: 'rgb(255, 255, 255)' }),
+      //stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
+      scale: 1 / (resolution + 0.5)
+    })
+  });
+}
 const textLayer = new VectorLayer({
+  id: 'arbre_id_layer',
   source: featureSource,
-  style: function (feature, resolution) {
-    return new Style({
-      text: new TextStyle({
-        text: String(feature.get('idthing')),
-        font: '10px Arial',
-        offsetY: -25 / (resolution + 1),
-        fill: new Fill({ color: 'rgb(255, 255, 255)' }),
-        //stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
-        scale: 1 / (resolution + 0.5)
-      })
-    });
-  },
+  style: arbreIdStyle,
   maxResolution: 0.2,
   visible: true
 });
 layers.value.push(textLayer);
+
+//const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
+const displayed_features = ref([1]);
+
+const filterFeatures = () => {
+  const arbre_layer = map.getLayers().getArray().find((layer) => layer.get('id') === 'arbre_layer');
+  const arbre_id_layer = map.getLayers().getArray().find((layer) => layer.get('id') === 'arbre_id_layer');
+
+  arbre_layer.getSource().forEachFeature((feature) => {
+    var idvalidation = feature.get('idvalidation');
+    if (idvalidation && displayed_features.value.includes(idvalidation)) {
+      arbre_layer.setStyle(arbreStyle);
+    } else {
+      console.log('### idvalidation:', idvalidation);
+      arbre_layer.setStyle({
+        "radius": 5,
+        "fill-color": "yellow",
+        "stroke-color": "yellow",
+        "stroke-width": 1
+      })
+    }
+  });
+}
 
 const getValidationColor = (idvalidation) => {
   let color = '';
@@ -275,6 +302,7 @@ onMounted(async () => {
     return feature
   });
 
+  featureSource.addFeatures(features);
   /*
   const getValidationColor = (idvalidation) => {
     let color = '';
@@ -356,6 +384,8 @@ onMounted(async () => {
     layers: layers.value,
     target: 'map',
   });
+  filterFeatures();
+
 
   const myControl = new Control({
     element: document.getElementById("expandCustomControl")
