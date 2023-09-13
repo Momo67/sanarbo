@@ -19,7 +19,9 @@ import 'ol/ol.css'
 import TreeForm from "./TreeForm.vue";
 import TrackingControl from "./TrackingControl.vue";
 import LayersControl from "./LayersControl.vue";
+import FeaturesControl from "./FeaturesControl.vue";
 import { tile_layers, default_tile_grid} from "./layers.js"
+import { getValidationColor } from './features.js';
 import { DEFAULT_BASE_LAYER } from '../config.js';
 
 
@@ -38,6 +40,8 @@ const errorFetch = ref(false);
 const errorFetchMessage = ref('');
 const fetchIsLoading = ref(true);
 
+const showControlLayers = ref(false);
+const showControlFeatures = ref(false);
 const showForm = ref(false);
 const treeId = ref(null);
 
@@ -171,62 +175,36 @@ const textLayer = new VectorLayer({
 });
 layers.value.push(textLayer);
 
-//const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
-const displayed_features = ref([1]);
+const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
 
-const filterFeatures = () => {
-  const arbre_layer = map.getLayers().getArray().find((layer) => layer.get('id') === 'arbre_layer');
-  const arbre_id_layer = map.getLayers().getArray().find((layer) => layer.get('id') === 'arbre_id_layer');
+const filterFeatures = (featuresToShow) => {
+  featureSource.clear();
 
-  arbre_layer.getSource().forEachFeature((feature) => {
-    var idvalidation = feature.get('idvalidation');
-    if (idvalidation && displayed_features.value.includes(idvalidation)) {
-      arbre_layer.setStyle(arbreStyle);
-    } else {
-      console.log('### idvalidation:', idvalidation);
-      arbre_layer.setStyle({
-        "radius": 5,
-        "fill-color": "yellow",
-        "stroke-color": "yellow",
-        "stroke-width": 1
-      })
-    }
-  });
+  const filter = (query) => {
+    return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')));
+  }
+
+  featureSource.addFeatures(filter(featuresToShow));
 }
 
-const getValidationColor = (idvalidation) => {
-  let color = '';
-  switch (idvalidation) {
-    case 1:   //Existant
-      color = '#00FF00';
-      break;
-    case 5:   //En attente de soins
-      color = '#FF00FF';
-      break;
-    case 6:   //En attente d'abattage
-      color = '#FFFF00';
-      break;
-    case 7:   //En attente de remplacement
-      color = '#00FFFF';
-      break;
-    case 8:   //En attente de tomographie
-      color = '#0000FF';
-      break;
-    case 9:   //A surveiller
-      color = '#FF0000';
-      break;
-    case 10:  //En demande d'abattage
-      color = '#FF7D00';
-      break;
-    case 11:  //En attente de projet
-      color = '#009696';
-      break;
-    default:
-      color = 'white';
-      break;
-  };
-  return color;
-};
+const chooseFeatures = (selected) => {
+  displayed_features.value = selected;
+  filterFeatures(displayed_features.value);
+}
+
+const controlFeaturesOnClick = (state) => {
+  showControlFeatures.value = state;
+  if (showControlFeatures.value) {
+    showControlLayers.value = false;
+  }
+}
+
+const controlLayersOnClick = (state) => {
+  showControlLayers.value = state;
+  if (showControlLayers.value) {
+    showControlFeatures.value = false;
+  }
+}
 
 const chooseLayer = (selected) => {
   selectedLayer.value = selected;
@@ -282,14 +260,13 @@ const setPosition = (position) => {
 const trackingEnabled = ref(false);
 
 onMounted(async () => {
-
   const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
   errorFetch.value = hasError.value;
   fetchIsLoading.value = isLoading.value;
   errorFetchMessage.value = errorMessage.value;
-
+  
   fetchDictionaries();
-
+  
   const features = data.value.map((d) => {
     let feature = wktFormat.readFeature(d.geom, {
       featureProjection: swissProjection,
@@ -302,81 +279,9 @@ onMounted(async () => {
     return feature
   });
 
-  featureSource.addFeatures(features);
-  /*
-  const getValidationColor = (idvalidation) => {
-    let color = '';
-    switch (idvalidation) {
-      case 1:   //Existant
-        color = '#00FF00';
-        break;
-      case 5:   //En attente de soins
-        color = '#FF00FF';
-        break;
-      case 6:   //En attente d'abattage
-        color = '#FFFF00';
-        break;
-      case 7:   //En attente de remplacement
-        color = '#00FFFF';
-        break;
-      case 8:   //En attente de tomographie
-        color = '#0000FF';
-        break;
-      case 9:   //A surveiller
-        color = '#FF0000';
-        break;
-      case 10:  //En demande d'abattage
-        color = '#FF7D00';
-        break;
-      case 11:  //En attente de projet
-        color = '#009696';
-        break;
-      default:
-        color = 'white';
-        break;
-    };
-    return color;
-  };
-  */
+  hiddenFeatureSource.addFeatures(features);
 
-  // Define vector layer
-  /*
-  const vectorLayer = new VectorLayer({
-    source: new VectorSource({
-      features: features
-    }),
-    style: function(feature, resolution) {
-      const color = getValidationColor(feature.get('idvalidation'));
-      return new Style({
-        image: new CircleStyle({
-          radius: 5/(resolution+0.5),
-          fill: new Fill({color: color}),
-          stroke: new Stroke({width: 1, color: color}),
-        }),
-      });
-    }
-  });
-  layers.value.push(vectorLayer);
-
-  const textLayer = new VectorLayer({
-    source: new VectorSource({features: features}),
-    style: function(feature, resolution) {
-      return new Style({
-        text: new TextStyle({
-          text: String(feature.get('idthing')),
-          font: '10px Arial',
-          offsetY: -25/(resolution+1),
-          fill: new Fill({color: 'rgb(255, 255, 255)'}),
-          //stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
-          scale: 1/(resolution+0.5)
-        })
-      });
-    },
-    maxResolution: 0.2,
-    visible: true
-  });
-  layers.value.push(textLayer);
-  */
+  filterFeatures(displayed_features.value)
 
   map = new Map({
     controls: [],
@@ -384,8 +289,6 @@ onMounted(async () => {
     layers: layers.value,
     target: 'map',
   });
-  filterFeatures();
-
 
   const myControl = new Control({
     element: document.getElementById("expandCustomControl")
@@ -394,7 +297,6 @@ onMounted(async () => {
 
   map.addInteraction(selectInteraction)
   setDefaultBaseLayer();
-
 });
 </script>
 
@@ -402,8 +304,28 @@ onMounted(async () => {
 <template>
 
   <div id="expandCustomControl" >
-    <TrackingControl :tracking-enabled="trackingEnabled" :projection="swissProjection" class="ol-custom tracking-control" @position-changed="setPosition"></TrackingControl>
-    <LayersControl :layers="tile_layers" :current-layer="selectedLayer" class="ol-custom layers-control" @selected-layer="chooseLayer"></LayersControl>
+    <TrackingControl 
+      :tracking-enabled="trackingEnabled" 
+      :projection="swissProjection" 
+      class="ol-custom tracking-control" 
+      @position-changed="setPosition">
+    </TrackingControl>
+    <LayersControl 
+      :show-layers="showControlLayers" 
+      :layers="tile_layers" 
+      :current-layer="selectedLayer" 
+      class="ol-custom layers-control" 
+      @show-changed="controlLayersOnClick" 
+      @selected-layer="chooseLayer">
+    </LayersControl>
+    <FeaturesControl 
+      :show-features="showControlFeatures" 
+      :validations="dictionaries.validation" 
+      :validation-to-show="displayed_features" 
+      class="ol-custom features-control" 
+      @show-changed="controlFeaturesOnClick" 
+      @selected-validation="chooseFeatures">
+    </FeaturesControl>
   </div>  
 
   <v-select
@@ -415,6 +337,7 @@ onMounted(async () => {
     width="100%"
     @update:model-value="chooseLayer"
   ></v-select>
+  <div>showControlLayers:{{ showControlLayers }},&nbsp;showControlFeatures:{{ showControlFeatures }}</div>
 
   <div id="map" ref="mymap">
     <div v-if="fetchIsLoading">Loading...</div>
@@ -471,4 +394,12 @@ onMounted(async () => {
   left: -webkit-calc(100% - 32px);
   left: calc(100% - 100px);
 }
-</style>
+
+.ol-custom.features-control {
+  position: relative;
+  z-index: 1000;
+  top: 0.5em;
+  left: -moz-calc(100% - 32px);
+  left: -webkit-calc(100% - 32px);
+  left: calc(100% - 100px);
+}</style>
