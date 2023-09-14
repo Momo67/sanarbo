@@ -20,6 +20,7 @@ import TreeForm from "./TreeForm.vue";
 import TrackingControl from "./TrackingControl.vue";
 import LayersControl from "./LayersControl.vue";
 import FeaturesControl from "./FeaturesControl.vue";
+import SearchTreeControlVue from "./SearchTreeControl.vue";
 import { tile_layers, default_tile_grid} from "./layers.js"
 import { getValidationColor } from './features.js';
 import { DEFAULT_BASE_LAYER } from '../config.js';
@@ -42,6 +43,7 @@ const fetchIsLoading = ref(true);
 
 const showControlLayers = ref(false);
 const showControlFeatures = ref(false);
+const showSearchTrees = ref(false);
 const showForm = ref(false);
 const treeId = ref(null);
 
@@ -192,17 +194,50 @@ const chooseFeatures = (selected) => {
   filterFeatures(displayed_features.value);
 }
 
+const controls = [
+  {
+    name: 'layers',
+    state: null,
+    displayed: showControlLayers
+  },
+  {
+    name: 'features',
+    state: null,
+    displayed: showControlFeatures
+  },
+  {
+    name: 'search-tree',
+    state: null,
+    displayed: showSearchTrees
+  },
+];
+
+const switchOffControls = (exception) => {
+  controls.forEach(control => {
+    if (control.name !== exception) {
+      control.displayed.value = false;
+    }
+  });
+}
+
 const controlFeaturesOnClick = (state) => {
   showControlFeatures.value = state;
   if (showControlFeatures.value) {
-    showControlLayers.value = false;
+    switchOffControls('features');
+  }
+}
+
+const controlSearchTreeOnClick = (state) => {
+  showSearchTrees.value = state;
+  if (showSearchTrees.value) {
+    switchOffControls('search-tree');
   }
 }
 
 const controlLayersOnClick = (state) => {
   showControlLayers.value = state;
   if (showControlLayers.value) {
-    showControlFeatures.value = false;
+    switchOffControls('layers');
   }
 }
 
@@ -326,6 +361,11 @@ onMounted(async () => {
       @show-changed="controlFeaturesOnClick" 
       @selected-validation="chooseFeatures">
     </FeaturesControl>
+    <SearchTreeControlVue
+      :show-search-trees="showSearchTrees"
+      class="ol-custom search-control"
+      @show-changed="controlSearchTreeOnClick">
+    </SearchTreeControlVue>
   </div>  
 
   <v-select
@@ -402,4 +442,14 @@ onMounted(async () => {
   left: -moz-calc(100% - 32px);
   left: -webkit-calc(100% - 32px);
   left: calc(100% - 100px);
-}</style>
+}
+
+.ol-custom.search-control {
+  position: relative;
+  z-index: 1000;
+  top: 0.5em;
+  left: -moz-calc(100% - 32px);
+  left: -webkit-calc(100% - 32px);
+  left: calc(100% - 100px);
+}
+</style>
