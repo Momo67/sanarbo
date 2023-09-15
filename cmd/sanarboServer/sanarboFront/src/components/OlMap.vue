@@ -125,7 +125,8 @@ tile_layers.forEach((layer) => {
       tileGrid: new OlTileGridWMTS(default_tile_grid),
       requestEncoding: layer.requestEncoding
     }),
-    visible: layer.visible
+    visible: layer.visible,
+    zIndex: layer.zIndex
   });
   layers.value.push(new_layer);
 });
@@ -282,7 +283,7 @@ let map = null;
 const view = new View({
   center: [2537633.0, 1152618.0],
   zoom: 18,
-  projection: swissProjection
+  projection: swissProjection,
 });
 
 const setPosition = (position) => {
@@ -368,6 +369,7 @@ onMounted(async () => {
     </SearchTreeControlVue>
   </div>  
 
+<!--
   <v-select
     v-model="selectedLayer"
     :items="tile_layers"
@@ -378,6 +380,7 @@ onMounted(async () => {
     @update:model-value="chooseLayer"
   ></v-select>
   <div>showControlLayers:{{ showControlLayers }},&nbsp;showControlFeatures:{{ showControlFeatures }}</div>
+-->
 
   <div id="map" ref="mymap">
     <div v-if="fetchIsLoading">Loading...</div>
@@ -412,44 +415,36 @@ onMounted(async () => {
 }
 
 #expandCustomControl {
-  max-width: auto;
+  position: relative;
+  max-width: 100px;
   max-height: auto;
   margin: 0px; /* important to ensure the custom control is not centered since the container has margin: auto by default */
+  left: -moz-calc(100% - 32px);
+  left: -webkit-calc(100% - 32px);
+  left: calc(100% - 100px);
 }
 
 .ol-custom.tracking-control {
   position: relative;
   z-index: 1000;
   top: 1.0em;
-  left: -moz-calc(100% - 32px);
-  left: -webkit-calc(100% - 32px);
-  left: calc(100% - 100px);
 }
 
 .ol-custom.layers-control {
   position: relative;
   z-index: 1000;
   top: 0.5em;
-  left: -moz-calc(100% - 32px);
-  left: -webkit-calc(100% - 32px);
-  left: calc(100% - 100px);
 }
 
 .ol-custom.features-control {
   position: relative;
   z-index: 1000;
   top: 0.5em;
-  left: -moz-calc(100% - 32px);
-  left: -webkit-calc(100% - 32px);
-  left: calc(100% - 100px);
 }
 
 .ol-custom.search-control {
   position: relative;
   z-index: 1000;
   top: 0.5em;
-  left: -moz-calc(100% - 32px);
-  left: -webkit-calc(100% - 32px);
-  left: calc(100% - 100px);
 }
 </style>
