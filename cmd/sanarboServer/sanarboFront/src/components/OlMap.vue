@@ -195,6 +195,13 @@ const chooseFeatures = (selected) => {
   filterFeatures(displayed_features.value);
 }
 
+const coordsFound = (geom) => {
+  let feature = wktFormat.readFeature(geom, {
+      featureProjection: swissProjection,
+  });
+  setPosition(feature.getGeometry().getCoordinates());
+}
+
 const controls = [
   {
     name: 'layers',
@@ -287,10 +294,12 @@ const view = new View({
 });
 
 const setPosition = (position) => {
-  view.animate({
-    center: position,
-    duration: 2000,
-  });
+  if ((parseInt(position.length) == 2) && (parseInt(position[0]) > 2000000) && (parseInt(position[0]) < 2900000) && (parseInt(position[1]) > 1000000) && (parseInt(position[1]) < 1300000)) {
+    view.animate({
+      center: position,
+      duration: 2000,
+    });
+  }
 }
 //Tracking
 const trackingEnabled = ref(false);
@@ -365,7 +374,8 @@ onMounted(async () => {
     <SearchTreeControlVue
       :show-search-trees="showSearchTrees"
       class="ol-custom search-control"
-      @show-changed="controlSearchTreeOnClick">
+      @show-changed="controlSearchTreeOnClick"
+      @coords-found="coordsFound">
     </SearchTreeControlVue>
   </div>  
 

@@ -1,5 +1,9 @@
 <script setup>
 import { computed, ref } from 'vue';
+import {useFetch} from "../composables/FetchData.js";
+
+const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+const urlTrees = backendUrl + "trees";
 
 const props = defineProps({
   showSearchTrees: {
@@ -18,21 +22,43 @@ const showSearchTrees = computed({
   }
 });
 
-const emit = defineEmits(['tree-found', 'show-changed']);
+const treeId = ref();
+
+const emit = defineEmits(['coords-found', 'show-changed']);
 
 const showTreesOnClick = () => {
   showSearchTrees.value = !showSearchTrees.value;
 }
 
-const treeId = ref(0);
+const token = sessionStorage.getItem('token');
+const headers = {
+  'Authorization': 'Bearer ' + token,
+  'Content-Type': 'application/json',
+}
 
+const submitForm = async () => {
+  const options = {
+    headers: headers,
+    method: 'GET',
+  }
+
+  const tree =  await useFetch(urlTrees + '/' + treeId.value, options);
+
+  showSearchTrees.value = false;
+  treeId.value = null;
+  emit('coords-found', tree.data.value.geom);
+};
+
+/*
 const searchTreeOnOK = () => {
   showSearchTrees.value = false;
-  emit('tree-found', treeId.value);
+  submitForm();
 }
+*/
 
 const searchTreeOnCancel = () => {
   showSearchTrees.value = false;
+  treeId.value = null;
 }
 </script>
 
@@ -69,7 +95,7 @@ const searchTreeOnCancel = () => {
 
                   <v-row class="py-5">
                     <v-col cols="12" md="12">
-                      <v-text-field label="Identifiant de l'arbre"></v-text-field>
+                      <v-text-field v-model="treeId" label="Identifiant de l'arbre"></v-text-field>
                     </v-col>
                   </v-row>
 
@@ -78,7 +104,7 @@ const searchTreeOnCancel = () => {
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
-              <v-btn color="info" @click="searchTreeOnOK">OK</v-btn>
+              <v-btn color="info" @click="submitForm">OK</v-btn>
               <v-btn color="info" @click="searchTreeOnCancel">Annuler</v-btn>
             </v-card-actions>
           </v-card>
