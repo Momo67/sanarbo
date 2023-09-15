@@ -5,7 +5,8 @@ export const tile_layers = [
     layer: 'orthophotos_ortho_lidar_2016',
     url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2016/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
-    visible: false
+    visible: false,
+    zIndex: -1
   },
   {
     title: 'Lidar 2012',
@@ -13,7 +14,8 @@ export const tile_layers = [
     layer: 'orthophotos_ortho_lidar_2012',
     url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2012/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
-    visible: false
+    visible: false,
+    zIndex: 10
   },
   {
     title: 'Plan Ville',
@@ -21,7 +23,8 @@ export const tile_layers = [
     layer: 'plan_ville',
     url: `https://tilesmn95.lausanne.ch/tiles/1.0.0/fonds_geo_osm_bdcad_couleur/default/2021/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
-    visible: false
+    visible: false,
+    zIndex: 10
   },
   {
     title: 'Carte nationale',
@@ -29,7 +32,8 @@ export const tile_layers = [
     layer: 'fonds_geo_carte_nationale_msgroup',
     url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2014/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
-    visible: false
+    visible: false,
+    zIndex: 10
   },
 ];
 
