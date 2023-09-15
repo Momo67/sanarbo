@@ -10,7 +10,7 @@ const (
 	SELECT id, name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator,
 			create_time, creator, last_modification_time, last_modification_user, ST_AsText(geom) as geom, tree_attributes
 	FROM tree_mobile
-	WHERE id = $1;`
+	WHERE external_id = $1;`
 	
 	treesGetMaxId = "SELECT MAX(id) FROM tree_mobile;"
 
