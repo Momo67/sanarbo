@@ -196,10 +196,7 @@ const chooseFeatures = (selected) => {
 }
 
 const coordsFound = (geom) => {
-  let feature = wktFormat.readFeature(geom, {
-      featureProjection: swissProjection,
-  });
-  setPosition(feature.getGeometry().getCoordinates());
+  setPosition(geom);
 }
 
 const controls = [
@@ -298,6 +295,7 @@ const setPosition = (position) => {
     view.animate({
       center: position,
       duration: 2000,
+      zoom: 22
     });
   }
 }
@@ -373,6 +371,7 @@ onMounted(async () => {
     </FeaturesControl>
     <SearchTreeControlVue
       :show-search-trees="showSearchTrees"
+      :feature-source="featureSource"
       class="ol-custom search-control"
       @show-changed="controlSearchTreeOnClick"
       @coords-found="coordsFound">
