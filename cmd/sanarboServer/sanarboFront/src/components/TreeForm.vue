@@ -161,9 +161,9 @@ const handleFormCanceled = () => {
             </v-col>
             <v-col cols="12" md="12">
               <v-textarea 
+                  v-model="Tree.tree_attributes.entouragerem"
                   rows="3"
                   auto-grow
-                  v-model="Tree.tree_attributes.entouragerem"
                   label="Remarque entourage"
                   type="string"
               ></v-textarea>
@@ -201,9 +201,9 @@ const handleFormCanceled = () => {
             </v-col>
             <v-col cols="12" md="12">
               <v-textarea 
+                  v-model="Tree.tree_attributes.revsurfacerem"
                   rows="3"
                   auto-grow
-                  v-model="Tree.tree_attributes.revsurfacerem"
                   label="Remarque revêtement"
                   type="string"
               ></v-textarea>
@@ -246,9 +246,9 @@ const handleFormCanceled = () => {
           </v-col>
           <v-col cols="12" md="12">
             <v-textarea 
+                v-model="Tree.tree_attributes.etatsanitairerem"
                 rows="3"
                 auto-grow
-                v-model="Tree.tree_attributes.etatsanitairerem"
                 label="Remarque état sanitaire">
             </v-textarea>
           </v-col>
