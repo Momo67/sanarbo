@@ -15,7 +15,7 @@ export const tile_layers = [
     url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2012/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
     visible: false,
-    zIndex: 10
+    zIndex: -1
   },
   {
     title: 'Plan Ville',
@@ -24,7 +24,7 @@ export const tile_layers = [
     url: `https://tilesmn95.lausanne.ch/tiles/1.0.0/fonds_geo_osm_bdcad_couleur/default/2021/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
     visible: false,
-    zIndex: 10
+    zIndex: -1
   },
   {
     title: 'Carte nationale',
@@ -33,7 +33,7 @@ export const tile_layers = [
     url: `https://tiles01.lausanne.ch/tiles/1.0.0/{Layer}/default/2014/swissgrid_05/{TileMatrix}/{TileRow}/{TileCol}.png`,
     requestEncoding: 'REST',
     visible: false,
-    zIndex: 10
+    zIndex: -1
   },
 ];
 
