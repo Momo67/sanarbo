@@ -66,7 +66,7 @@ const submitForm = async () => {
 
   await useFetch(urlTrees + '/' + props.treeId, options)
 
-  emit('formSubmitted');
+  emit('formSubmitted', JSON.stringify(Tree));
 };
 
 

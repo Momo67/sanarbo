@@ -19,7 +19,7 @@ const props = defineProps({
 
 const layers = ref(props.layers);
 const currentLayer = ref(props.currentLayer);
-//const showLayers = ref(props.showLayers);
+let oldLayer = currentLayer.value;
 const showLayers = computed({
   get() {
     return props.showLayers;
@@ -33,18 +33,18 @@ const emit = defineEmits(['selected-layer', 'show-changed']);
 
 const showLayersOnClick = () => {
   showLayers.value = !showLayers.value;
-  //emit('show-changed', showLayers.value);
 }
 
 const showLayersOnOK = () => {
   showLayers.value = false;
-  emit('selected-layer', currentLayer.value);
-  //emit('show-changed', showLayers.value);
+  oldLayer = currentLayer.value;
+  emit('selected-layer', currentLayer.value); 
 }
 
 const showLayersOnCancel = () => {
   showLayers.value = false;
-  //emit('show-changed', showLayers.value);
+  currentLayer.value = oldLayer;
+  emit('selected-layer', currentLayer.value);
 }
 
 const layerOnClick = (layer) => {

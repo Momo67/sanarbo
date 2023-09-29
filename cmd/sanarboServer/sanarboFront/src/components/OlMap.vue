@@ -21,7 +21,7 @@ import TrackingControl from "./TrackingControl.vue";
 import LayersControl from "./LayersControl.vue";
 import FeaturesControl from "./FeaturesControl.vue";
 import SearchTreeControlVue from "./SearchTreeControl.vue";
-import { tile_layers, default_tile_grid} from "./layers.js"
+import { tile_layers, default_tile_grid, getLayerByName } from "./layers.js"
 import { getValidationColor } from './features.js';
 import { DEFAULT_BASE_LAYER } from '../config.js';
 
@@ -53,10 +53,12 @@ const wktFormat = new WKT();
 // Interactions
 const selectInteraction = new Select({});
 
+let selectedFeature = null
+
 selectInteraction.on('select', (event) => {
   if (event.selected.length > 0) {
     showForm.value = true;
-    const selectedFeature = event.selected[0];
+    selectedFeature = event.selected[0];
     treeId.value = selectedFeature.get('id');
 
   } else {
@@ -66,11 +68,31 @@ selectInteraction.on('select', (event) => {
 
 // Handle form submission / cancel
 const formSubmitted = ref(false);
-const handleFormSubmitted = () => {
+const handleFormSubmitted = (json) => {
+  const tree = JSON.parse(json);
+  selectedFeature.setStyle(function (feature, resolution) {
+    const color = getValidationColor(tree.tree_attributes.idvalidation);
+    return new Style({
+      image: new CircleStyle({
+        radius: 5 / (resolution + 0.5),
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ width: 1, color: color }),
+      }),
+      text: new TextStyle({
+        text: String(tree.tree_attributes.idthing),
+        font: '10px Arial',
+        offsetY: -25 / (resolution + 1),
+        fill: fill ? new Fill({ color: fill.color }) : null,
+        stroke: stroke ? new Stroke({color: stroke.color, width: stroke.width}) : null,
+        scale: 1 / (resolution + 0.5)
+      })
+    });
+  });
+  map.render();
+
   formSubmitted.value = true;
   showForm.value = false;
   selectInteraction.getFeatures().clear();
-
 }
 
 const handleFormCanceled = () => {
@@ -115,6 +137,9 @@ const fetchDictionaries = async () => {
 const layers = ref([]);
 const selectedLayer = ref(DEFAULT_BASE_LAYER);
 
+let fill = null;
+let stroke = null;
+
 tile_layers.forEach((layer) => {
   let new_layer = new TileLayer({
     title: layer.title,
@@ -122,7 +147,7 @@ tile_layers.forEach((layer) => {
     source: new OlSourceWMTS({
       layer: layer.layer,
       url: layer.url,
-      tileGrid: new OlTileGridWMTS(default_tile_grid),
+      tileGrid: new OlTileGridWMTS(layer.tileGrid ? layer.tileGrid : default_tile_grid),
       requestEncoding: layer.requestEncoding
     }),
     visible: layer.visible,
@@ -164,7 +189,7 @@ const arbreIdStyle = (feature, resolution) => {
       font: '10px Arial',
       offsetY: -25 / (resolution + 1),
       fill: new Fill({ color: 'rgb(255, 255, 255)' }),
-      //stroke: new Stroke({color: 'rgb(255, 255, 255)', width: 1}),
+      //stroke: new Stroke({color: 'rgb(0, 0, 0)', width: 0.5}),
       scale: 1 / (resolution + 0.5)
     })
   });
@@ -247,6 +272,7 @@ const controlLayersOnClick = (state) => {
 }
 
 const chooseLayer = (selected) => {
+  let textStyle = null;
   selectedLayer.value = selected;
   const map_layers = map.getLayers();
   map_layers.forEach((layer) => {
@@ -254,6 +280,23 @@ const chooseLayer = (selected) => {
     if (layer.get('type') === 'base') {
       if (layerName === selected) {
         layer.setVisible(true);
+        textStyle = getLayerByName(selected).textStyle;
+        if (textStyle != null) {
+          fill = textStyle.fill;
+          stroke = textStyle.stroke;
+          textLayer.setStyle(function(feature, resolution) {
+            return new Style({
+              text: new TextStyle({
+                text: String(feature.get('idthing')),
+                font: '10px Arial',
+                offsetY: -25 / (resolution + 1),
+                fill: fill ? new Fill({ color: fill.color ? fill.color : null }) : null,
+                stroke: stroke ? new Stroke({color: stroke.color ? stroke.color : null, width: stroke.width ? stroke.width : null}) : null,
+                scale: 1 / (resolution + 0.5)
+              })
+            });
+          });
+        }
       } else {
         layer.setVisible(false);
       }
@@ -266,6 +309,8 @@ const setDefaultBaseLayer = () => {
   map_layers.forEach((layer) => {
     const layerName = layer.get('source').layer_;
     if ((layerName === DEFAULT_BASE_LAYER) && (layer.get('type') === 'base')) {
+      fill = getLayerByName(layerName).textStyle.fill;
+      stroke = getLayerByName(layerName).textStyle.stroke;
       layer.setVisible(true);
     }
   });
