@@ -41,10 +41,10 @@ export const tile_layers = [
     zIndex: -1,
     textStyle: {
       fill: {
-        color: [0, 0, 0],
+        color: [255, 255, 255],
       },
       stroke: {
-        color: [255, 255, 255],
+        color: [0, 0, 0],
         width: 0.5
       }
     }
