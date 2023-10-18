@@ -23,6 +23,18 @@ const (
 	Validation       GetDicoTableParamsTable = "validation"
 )
 
+// Dico defines model for Dico.
+type Dico struct {
+	Id    int32  `json:"id"`
+	Value string `json:"value"`
+}
+
+// EmplacementCentroid defines model for EmplacementCentroid.
+type EmplacementCentroid struct {
+	Geometry string  `json:"geometry"`
+	Surface  float32 `json:"surface"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    int32  `json:"code"`
@@ -91,6 +103,7 @@ type TreeList struct {
 	Geom         string       `json:"geom"`
 	Id           int32        `json:"id"`
 	IsActive     bool         `json:"is_active"`
+	IsValidated  *bool        `json:"is_validated,omitempty"`
 	Name         string       `json:"name"`
 	TreeAttLight TreeAttLight `json:"tree_att_light"`
 }
