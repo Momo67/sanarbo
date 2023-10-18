@@ -18,6 +18,7 @@ const props = defineProps({
 const Tree = reactive({
   external_id: '',
   is_active: '',
+  is_validated: '',
   create_time: '',
   creator: '',
   description: '',
@@ -45,6 +46,7 @@ onMounted(async () => {
   const tree = await useFetch(urlTrees + '/' + props.treeId, options)
   Tree.external_id = tree.data.value.external_id;
   Tree.is_active = tree.data.value.is_active;
+  Tree.is_validated = false;
   Tree.create_time = tree.data.value.create_time;
   Tree.creator = tree.data.value.creator;
   Tree.description = tree.data.value.description;
