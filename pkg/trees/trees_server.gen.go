@@ -16,6 +16,18 @@ type ServerInterface interface {
 	// Get dico values for the table passed in parameter
 	// (GET /dico/{table})
 	GetDicoTable(ctx echo.Context, table GetDicoTableParamsTable) error
+	// Get dico values
+	// (GET /gestion_com/emplacements)
+	GetEmplacements(ctx echo.Context) error
+	// Get centroid
+	// (GET /gestion_com/emplacements/centroid/{emplacementId})
+	GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context, emplacementId int32) error
+	// Get dico values
+	// (GET /gestion_com/emplacements/{secteur})
+	GetGestionComEmplacementsSecteur(ctx echo.Context, secteur string) error
+	// Get dico values
+	// (GET /gestion_com/secteurs)
+	GetGestionComSecteurs(ctx echo.Context) error
 	// List returns a list of trees
 	// (GET /trees)
 	List(ctx echo.Context, params ListParams) error
@@ -53,6 +65,56 @@ func (w *ServerInterfaceWrapper) GetDicoTable(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetDicoTable(ctx, table)
+	return err
+}
+
+// GetEmplacements converts echo context to params.
+func (w *ServerInterfaceWrapper) GetEmplacements(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetEmplacements(ctx)
+	return err
+}
+
+// GetGestionComEmplacementsCentroidEmplacementId converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "emplacementId" -------------
+	var emplacementId int32
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "emplacementId", runtime.ParamLocationPath, ctx.Param("emplacementId"), &emplacementId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter emplacementId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetGestionComEmplacementsCentroidEmplacementId(ctx, emplacementId)
+	return err
+}
+
+// GetGestionComEmplacementsSecteur converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGestionComEmplacementsSecteur(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "secteur" -------------
+	var secteur string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "secteur", runtime.ParamLocationPath, ctx.Param("secteur"), &secteur)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter secteur: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetGestionComEmplacementsSecteur(ctx, secteur)
+	return err
+}
+
+// GetGestionComSecteurs converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGestionComSecteurs(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetGestionComSecteurs(ctx)
 	return err
 }
 
@@ -177,6 +239,10 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.GET(baseURL+"/dico/:table", wrapper.GetDicoTable)
+	router.GET(baseURL+"/gestion_com/emplacements", wrapper.GetEmplacements)
+	router.GET(baseURL+"/gestion_com/emplacements/centroid/:emplacementId", wrapper.GetGestionComEmplacementsCentroidEmplacementId)
+	router.GET(baseURL+"/gestion_com/emplacements/:secteur", wrapper.GetGestionComEmplacementsSecteur)
+	router.GET(baseURL+"/gestion_com/secteurs", wrapper.GetGestionComSecteurs)
 	router.GET(baseURL+"/trees", wrapper.List)
 	router.POST(baseURL+"/trees", wrapper.Create)
 	router.DELETE(baseURL+"/trees/:treeId", wrapper.Delete)

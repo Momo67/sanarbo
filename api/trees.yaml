@@ -226,6 +226,102 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
         - JWTAuth: []
+  /gestion_com/secteurs:
+    get:
+      summary: Get dico values
+      description: get dico values
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /gestion_com/emplacements:
+    get:
+      summary: Get dico values
+      description: get dico values
+      operationId: GetEmplacements
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /gestion_com/emplacements/{secteur}:
+    get:
+      summary: Get dico values
+      description: get dico values for a given secteur
+      parameters:
+      - name: secteur
+        in: path
+        description: name of the secteur in which the emplacement is
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /gestion_com/emplacements/centroid/{emplacementId}:
+    get:
+      summary: Get centroid
+      description: get centroid of a given emplacement
+      parameters:
+        - name: emplacementId
+          in: path
+          description: id of emplacement of which we want to know the centroid
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: get centroid succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmplacementCentroid'
+        '404':
+          description: get centroid response when no centroid was found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Tree:
@@ -312,6 +408,8 @@ components:
         is_active:
           type: boolean
           default: true
+        is_validated:
+          type: boolean
         creator:
           type: integer
           format: int32
@@ -415,6 +513,28 @@ components:
         sort_order:
           type: integer
           format: int32
+    Dico:
+      required:
+        - id
+        - value
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        value:
+          type: string
+    EmplacementCentroid:
+      required:
+        - geometry
+        - surface
+      type: object
+      properties:
+        geometry:
+          type: string
+        surface:
+          type: number
+          format: float
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

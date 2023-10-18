@@ -220,3 +220,43 @@ func (s Service) GetDicoTable(ctx echo.Context, table GetDicoTableParamsTable) e
 	return ctx.JSON(http.StatusOK, treedico)
 
 }
+
+func (s Service) GetGestionComSecteurs(ctx echo.Context) error {
+	s.Log.Debug("entering GetGestionComSecteurs")
+
+	dico, err := s.Store.GetGestionComSecteurs()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving secteurs dico :%v", err))
+	}
+	return ctx.JSON(http.StatusOK, dico)
+}
+
+func (s Service) GetGestionComEmplacementsSecteur(ctx echo.Context, secteur string) error {
+	s.Log.Debug("entering GetGestionComEmplacementsSecteur")
+
+	dico, err := s.Store.GetGestionComEmplacementsSecteur(secteur)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements(%s) dico :%v", secteur, err))
+	}
+	return ctx.JSON(http.StatusOK, dico)
+}
+
+func (s Service) GetEmplacements(ctx echo.Context) error {
+	s.Log.Debug("entering GetEmplacements")
+
+	dico, err := s.Store.GetEmplacements()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements dico :%v", err))
+	}
+	return ctx.JSON(http.StatusOK, dico)
+}
+
+func (s Service) GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context, idEmplacement int32) error {
+	s.Log.Debug("entering GetGestionComEmplacementsCentroidEmplacementId(%d)", idEmplacement)
+
+	centroid, err := s.Store.GetGestionComEmplacementsCentroidEmplacementId(idEmplacement)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving centroid(%d) dico :%v", idEmplacement, err))
+	}
+	return ctx.JSON(http.StatusOK, centroid)
+}

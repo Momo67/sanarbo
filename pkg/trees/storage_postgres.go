@@ -18,7 +18,6 @@ const (
 
 var ErrNoRecordFound = errors.New(noRecords)
 
-
 type PGX struct {
 	con *pgxpool.Pool
 	log golog.MyLogger
@@ -46,10 +45,10 @@ func (P PGX) List(offset, limit int) ([]*TreeList, error) {
 func (P PGX) Get(id int32) (*Tree, error) {
 	P.log.Debug("entering Get(%d)", id)
 	res := &Tree{}
-	
+
 	err := pgxscan.Get(context.Background(), P.con, res, treesGet, id)
 	if err != nil {
-		P.log.Error("Get(%d) pgxscan.Select unexpectedly failed, error : %v", id, err)
+		P.log.Error("Get(%d) pgxscan.Get unexpectedly failed, error : %v", id, err)
 		return nil, err
 	}
 	if res == (&Tree{}) {
@@ -103,7 +102,7 @@ func (P PGX) Create(object Tree) (*Tree, error) {
 	P.log.Debug("entering Create(%q,%q,%#v)", object.Name, object.Geom, object.TreeAttributes)
 	var lastInsertId int = 0
 
-	err := P.con.QueryRow(context.Background(), treesCreate, 
+	err := P.con.QueryRow(context.Background(), treesCreate,
 		object.Name, &object.Description, object.ExternalId, object.IsActive, &object.Comment, object.Creator, object.Geom, object.TreeAttributes).Scan(&lastInsertId)
 	if err != nil {
 		P.log.Error("Create(%q) unexpectedly failed. error : %v", object.Name, err)
@@ -130,9 +129,9 @@ func (P PGX) Update(id int32, object Tree) (*Tree, error) {
 	}
 	P.log.Info("Just before Update(%+v)", object)
 
-	res, err := P.con.Exec(context.Background(), treesUpdate, 
+	res, err := P.con.Exec(context.Background(), treesUpdate,
 		object.Name, &object.Description, &object.ExternalId, object.IsActive, &object.InactivationTime, &object.InactivationReason,
-		&object.Comment, &object.IsValidated, &object.IdValidator, &object.LastModificationUser, object.Geom, &object.TreeAttributes, id)	
+		&object.Comment, &object.IsValidated, &object.IdValidator, &object.LastModificationUser, object.Geom, &object.TreeAttributes, id)
 	if err != nil {
 		return nil, GetErrorF("error : Update() query failed", err)
 	}
@@ -251,9 +250,76 @@ func (P PGX) GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error) {
 			P.log.Info("GetDico returned no results ")
 			return nil, errors.New(noRecords)
 		}
-	
+
 		return res, nil
 	} else {
 		return nil, errors.New("error : GetDico table not specified")
 	}
+}
+
+func (P PGX) GetGestionComSecteurs() ([]*Dico, error) {
+	P.log.Debug("entering GetGestionComSecteurs")
+	var res []*Dico
+
+	err := pgxscan.Select(context.Background(), P.con, &res, secteursList)
+	if err != nil {
+		P.log.Error("List pgxscan.Select unexpectedly failed, error : %v", err)
+		return nil, err
+	}
+	if res == nil {
+		P.log.Info("GetGestionComSecteurs returned no results ")
+		return nil, errors.New(noRecords)
+	}
+
+	return res, nil
+}
+
+func (P PGX) GetEmplacements() ([]*Dico, error) {
+	P.log.Debug("entering GetEmplacements")
+	var res []*Dico
+
+	err := pgxscan.Select(context.Background(), P.con, &res, emplacementsList)
+	if err != nil {
+		P.log.Error("List pgxscan.Select unexpectedly failed, error : %v", err)
+		return nil, err
+	}
+	if res == nil {
+		P.log.Info("GetGestionComSecteurs returned no results ")
+		return nil, errors.New(noRecords)
+	}
+
+	return res, nil
+}
+
+func (P PGX) GetGestionComEmplacementsSecteur(secteur string) ([]*Dico, error) {
+	P.log.Debug("entering GetGestionComEmplacementsSecteur(%s)", secteur)
+	var res []*Dico
+
+	err := pgxscan.Select(context.Background(), P.con, &res, emplacementsListBySecteur, secteur)
+	if err != nil {
+		P.log.Error("GetGestionComEmplacementsSecteur(%s) pgxscan.Select unexpectedly failed, error : %v", secteur, err)
+		return nil, err
+	}
+	if res == nil {
+		P.log.Info("GetGestionComSecteurs returned no results ")
+		return nil, errors.New(noRecords)
+	}
+
+	return res, nil
+}
+
+func (P PGX) GetGestionComEmplacementsCentroidEmplacementId(idemplacement int32) (*EmplacementCentroid, error) {
+	P.log.Debug("entering GetGestionComEmplacementsCentroidEmplacementId(%d)", idemplacement)
+
+	res := &EmplacementCentroid{}
+	err := pgxscan.Get(context.Background(), P.con, res, emplacementCentroid, idemplacement)
+	if err != nil {
+		P.log.Error("GetGestionComEmplacementsCentroidEmplacementId(%d) pgxscan.Get unexpectedly failed, error : %v", idemplacement, err)
+		return nil, err
+	}
+	if res == (&EmplacementCentroid{}) {
+		P.log.Info("Get(%d) returned no results ", idemplacement)
+		return nil, errors.New(noRecords)
+	}
+	return res, nil
 }
