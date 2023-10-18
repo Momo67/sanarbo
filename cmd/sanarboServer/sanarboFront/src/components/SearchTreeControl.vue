@@ -1,11 +1,13 @@
 <script setup>
-import { computed, ref } from 'vue';
-/*
-import {useFetch} from "../composables/FetchData.js";
+import { computed, ref, reactive, watch, onMounted } from 'vue';
+import proj4 from 'proj4';
+import { WKT } from "ol/format.js";
+import OlProjection from 'ol/proj/Projection'
+import { register } from 'ol/proj/proj4';
+import { useFetch } from "../composables/FetchData.js";
 
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
-const urlTrees = backendUrl + "trees";
-*/
+const urlGestionCom = backendUrl + "gestion_com";
 
 const props = defineProps({
   featureSource: {
@@ -39,11 +41,24 @@ const submitBtnDisabled = computed({
 
 const idThing = ref();
 
+const secteurName = ref('');
+
+const idEmplacement = ref();
+
 const showAlert = ref(false);
 
 const textAlert = ref('');
 
 const form = ref(null);
+
+let secteurs = {data: []};
+let emplacements = {data: []};
+
+const gestion_com = ref({
+  secteurs: secteurs,
+  emplacements: emplacements,
+})
+
 
 const emit = defineEmits(['coords-found', 'show-changed']);
 
@@ -63,31 +78,77 @@ const isValid = (value) => {
     return true;
   }
 }
-/*
-const token = sessionStorage.getItem('token');
-const headers = {
-  'Authorization': 'Bearer ' + token,
-  'Content-Type': 'application/json',
-}
-*/
 
-const submitForm = () => {
-  console.log('### validate:', form.value.errors.length);
+// Define projection
+proj4.defs(
+    'EPSG:2056',
+    '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs');
+
+register(proj4);
+
+const swissProjection = reactive(new OlProjection({
+  code: 'EPSG:2056',
+  units: 'm',
+}));
+
+// wkt format
+const wktFormat = new WKT();
+
+const searchTreeById = (idTree) => {
   const features = props.featureSource.getFeatures();
   const length = features.length;
-  let found = null;
+  let tree = null;
   for (let count = 0; count < length; count++) {
-    if (features[count].get('idthing') === parseInt(idThing.value)) {
-      found = features[count];
+    if (features[count].get('idthing') === parseInt(idTree)) {
+      tree = features[count];
       break;
     }
   }
+  return { feature: tree, zoom: 22 };
+}
 
-  if (found !== null) {
-    emit('coords-found', found.getGeometry().getCoordinates());
+const getZoomLevel = (surface) => {
+  let zoom = null;
+  zoom = 22 - Math.floor(surface / 20000);
+
+  return zoom;
+}
+
+const searchEmplacementCenter = async (idEmplacement) => {
+  const centroid = await useFetch(urlGestionCom + '/emplacements/centroid/' + idEmplacement, options);
+
+  let feature = wktFormat.readFeature(centroid.data.value.geometry, {
+    featureProjection: swissProjection,
+  });
+  let surface = centroid.data.value.surface;
+
+  return { feature: feature, zoom: getZoomLevel(surface)};
+}
+
+const submitForm = async () => {
+  let center = null;
+
+  if (idThing.value != null) {
+    center = searchTreeById(idThing.value);
+  }
+  else if (idEmplacement.value != null) {
+    center = await searchEmplacementCenter(idEmplacement.value);
+  }
+
+  if (center.feature !== null) {
+    emit('coords-found', {
+      coords: center.feature.getGeometry().getCoordinates(),
+      zoom: center.zoom
+    });
     showSearchTrees.value = false;
     idThing.value = null;
+    secteurName.value = null;
+    idEmplacement.value = null;
     showAlert.value = false;
+    gestion_com.value = {
+    secteurs: secteurs,
+    emplacements: {data: []},
+  };
   } else {
     textAlert.value = 'Aucun arbre trouvé!';
     showAlert.value = true;
@@ -106,7 +167,44 @@ const searchTreeOnCancel = () => {
   showSearchTrees.value = false;
   showAlert.value = false;
   idThing.value = null;
+  secteurName.value = null;
+  idEmplacement.value = null;
+  gestion_com.value = {
+    secteurs: secteurs,
+    emplacements: {data: []},
+  };
 }
+
+// Get session storage token
+const token = sessionStorage.getItem('token');
+const headers = {
+  'Authorization': 'Bearer ' + token,
+  'Content-Type': 'application/json',
+}
+
+const options = {
+  headers: headers
+}
+
+watch(secteurName, async () => {
+  if ((secteurName.value != '') && (secteurName.value != null)) {
+    emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
+    gestion_com.value = {
+      secteurs: secteurs,
+      emplacements: emplacements
+    };
+  }
+})
+
+onMounted(async () => {
+  secteurs = await useFetch(urlGestionCom + '/secteurs', options);
+
+  gestion_com.value = {
+    secteurs: secteurs,
+    emplacements: {data: []},
+  };
+})
+
 </script>
 
 <template>
@@ -131,13 +229,38 @@ const searchTreeOnCancel = () => {
               </v-card-title>
             </v-card-item>
             <v-divider></v-divider>
-            <v-card-text style="height: 300px;">
+            <v-card-text>
               <v-form ref="form" @submit.prevent="submitForm">
                 <v-container>
 
                   <v-row class="py-5">
                     <v-col cols="12" md="12">
                       <v-text-field v-model="idThing" clearable label="Identifiant de l'arbre" :rules="[rules.valid]" @click:clear="onClear"></v-text-field>
+                    </v-col>
+                <!--
+                  </v-row>
+
+                  <v-row class="py-5">
+                -->
+                    <v-col cols="12" md="12">
+                      <v-select
+                        v-model="secteurName"
+                        :items="gestion_com.secteurs.data"
+                        item-title="value"
+                        item-value="value"
+                        label="Secteur"
+                      >
+                      </v-select>
+                    </v-col>
+                    <v-col cols="12" md="12">
+                      <v-select
+                        v-model.number="idEmplacement"
+                        :items="gestion_com.emplacements.data"
+                        item-title="value"
+                        item-value="id"
+                        label="Emplacement"
+                      >
+                      </v-select>
                     </v-col>
                   </v-row>
 

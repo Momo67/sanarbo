@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref, reactive} from "vue";
+import { onMounted, ref, reactive } from "vue";
 import Map from 'ol/Map.js';
 import View from 'ol/View.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -7,12 +7,12 @@ import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
 import OlSourceWMTS from 'ol/source/WMTS';
 import OlTileGridWMTS from 'ol/tilegrid/WMTS';
-import {WKT} from "ol/format.js";
+import { WKT } from "ol/format.js";
 import OlProjection from 'ol/proj/Projection'
-import {register} from 'ol/proj/proj4';
-import {useFetch} from "../composables/FetchData.js";
-import {Select} from "ol/interaction.js";
-import {Fill, Stroke, Style, Circle as CircleStyle, Text as TextStyle} from 'ol/style.js';
+import { register } from 'ol/proj/proj4';
+import { useFetch } from "../composables/FetchData.js";
+import { Select } from "ol/interaction.js";
+import { Fill, Stroke, Style, Circle as CircleStyle, Text as TextStyle, RegularShape } from 'ol/style.js';
 import Control from 'ol/control/Control.js';
 import proj4 from 'proj4';
 import 'ol/ol.css'
@@ -28,7 +28,7 @@ import { DEFAULT_BASE_LAYER } from '../config.js';
 
 // Fetch data
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
-const urlTrees = backendUrl + "trees"
+const urlTrees = backendUrl + "trees?offset=0&limit=1000000"
 const token = sessionStorage.getItem('token');
 
 const headers = {'Authorization': 'Bearer ' + token}
@@ -68,28 +68,9 @@ selectInteraction.on('select', (event) => {
 
 // Handle form submission / cancel
 const formSubmitted = ref(false);
-const handleFormSubmitted = (json) => {
-  const tree = JSON.parse(json);
-  selectedFeature.setStyle(function (feature, resolution) {
-    const color = getValidationColor(tree.tree_attributes.idvalidation);
-    return new Style({
-      image: new CircleStyle({
-        radius: 5 / (resolution + 0.5),
-        fill: new Fill({ color: color }),
-        stroke: new Stroke({ width: 1, color: color }),
-      }),
-      text: new TextStyle({
-        text: String(tree.tree_attributes.idthing),
-        font: '10px Arial',
-        offsetY: -25 / (resolution + 1),
-        fill: fill ? new Fill({ color: fill.color }) : null,
-        stroke: stroke ? new Stroke({color: stroke.color, width: stroke.width}) : null,
-        scale: 1 / (resolution + 0.5)
-      })
-    });
-  });
-  map.render();
-
+const handleFormSubmitted = () => {
+  getFeatures();
+  
   formSubmitted.value = true;
   showForm.value = false;
   selectInteraction.getFeatures().clear();
@@ -164,14 +145,43 @@ const hiddenFeatureLayer = new VectorLayer({
 layers.value.push(hiddenFeatureLayer);
 
 const arbreStyle = (feature, resolution) => {
-  const color = getValidationColor(feature.get('idvalidation'));
-  return new Style({
-    image: new CircleStyle({
-      radius: 5 / (resolution + 0.5),
-      fill: new Fill({ color: color }),
-      stroke: new Stroke({ width: 1, color: color }),
-    }),
-  });
+  let color = getValidationColor(feature.get('idvalidation'));
+  let is_validated = feature.get('is_validated');
+  let style = [];
+
+  if (is_validated == false) {
+    style.push(new Style({
+      image: new RegularShape({
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ width: 1, color: color }),
+        points: 4,
+        radius: 6 / (resolution + 0.5),
+        //angle: Math.PI / 4,
+      }),
+    }));
+  } else {
+    style.push(new Style({
+        image: new CircleStyle({
+          radius: 5 / (resolution + 0.5),
+          fill: new Fill({ color: color }),
+          stroke: new Stroke({ width: 1, color: color }),
+        }),
+      }),
+    );
+  }
+  /*
+  if (is_validated == false) {
+    style.push(new Style({
+      image: new CircleStyle({
+        radius: 3 / (resolution + 0.5),
+        fill: new Fill({ color: 'black' }),
+        //stroke: new Stroke({ width: 1, color: 'white' }),
+      }),
+    }));
+  }
+  */
+
+  return style;
 }
 const featureSource = new VectorSource();
 const vectorLayer = new VectorLayer({
@@ -336,41 +346,49 @@ const view = new View({
 });
 
 const setPosition = (position) => {
-  if ((parseInt(position.length) == 2) && (parseInt(position[0]) > 2000000) && (parseInt(position[0]) < 2900000) && (parseInt(position[1]) > 1000000) && (parseInt(position[1]) < 1300000)) {
+  let coords = position.coords;
+  let zoom = position.zoom;
+  if ((parseInt(coords.length) == 2) && (parseInt(coords[0]) > 2000000) && (parseInt(coords[0]) < 2900000) && (parseInt(coords[1]) > 1000000) && (parseInt(coords[1]) < 1300000)) {
     view.animate({
-      center: position,
+      center: coords,
       duration: 2000,
-      zoom: 22
+      zoom: zoom
     });
   }
 }
 //Tracking
 const trackingEnabled = ref(false);
 
-onMounted(async () => {
+const getFeatures = async () => {
   const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
   errorFetch.value = hasError.value;
   fetchIsLoading.value = isLoading.value;
   errorFetchMessage.value = errorMessage.value;
-  
-  fetchDictionaries();
-  
+
   const features = data.value.map((d) => {
     let feature = wktFormat.readFeature(d.geom, {
       featureProjection: swissProjection,
     })
 
-    feature.set('id', d.id)
-    feature.set('idthing', d.external_id)
-    feature.set('idvalidation', d.tree_att_light.idvalidation)
+    feature.set('id', d.id);
+    feature.set('idthing', d.external_id);
+    feature.set('is_validated', d.is_validated);
+    feature.set('idvalidation', d.tree_att_light.idvalidation);
 
-    return feature
+    return feature;
   });
 
+  hiddenFeatureSource.clear();
   hiddenFeatureSource.addFeatures(features);
 
   filterFeatures(displayed_features.value)
+}
 
+onMounted(async () => {
+  getFeatures();
+
+  fetchDictionaries();
+  
   map = new Map({
     controls: [],
     view: view,

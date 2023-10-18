@@ -37,7 +37,10 @@ const trackingOnClick = () => {
 onMounted(() => {
   geolocation.setTracking(trackingEnabled.value);
   geolocation.on('change:position', () => {
-    emit('position-changed', geolocation.getPosition());
+    emit('position-changed', {
+      coords: geolocation.getPosition(),
+      zoom: 22
+    });
   });
 });
 </script>
