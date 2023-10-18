@@ -149,5 +149,18 @@ const (
 
 	emplacementCentroid = `SELECT ST_ASText(ST_Centroid(ST_Collect(surface.the_geom))) AS geometry, ST_Area(ST_Collect(surface.the_geom)) AS surface
 	FROM geodata_gestion_com.spadom_surfaces AS surface
-	WHERE surface.idgo_empl = $1;`		
+	WHERE surface.idgo_empl = $1;`
+	
+	streetsList = `SELECT str.idthing AS id, str.longname AS value
+	FROM thi_street str
+	WHERE str.idville = 632
+	ORDER BY str.lastname;`
+
+	buildingsNumberByStreet = `SELECT sba.idaddress AS id, sba.number::text || COALESCE(sba.extention, '') AS value
+	FROM thi_street_building_address sba
+	WHERE sba.idthingstreet = $1;`
+
+	buildingCenter = `SELECT 'POINT(' || (sba.coordeo / 100.0)::text || ' ' || (sba.coordsn / 100.0)::text || ')'
+	FROM thi_street_building_address sba
+	WHERE sba.idaddress = $1`
 )

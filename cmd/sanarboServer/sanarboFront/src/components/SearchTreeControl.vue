@@ -188,7 +188,10 @@ const options = {
 
 watch(secteurName, async () => {
   if ((secteurName.value != '') && (secteurName.value != null)) {
+    idEmplacement.value = null;
+
     emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
+    
     gestion_com.value = {
       secteurs: secteurs,
       emplacements: emplacements
@@ -221,7 +224,7 @@ onMounted(async () => {
     </v-container>
     <v-container v-show="showSearchTrees" class="tree-search">
       <v-row>
-        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-4 offset-lg-4">
+        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-6 offset-lg-3">
           <v-card>
             <v-card-item>
               <v-card-title primary-title>
@@ -242,7 +245,7 @@ onMounted(async () => {
 
                   <v-row class="py-5">
                 -->
-                    <v-col cols="12" md="12">
+                    <v-col cols="4" md="4">
                       <v-select
                         v-model="secteurName"
                         :items="gestion_com.secteurs.data"
@@ -252,7 +255,7 @@ onMounted(async () => {
                       >
                       </v-select>
                     </v-col>
-                    <v-col cols="12" md="12">
+                    <v-col cols="8" md="8">
                       <v-select
                         v-model.number="idEmplacement"
                         :items="gestion_com.emplacements.data"
