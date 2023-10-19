@@ -323,3 +323,52 @@ func (P PGX) GetGestionComEmplacementsCentroidEmplacementId(idemplacement int32)
 	}
 	return res, nil
 }
+
+func (P PGX) GetBuildingCenter(idaddress int32) (*Center, error) {
+	P.log.Debug("entering GetBuildingCenter(%d)", idaddress)
+
+	res := &Center{}
+	err := pgxscan.Get(context.Background(), P.con, res, buildingCenter, idaddress)
+	if err != nil {
+		P.log.Error("GetBuildingCenter(%d) pgxscan.Get unexpectedly failed, error : %v", idaddress, err)
+		return nil, err
+	}
+	if res == (&Center{}) {
+		P.log.Info("Get(%d) returned no results ", idaddress)
+		return nil, errors.New(noRecords)
+	}
+	return res, nil
+}
+
+func (P PGX) GetBuildingsNumbers(idstreet int32) ([]*Dico, error) {
+	P.log.Debug("entering GetBuildingsNumbers(%d)", idstreet)
+
+	var res []*Dico
+	err := pgxscan.Select(context.Background(), P.con, &res, buildingsNumberByStreet, idstreet)
+	if err != nil {
+		P.log.Error("GetBuildingsNumbers(%d) pgxscan.Select unexpectedly failed, error : %v", idstreet, err)
+		return nil, err
+	}
+	if res == nil {
+		P.log.Info("Select(%d) returned no results ", idstreet)
+		return nil, errors.New(noRecords)
+	}
+	return res, nil
+}
+
+func (P PGX) GetStreets() ([]*Dico, error) {
+	P.log.Debug("entering GetStreets")
+
+	var res []*Dico
+	err := pgxscan.Select(context.Background(), P.con, &res, streetsList)
+	if err != nil {
+		P.log.Error("GetStreets pgxscan.Select unexpectedly failed, error : %v", err)
+		return nil, err
+	}
+	if res == nil {
+		P.log.Info("Select returned no results ",)
+		return nil, errors.New(noRecords)
+	}
+	return res, nil
+}
+

@@ -151,7 +151,7 @@ const (
 	FROM geodata_gestion_com.spadom_surfaces AS surface
 	WHERE surface.idgo_empl = $1;`
 	
-	streetsList = `SELECT str.idthing AS id, str.longname AS value
+	streetsList = `SELECT str.idthing AS id, str.shortname AS value
 	FROM thi_street str
 	WHERE str.idville = 632
 	ORDER BY str.lastname;`
@@ -160,7 +160,7 @@ const (
 	FROM thi_street_building_address sba
 	WHERE sba.idthingstreet = $1;`
 
-	buildingCenter = `SELECT 'POINT(' || (sba.coordeo / 100.0)::text || ' ' || (sba.coordsn / 100.0)::text || ')'
+	buildingCenter = `SELECT 'POINT(' || (sba.coordeo / 100.0)::text || ' ' || (sba.coordsn / 100.0)::text || ')' AS geometry
 	FROM thi_street_building_address sba
 	WHERE sba.idaddress = $1`
 )

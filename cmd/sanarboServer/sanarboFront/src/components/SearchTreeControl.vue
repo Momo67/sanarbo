@@ -8,6 +8,8 @@ import { useFetch } from "../composables/FetchData.js";
 
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlGestionCom = backendUrl + "gestion_com";
+const urlStreets = backendUrl + "thing/streets";
+const urlBuildings = backendUrl + "thing/buildings";
 
 const props = defineProps({
   featureSource: {
@@ -45,6 +47,10 @@ const secteurName = ref('');
 
 const idEmplacement = ref();
 
+const idStreet = ref();
+
+const idAddress = ref();
+
 const showAlert = ref(false);
 
 const textAlert = ref('');
@@ -57,8 +63,15 @@ let emplacements = {data: []};
 const gestion_com = ref({
   secteurs: secteurs,
   emplacements: emplacements,
-})
+});
 
+let streets = {data: []};
+let buildingsNumbers = {data: []};
+
+const things = ref({
+  streets: streets,
+  buildings: buildingsNumbers,
+});
 
 const emit = defineEmits(['coords-found', 'show-changed']);
 
@@ -125,6 +138,30 @@ const searchEmplacementCenter = async (idEmplacement) => {
   return { feature: feature, zoom: getZoomLevel(surface)};
 }
 
+const searchBuildingCenter = async (idAddress) => {
+  const center = await useFetch(urlBuildings + '/center/' + idAddress, options);
+
+  let feature = wktFormat.readFeature(center.data.value.geometry, {
+    featureProjection: swissProjection,
+  });
+
+  return { feature: feature, zoom: 22};
+}
+
+const resetFields = () => {
+  showSearchTrees.value = false;
+  idThing.value = null;
+  secteurName.value = null;
+  idEmplacement.value = null;
+  idStreet.value = null;
+  idAddress.value = null;
+  showAlert.value = false;
+  gestion_com.value = {
+    secteurs: secteurs,
+    emplacements: {data: []},
+  }
+}
+
 const submitForm = async () => {
   let center = null;
 
@@ -133,6 +170,8 @@ const submitForm = async () => {
   }
   else if (idEmplacement.value != null) {
     center = await searchEmplacementCenter(idEmplacement.value);
+  } else if (idAddress.value != null) {
+    center = await searchBuildingCenter(idAddress.value);
   }
 
   if (center.feature !== null) {
@@ -140,15 +179,7 @@ const submitForm = async () => {
       coords: center.feature.getGeometry().getCoordinates(),
       zoom: center.zoom
     });
-    showSearchTrees.value = false;
-    idThing.value = null;
-    secteurName.value = null;
-    idEmplacement.value = null;
-    showAlert.value = false;
-    gestion_com.value = {
-    secteurs: secteurs,
-    emplacements: {data: []},
-  };
+    resetFields();
   } else {
     textAlert.value = 'Aucun arbre trouvé!';
     showAlert.value = true;
@@ -164,15 +195,7 @@ const alertOnClose = () => {
 }
 
 const searchTreeOnCancel = () => {
-  showSearchTrees.value = false;
-  showAlert.value = false;
-  idThing.value = null;
-  secteurName.value = null;
-  idEmplacement.value = null;
-  gestion_com.value = {
-    secteurs: secteurs,
-    emplacements: {data: []},
-  };
+  resetFields();
 }
 
 // Get session storage token
@@ -190,21 +213,38 @@ watch(secteurName, async () => {
   if ((secteurName.value != '') && (secteurName.value != null)) {
     idEmplacement.value = null;
 
-    emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
     
+    emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
     gestion_com.value = {
       secteurs: secteurs,
       emplacements: emplacements
     };
   }
-})
+});
+
+watch(idStreet, async () => {
+  if (idStreet != null) {
+    idAddress.value = null;
+
+    buildingsNumbers = await useFetch(urlBuildings + '/numbers/' + idStreet.value, options);
+    things.value = {
+      streets: streets,
+      buildings: buildingsNumbers
+    };
+  }
+});
 
 onMounted(async () => {
   secteurs = await useFetch(urlGestionCom + '/secteurs', options);
-
   gestion_com.value = {
     secteurs: secteurs,
     emplacements: {data: []},
+  };
+
+  streets = await useFetch(urlStreets, options);
+  things.value = {
+    streets: streets,
+    buildings: {data: []},
   };
 })
 
@@ -236,15 +276,13 @@ onMounted(async () => {
               <v-form ref="form" @submit.prevent="submitForm">
                 <v-container>
 
-                  <v-row class="py-5">
+                  <v-row class="py-1">
                     <v-col cols="12" md="12">
                       <v-text-field v-model="idThing" clearable label="Identifiant de l'arbre" :rules="[rules.valid]" @click:clear="onClear"></v-text-field>
                     </v-col>
-                <!--
                   </v-row>
 
-                  <v-row class="py-5">
-                -->
+                  <v-row class="py-1">
                     <v-col cols="4" md="4">
                       <v-select
                         v-model="secteurName"
@@ -262,6 +300,29 @@ onMounted(async () => {
                         item-title="value"
                         item-value="id"
                         label="Emplacement"
+                      >
+                      </v-select>
+                    </v-col>
+                  </v-row>
+
+                  <v-row class="py-1">
+                    <v-col cols="8" md="8">
+                      <v-select
+                        v-model="idStreet"
+                        :items="things.streets.data"
+                        item-title="value"
+                        item-value="id"
+                        label="Rue"
+                      >
+                      </v-select>
+                    </v-col>
+                    <v-col cols="4" md="4">
+                      <v-select
+                        v-model.number="idAddress"
+                        :items="things.buildings.data"
+                        item-title="value"
+                        item-value="id"
+                        label="N°"
                       >
                       </v-select>
                     </v-col>

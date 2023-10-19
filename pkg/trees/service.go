@@ -48,7 +48,7 @@ func (s Service) List(ctx echo.Context, params ListParams) error {
 	if params.Offset != nil {
 		offset = int(*params.Offset)
 	}
-	list, err:= s.Store.List(offset, limit)
+	list, err := s.Store.List(offset, limit)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
 	}
@@ -71,7 +71,7 @@ func (s Service) Create(ctx echo.Context) error {
 	}
 
 	newTree := &Tree{
-		Id: 	 0,
+		Id:      0,
 		Creator: int32(currentUserId),
 	}
 	if err := ctx.Bind(newTree); err != nil {
@@ -199,10 +199,10 @@ func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
 
 	var search string = ""
 	search = strings.TrimSpace(pattern)
-	if (search == "" || search == "*") {
+	if search == "" || search == "*" {
 		search = "%"
 	}
-	list, err:= s.Store.SearchTreesByName(search)
+	list, err := s.Store.SearchTreesByName(search)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
 	}
@@ -260,3 +260,34 @@ func (s Service) GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context
 	}
 	return ctx.JSON(http.StatusOK, centroid)
 }
+
+func (s Service) GetBuildingCenter(ctx echo.Context, addressId int32) error {
+	s.Log.Debug("entering GetBuildingCenter(%d)", addressId)
+
+	center, err := s.Store.GetBuildingCenter(addressId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving center(%d) :%v", addressId, err))
+	}
+	return ctx.JSON(http.StatusOK, center)
+}
+
+func (s Service) GetBuildingsNumbers(ctx echo.Context, streetId int32) error {
+	s.Log.Debug("entering GetBuildingsNumbers(%d)", streetId)
+
+	dico, err := s.Store.GetBuildingsNumbers(streetId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving buildingd numbers(%d) :%v", streetId, err))
+	}
+	return ctx.JSON(http.StatusOK, dico)
+}
+
+func (s Service) GetStreets(ctx echo.Context) error {
+	s.Log.Debug("entering GetStreets")
+
+	dico, err := s.Store.GetStreets()
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving streets dico :%v", err))
+	}
+	return ctx.JSON(http.StatusOK, dico)
+}
+

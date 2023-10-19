@@ -322,6 +322,86 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /thing/streets:
+    get:
+      summary: Streets list
+      description: List of streets of city of Lausanne
+      operationId: GetStreets
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /thing/buildings/numbers/{streetId}:
+    get:
+      summary: Buildings numbers list
+      description: List of buildings numbers for a given street
+      operationId: GetBuildingsNumbers
+      parameters:
+        - name: streetId
+          in: path
+          description: id of street
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /thing/buildings/center/{addressId}:
+    get:
+      summary: Center of building
+      description: Get the center coordinates of a given building
+      operationId: GetBuildingCenter
+      parameters:
+        - name: addressId
+          in: path
+          description: id of the address
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Center'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Tree:
@@ -535,6 +615,13 @@ components:
         surface:
           type: number
           format: float
+    Center:
+      required:
+        - geometry
+      type: object
+      properties:
+        geometry:
+          type: string
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

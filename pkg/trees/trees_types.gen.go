@@ -23,6 +23,11 @@ const (
 	Validation       GetDicoTableParamsTable = "validation"
 )
 
+// Center defines model for Center.
+type Center struct {
+	Geometry string `json:"geometry"`
+}
+
 // Dico defines model for Dico.
 type Dico struct {
 	Id    int32  `json:"id"`

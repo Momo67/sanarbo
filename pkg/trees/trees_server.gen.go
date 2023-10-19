@@ -28,6 +28,15 @@ type ServerInterface interface {
 	// Get dico values
 	// (GET /gestion_com/secteurs)
 	GetGestionComSecteurs(ctx echo.Context) error
+	// Center of building
+	// (GET /thing/buildings/center/{addressId})
+	GetBuildingCenter(ctx echo.Context, addressId int32) error
+	// Buildings numbers list
+	// (GET /thing/buildings/numbers/{streetId})
+	GetBuildingsNumbers(ctx echo.Context, streetId int32) error
+	// Streets list
+	// (GET /thing/streets)
+	GetStreets(ctx echo.Context) error
 	// List returns a list of trees
 	// (GET /trees)
 	List(ctx echo.Context, params ListParams) error
@@ -115,6 +124,47 @@ func (w *ServerInterfaceWrapper) GetGestionComSecteurs(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetGestionComSecteurs(ctx)
+	return err
+}
+
+// GetBuildingCenter converts echo context to params.
+func (w *ServerInterfaceWrapper) GetBuildingCenter(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "addressId" -------------
+	var addressId int32
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "addressId", runtime.ParamLocationPath, ctx.Param("addressId"), &addressId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter addressId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetBuildingCenter(ctx, addressId)
+	return err
+}
+
+// GetBuildingsNumbers converts echo context to params.
+func (w *ServerInterfaceWrapper) GetBuildingsNumbers(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "streetId" -------------
+	var streetId int32
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "streetId", runtime.ParamLocationPath, ctx.Param("streetId"), &streetId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter streetId: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetBuildingsNumbers(ctx, streetId)
+	return err
+}
+
+// GetStreets converts echo context to params.
+func (w *ServerInterfaceWrapper) GetStreets(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetStreets(ctx)
 	return err
 }
 
@@ -243,6 +293,9 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/gestion_com/emplacements/centroid/:emplacementId", wrapper.GetGestionComEmplacementsCentroidEmplacementId)
 	router.GET(baseURL+"/gestion_com/emplacements/:secteur", wrapper.GetGestionComEmplacementsSecteur)
 	router.GET(baseURL+"/gestion_com/secteurs", wrapper.GetGestionComSecteurs)
+	router.GET(baseURL+"/thing/buildings/center/:addressId", wrapper.GetBuildingCenter)
+	router.GET(baseURL+"/thing/buildings/numbers/:streetId", wrapper.GetBuildingsNumbers)
+	router.GET(baseURL+"/thing/streets", wrapper.GetStreets)
 	router.GET(baseURL+"/trees", wrapper.List)
 	router.POST(baseURL+"/trees", wrapper.Create)
 	router.DELETE(baseURL+"/trees/:treeId", wrapper.Delete)
