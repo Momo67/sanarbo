@@ -30,8 +30,9 @@ type Center struct {
 
 // Dico defines model for Dico.
 type Dico struct {
-	Id    int32  `json:"id"`
-	Value string `json:"value"`
+	Id       int32   `json:"id"`
+	Subtitle *string `json:"subtitle,omitempty"`
+	Value    string  `json:"value"`
 }
 
 // EmplacementCentroid defines model for EmplacementCentroid.

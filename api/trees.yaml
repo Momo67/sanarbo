@@ -604,6 +604,8 @@ components:
           format: int32
         value:
           type: string
+        subtitle:
+          type: string
     EmplacementCentroid:
       required:
         - geometry

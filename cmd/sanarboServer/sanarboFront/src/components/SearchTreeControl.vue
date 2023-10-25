@@ -57,6 +57,13 @@ const textAlert = ref('');
 
 const form = ref(null);
 
+let res = {
+  hasError: null, 
+  errorMessage: null, 
+  isLoading: null, 
+  data: null,
+};
+
 let secteurs = {data: []};
 let emplacements = {data: []};
 
@@ -213,7 +220,6 @@ watch(secteurName, async () => {
   if ((secteurName.value != '') && (secteurName.value != null)) {
     idEmplacement.value = null;
 
-    
     emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
     gestion_com.value = {
       secteurs: secteurs,
@@ -223,14 +229,27 @@ watch(secteurName, async () => {
 });
 
 watch(idStreet, async () => {
-  if (idStreet != null) {
+  textAlert.value = '';
+  showAlert.value = false;
+  things.value = {
+    streets: streets,
+    buildings: {data: []},
+  };
+
+  if (idStreet.value != null) {
     idAddress.value = null;
 
-    buildingsNumbers = await useFetch(urlBuildings + '/numbers/' + idStreet.value, options);
-    things.value = {
-      streets: streets,
-      buildings: buildingsNumbers
-    };
+    res = await useFetch(urlBuildings + '/numbers/' + idStreet.value, options);
+    if (!res.hasError.value) {
+      buildingsNumbers = res;
+      things.value = {
+        streets: streets,
+        buildings: buildingsNumbers,
+      };
+    } else {
+      textAlert.value = 'Il n\'y a pas de numéros d\'immeuble pour cette rue!';
+      showAlert.value = true;
+    }
   }
 });
 
@@ -294,32 +313,40 @@ onMounted(async () => {
                       </v-select>
                     </v-col>
                     <v-col cols="8" md="8">
-                      <v-select
+                      <v-autocomplete
                         v-model.number="idEmplacement"
+                        auto-select-first
                         :items="gestion_com.emplacements.data"
+                        no-data-text="Aucune donnée"
                         item-title="value"
                         item-value="id"
                         label="Emplacement"
                       >
-                      </v-select>
+                      </v-autocomplete>
                     </v-col>
                   </v-row>
 
                   <v-row class="py-1">
                     <v-col cols="8" md="8">
-                      <v-select
+                      <v-autocomplete
                         v-model="idStreet"
+                        auto-select-first
                         :items="things.streets.data"
+                        no-data-text="Aucune donnée"
                         item-title="value"
                         item-value="id"
                         label="Rue"
                       >
-                      </v-select>
+                       <template #item="{ props, item }">
+                        <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
+                       </template> 
+                      </v-autocomplete>
                     </v-col>
                     <v-col cols="4" md="4">
                       <v-select
                         v-model.number="idAddress"
                         :items="things.buildings.data"
+                        no-data-text="Aucune donnée"
                         item-title="value"
                         item-value="id"
                         label="N°"

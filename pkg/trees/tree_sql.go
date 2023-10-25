@@ -150,8 +150,8 @@ const (
 	emplacementCentroid = `SELECT ST_ASText(ST_Centroid(ST_Collect(surface.the_geom))) AS geometry, ST_Area(ST_Collect(surface.the_geom)) AS surface
 	FROM geodata_gestion_com.spadom_surfaces AS surface
 	WHERE surface.idgo_empl = $1;`
-	
-	streetsList = `SELECT str.idthing AS id, str.shortname AS value
+
+	streetsList = `SELECT str.idthing AS id, str.lastname AS value, str.longname AS subtitle
 	FROM thi_street str
 	WHERE str.idville = 632
 	ORDER BY str.lastname;`
