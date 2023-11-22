@@ -1,12 +1,12 @@
 <script setup>
 import { onMounted, ref, reactive } from "vue";
-import Map from 'ol/Map.js';
+//import Map from 'ol/Map.js';
 import View from 'ol/View.js';
-import TileLayer from 'ol/layer/Tile.js';
+//import TileLayer from 'ol/layer/Tile.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
-import OlSourceWMTS from 'ol/source/WMTS';
-import OlTileGridWMTS from 'ol/tilegrid/WMTS';
+//import OlSourceWMTS from 'ol/source/WMTS';
+//import OlTileGridWMTS from 'ol/tilegrid/WMTS';
 import { WKT } from "ol/format.js";
 import OlProjection from 'ol/proj/Projection'
 import { register } from 'ol/proj/proj4';
@@ -21,7 +21,8 @@ import TrackingControl from "./TrackingControl.vue";
 import LayersControl from "./LayersControl.vue";
 import FeaturesControl from "./FeaturesControl.vue";
 import SearchTreeControlVue from "./SearchTreeControl.vue";
-import { tile_layers, default_tile_grid, getLayerByName } from "./layers.js"
+//import { tile_layers, default_tile_grid, getLayerByName } from "./layers.js"
+import { createLausanneMap } from "./layers.js"
 import { getValidationColor } from './features.js';
 import { DEFAULT_BASE_LAYER } from '../config.js';
 
@@ -118,9 +119,11 @@ const fetchDictionaries = async () => {
 const layers = ref([]);
 const selectedLayer = ref(DEFAULT_BASE_LAYER);
 
+let textSytles = {};
 let fill = null;
 let stroke = null;
 
+/*
 tile_layers.forEach((layer) => {
   let new_layer = new TileLayer({
     title: layer.title,
@@ -136,6 +139,9 @@ tile_layers.forEach((layer) => {
   });
   layers.value.push(new_layer);
 });
+*/
+const tile_layers = [];
+
 
 const hiddenFeatureSource = new VectorSource();
 const hiddenFeatureLayer = new VectorLayer({
@@ -290,7 +296,8 @@ const chooseLayer = (selected) => {
     if (layer.get('type') === 'base') {
       if (layerName === selected) {
         layer.setVisible(true);
-        textStyle = getLayerByName(selected).textStyle;
+        //textStyle = getLayerByName(selected).textStyle;
+        textStyle = textSytles[selected].textStyle;
         if (textStyle != null) {
           fill = textStyle.fill;
           stroke = textStyle.stroke;
@@ -314,17 +321,21 @@ const chooseLayer = (selected) => {
   });
 }
 
+/*
 const setDefaultBaseLayer = () => {
   const map_layers = map.getLayers();
   map_layers.forEach((layer) => {
     const layerName = layer.get('source').layer_;
     if ((layerName === DEFAULT_BASE_LAYER) && (layer.get('type') === 'base')) {
-      fill = getLayerByName(layerName).textStyle.fill;
-      stroke = getLayerByName(layerName).textStyle.stroke;
+      //fill = getLayerByName(layerName).textStyle.fill;
+      fill = textSytles[layerName].textStyle.fill;
+      //stroke = getLayerByName(layerName).textStyle.stroke;
+      stroke = textSytles[layerName].textStyle.stroke;
       layer.setVisible(true);
     }
   });
 }
+*/
 
 // Define projection
 proj4.defs(
@@ -389,20 +400,59 @@ onMounted(async () => {
 
   fetchDictionaries();
   
+  /*
   map = new Map({
     controls: [],
     view: view,
     layers: layers.value,
     target: 'map',
   });
+  */
+  (async () => {
+		const placeStFrancoisM95 = [2538202, 1152364];
+		const myOlMap = await createLausanneMap('map', placeStFrancoisM95, 8, 'fonds_geo_osm_bdcad_couleur');
 
-  const myControl = new Control({
-    element: document.getElementById("expandCustomControl")
-  });
-  map.addControl(myControl);
+    console.log('### layers:', myOlMap.map.getLayers());
+    myOlMap.map.getLayers()
+		       .forEach((layer) => {
+				     const type = layer.get('type');
+				     const source = layer.getSource();
+             console.log('### source:', source);
+             console.log('### visible:', layer.getVisible());
+             console.log('### title:', layer.getProperties('title'));
+				     if (type === 'base') {
+	  			      const currentBaseLayer = source.getLayer();
+                console.log(`currentBaseLayer : ${currentBaseLayer}`)
+                tile_layers.push({title: layer.getProperties().title , layer: source.getLayer()});
+				     }
+             console.log('### layer:', layer);
+		       });
 
-  map.addInteraction(selectInteraction)
-  setDefaultBaseLayer();
+    console.log('### tile_layers:', tile_layers);
+    textSytles = myOlMap.textStyles;
+		console.log("myOlMap contains a ref to your OpenLayers Map Object : ", myOlMap);
+		/*
+		const urlSWISSTOPO = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml?lang=fr';
+		const WMTSCapabilitiesSWISSTOPO = await getWMTSCapabilitiesFromUrl(urlSWISSTOPO);
+		const WMTSCapabilitiesParsedSWISSTOPO = parser.read(WMTSCapabilitiesSWISSTOPO);
+		const olTileLayer = createBaseOlLayerTile(WMTSCapabilitiesParsedSWISSTOPO,
+		'SwissImage 2020 10cm (SWISSTOPO)',
+		'ch.swisstopo.swissimage',
+		true,
+		)
+		myOlMap.addLayer(olTileLayer);
+		
+		 */
+		
+    const myControl = new Control({
+      element: document.getElementById("expandCustomControl")
+    });
+    myOlMap.map.addControl(myControl);
+  
+    myOlMap.map.addInteraction(selectInteraction)
+    //setDefaultBaseLayer();
+  })();
+
 });
 </script>
 
