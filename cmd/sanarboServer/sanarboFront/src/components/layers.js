@@ -212,6 +212,12 @@ async function getWmtsBaseLayers (url) {
             fill: {
               color: [255, 255, 255],
             },
+            /*
+            stroke: {
+              color: [0, 0, 0],
+              width: 0.5
+            }
+            */
           }
         }
       );
@@ -252,12 +258,14 @@ async function getWmtsBaseLayers (url) {
                 ),
           textStyle: {
             fill: {
-              color: [255, 255, 255],
-            },
-            stroke: {
               color: [0, 0, 0],
+            },
+            /*
+            stroke: {
+              color: [255, 255, 255],
               width: 0.5
             }
+            */
           }
         }
       );

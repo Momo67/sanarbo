@@ -119,7 +119,7 @@ const fetchDictionaries = async () => {
 const layers = ref([]);
 const selectedLayer = ref(DEFAULT_BASE_LAYER);
 
-let textSytles = {};
+let textStyles = {};
 let fill = null;
 let stroke = null;
 
@@ -297,7 +297,7 @@ const chooseLayer = (selected) => {
       if (layerName === selected) {
         layer.setVisible(true);
         //textStyle = getLayerByName(selected).textStyle;
-        textStyle = textSytles[selected].textStyle;
+        textStyle = textStyles[selected];
         if (textStyle != null) {
           fill = textStyle.fill;
           stroke = textStyle.stroke;
@@ -321,21 +321,19 @@ const chooseLayer = (selected) => {
   });
 }
 
-/*
 const setDefaultBaseLayer = () => {
   const map_layers = map.getLayers();
   map_layers.forEach((layer) => {
     const layerName = layer.get('source').layer_;
     if ((layerName === DEFAULT_BASE_LAYER) && (layer.get('type') === 'base')) {
       //fill = getLayerByName(layerName).textStyle.fill;
-      fill = textSytles[layerName].textStyle.fill;
+      fill = textStyles[layerName].fill;
       //stroke = getLayerByName(layerName).textStyle.stroke;
-      stroke = textSytles[layerName].textStyle.stroke;
+      stroke = textStyles[layerName].stroke;
       layer.setVisible(true);
     }
   });
 }
-*/
 
 // Define projection
 proj4.defs(
@@ -360,6 +358,7 @@ const setPosition = (position) => {
   let coords = position.coords;
   let zoom = position.zoom;
   if ((parseInt(coords.length) == 2) && (parseInt(coords[0]) > 2000000) && (parseInt(coords[0]) < 2900000) && (parseInt(coords[1]) > 1000000) && (parseInt(coords[1]) < 1300000)) {
+    console.log('### coords:', coords);
     view.animate({
       center: coords,
       duration: 2000,
@@ -410,16 +409,18 @@ onMounted(async () => {
   */
   (async () => {
 		const placeStFrancoisM95 = [2538202, 1152364];
-		const myOlMap = await createLausanneMap('map', placeStFrancoisM95, 8, 'fonds_geo_osm_bdcad_couleur');
+		const myOlMap = await createLausanneMap('map', placeStFrancoisM95, 8, DEFAULT_BASE_LAYER);
+
+    map = myOlMap.map;
+    layers.value.forEach((layer) => {
+      map.addLayer(layer);
+    });
 
     console.log('### layers:', myOlMap.map.getLayers());
     myOlMap.map.getLayers()
 		       .forEach((layer) => {
 				     const type = layer.get('type');
 				     const source = layer.getSource();
-             console.log('### source:', source);
-             console.log('### visible:', layer.getVisible());
-             console.log('### title:', layer.getProperties('title'));
 				     if (type === 'base') {
 	  			      const currentBaseLayer = source.getLayer();
                 console.log(`currentBaseLayer : ${currentBaseLayer}`)
@@ -428,8 +429,7 @@ onMounted(async () => {
              console.log('### layer:', layer);
 		       });
 
-    console.log('### tile_layers:', tile_layers);
-    textSytles = myOlMap.textStyles;
+    textStyles = myOlMap.textStyles;
 		console.log("myOlMap contains a ref to your OpenLayers Map Object : ", myOlMap);
 		/*
 		const urlSWISSTOPO = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml?lang=fr';
@@ -443,14 +443,15 @@ onMounted(async () => {
 		myOlMap.addLayer(olTileLayer);
 		
 		 */
-		
+		map.setView(view);
+    
     const myControl = new Control({
       element: document.getElementById("expandCustomControl")
     });
-    myOlMap.map.addControl(myControl);
+    map.addControl(myControl);
   
-    myOlMap.map.addInteraction(selectInteraction)
-    //setDefaultBaseLayer();
+    map.addInteraction(selectInteraction)
+    setDefaultBaseLayer();
   })();
 
 });
