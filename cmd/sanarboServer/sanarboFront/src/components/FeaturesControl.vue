@@ -31,6 +31,8 @@ const showFeatures = computed({
   }
 });
 
+const showOnlyValidated = ref(false);
+
 const emit = defineEmits(['selected-validation', 'show-changed']);
 
 const showFeaturesOnClick = () => {
@@ -40,7 +42,7 @@ const showFeaturesOnClick = () => {
 
 const selectFeaturesOnOK = () => {
   showFeatures.value = false;
-  emit('selected-validation', validationToShow.value);
+  emit('selected-validation', {validationToShow: validationToShow.value, showOnlyValidated: showOnlyValidated.value});
   //emit('show-changed', showFeatures.value);
 }
 const selectFeaturesOnCancel = () => {
@@ -81,7 +83,12 @@ const selectFeaturesOnCancel = () => {
                   <v-checkbox v-model="validationToShow" :color="getValidationColor(validation.id)" :label="validation.value" :value="validation.id" class="chk-box-validation"></v-checkbox>
                 </v-container>
               </template>
-              <br/>
+              <v-container grid-list-xs class="radio-btn-show">
+                <v-radio-group v-model="showOnlyValidated" inline>
+                  <v-radio label="Tous" :value="false"></v-radio>
+                  <v-radio label="Modifiés" :value="true"></v-radio>
+                </v-radio-group>
+              </v-container>
             </v-card-text>
             <v-divider></v-divider>
             <v-card-actions>
@@ -117,8 +124,15 @@ const selectFeaturesOnCancel = () => {
 }
 
 .card-text {
+  height: 35em;
   transform: translateY(-1em);
   -webkit-transform: translateY(-1em);
   -ms-transform: translateY(-1em);
+}
+
+.radio-btn-show {
+  transform: translateY(1em);
+  -webkit-transform: translateY(1em);
+  -ms-transform: translateY(1em);
 }
 </style>
