@@ -124,12 +124,12 @@ const searchTreeById = (idTree) => {
       break;
     }
   }
-  return { feature: tree, zoom: 22 };
+  return { feature: tree, zoom: 12 };
 }
 
 const getZoomLevel = (surface) => {
   let zoom = null;
-  zoom = 22 - Math.floor(surface / 20000);
+  zoom = 9 - Math.floor(surface / 20000);
 
   return zoom;
 }
@@ -152,7 +152,7 @@ const searchBuildingCenter = async (idAddress) => {
     featureProjection: swissProjection,
   });
 
-  return { feature: feature, zoom: 22};
+  return { feature: feature, zoom: 10};
 }
 
 const resetFields = () => {
