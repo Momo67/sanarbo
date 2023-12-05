@@ -1,12 +1,7 @@
 <script setup>
 import { onMounted, ref, reactive } from "vue";
-//import Map from 'ol/Map.js';
-import View from 'ol/View.js';
-//import TileLayer from 'ol/layer/Tile.js';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
-//import OlSourceWMTS from 'ol/source/WMTS';
-//import OlTileGridWMTS from 'ol/tilegrid/WMTS';
 import { WKT } from "ol/format.js";
 import OlProjection from 'ol/proj/Projection'
 import { register } from 'ol/proj/proj4';
@@ -21,7 +16,6 @@ import TrackingControl from "./TrackingControl.vue";
 import LayersControl from "./LayersControl.vue";
 import FeaturesControl from "./FeaturesControl.vue";
 import SearchTreeControlVue from "./SearchTreeControl.vue";
-//import { tile_layers, default_tile_grid, getLayerByName } from "./layers.js"
 import { createLausanneMap } from "./layers.js"
 import { getValidationColor } from './features.js';
 import { DEFAULT_BASE_LAYER } from '../config.js';
@@ -123,24 +117,7 @@ let textStyles = {};
 let fill = null;
 let stroke = null;
 
-/*
-tile_layers.forEach((layer) => {
-  let new_layer = new TileLayer({
-    title: layer.title,
-    type: layer.type,
-    source: new OlSourceWMTS({
-      layer: layer.layer,
-      url: layer.url,
-      tileGrid: new OlTileGridWMTS(layer.tileGrid ? layer.tileGrid : default_tile_grid),
-      requestEncoding: layer.requestEncoding
-    }),
-    visible: layer.visible,
-    zIndex: layer.zIndex
-  });
-  layers.value.push(new_layer);
-});
-*/
-const tile_layers = [];
+const tile_layers = ref([]);
 
 
 const hiddenFeatureSource = new VectorSource();
@@ -221,19 +198,24 @@ layers.value.push(textLayer);
 
 const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
 
-const filterFeatures = (featuresToShow) => {
+const filterFeatures = (selected, showOnlyValidated) => {
   featureSource.clear();
 
   const filter = (query) => {
-    return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')));
+    if (showOnlyValidated === true)
+      return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')) && feature.get('is_validated') === false);
+    else
+      return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')));
   }
 
-  featureSource.addFeatures(filter(featuresToShow));
+  featureSource.addFeatures(filter(selected));
 }
 
-const chooseFeatures = (selected) => {
+const chooseFeatures = (featuresToShow) => {
+  let selected = featuresToShow.validationToShow;
+  let showOnlyValidated = featuresToShow.showOnlyValidated;
   displayed_features.value = selected;
-  filterFeatures(displayed_features.value);
+  filterFeatures(selected, showOnlyValidated);
 }
 
 const coordsFound = (geom) => {
@@ -296,7 +278,6 @@ const chooseLayer = (selected) => {
     if (layer.get('type') === 'base') {
       if (layerName === selected) {
         layer.setVisible(true);
-        //textStyle = getLayerByName(selected).textStyle;
         textStyle = textStyles[selected];
         if (textStyle != null) {
           fill = textStyle.fill;
@@ -326,9 +307,7 @@ const setDefaultBaseLayer = () => {
   map_layers.forEach((layer) => {
     const layerName = layer.get('source').layer_;
     if ((layerName === DEFAULT_BASE_LAYER) && (layer.get('type') === 'base')) {
-      //fill = getLayerByName(layerName).textStyle.fill;
       fill = textStyles[layerName].fill;
-      //stroke = getLayerByName(layerName).textStyle.stroke;
       stroke = textStyles[layerName].stroke;
       layer.setVisible(true);
     }
@@ -348,18 +327,14 @@ const swissProjection = reactive(new OlProjection({
 }));
 
 let map = null;
-const view = new View({
-  center: [2537633.0, 1152618.0],
-  zoom: 18,
-  projection: swissProjection,
-});
 
 const setPosition = (position) => {
   let coords = position.coords;
   let zoom = position.zoom;
+  console.log('zoom:', zoom);
   if ((parseInt(coords.length) == 2) && (parseInt(coords[0]) > 2000000) && (parseInt(coords[0]) < 2900000) && (parseInt(coords[1]) > 1000000) && (parseInt(coords[1]) < 1300000)) {
     console.log('### coords:', coords);
-    view.animate({
+    map.getView().animate({
       center: coords,
       duration: 2000,
       zoom: zoom
@@ -399,14 +374,6 @@ onMounted(async () => {
 
   fetchDictionaries();
   
-  /*
-  map = new Map({
-    controls: [],
-    view: view,
-    layers: layers.value,
-    target: 'map',
-  });
-  */
   (async () => {
 		const placeStFrancoisM95 = [2538202, 1152364];
 		const myOlMap = await createLausanneMap('map', placeStFrancoisM95, 8, DEFAULT_BASE_LAYER);
@@ -424,7 +391,7 @@ onMounted(async () => {
 				     if (type === 'base') {
 	  			      const currentBaseLayer = source.getLayer();
                 console.log(`currentBaseLayer : ${currentBaseLayer}`)
-                tile_layers.push({title: layer.getProperties().title , layer: source.getLayer()});
+                tile_layers.value.push({title: layer.getProperties().title , layer: source.getLayer()});
 				     }
              console.log('### layer:', layer);
 		       });
@@ -443,7 +410,7 @@ onMounted(async () => {
 		myOlMap.addLayer(olTileLayer);
 		
 		 */
-		map.setView(view);
+		//map.setView(view);
     
     const myControl = new Control({
       element: document.getElementById("expandCustomControl")
