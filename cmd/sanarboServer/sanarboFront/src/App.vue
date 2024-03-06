@@ -19,8 +19,6 @@ const authState = reactive({
 
 </script>
 
-
-
 <template>
   <div>
     <template  v-if="authState.isLoggedIn">
