@@ -459,19 +459,6 @@ onMounted(async () => {
     </SearchTreeControlVue>
   </div>  
 
-<!--
-  <v-select
-    v-model="selectedLayer"
-    :items="tile_layers"
-    item-title="title"
-    item-value="layer"
-    label="Choix des couches"
-    width="100%"
-    @update:model-value="chooseLayer"
-  ></v-select>
-  <div>showControlLayers:{{ showControlLayers }},&nbsp;showControlFeatures:{{ showControlFeatures }}</div>
--->
-
   <div id="map" ref="mymap">
     <div v-if="fetchIsLoading">Loading...</div>
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
