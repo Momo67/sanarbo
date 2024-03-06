@@ -1,4 +1,9 @@
 <script setup>
+defineOptions({
+  name: 'UserLogin',
+  inheritAttrs: false
+});
+
 import {reactive} from "vue";
 
 
