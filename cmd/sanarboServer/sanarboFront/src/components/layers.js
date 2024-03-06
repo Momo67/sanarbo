@@ -12,7 +12,9 @@ import {register} from 'ol/proj/proj4';
 const lausanneGareinMN95 = [2537968.5, 1152088.0];
 const defaultBaseLayer = 'fonds_geo_osm_bdcad_couleur';
 
+const urlSWISSTOPO = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml?lang=fr';
 const urlLausanneMN95 = 'https://tilesmn95.lausanne.ch/tiles/1.0.0/LausanneWMTS.xml';
+
 proj4.defs(
   'EPSG:2056',
   '+proj=somerc +lat_0=46.95240555555556 +lon_0=7.439583333333333 +k_0=1 +x_0=2600000 +y_0=1200000 +ellps=bessel +towgs84=674.374,15.056,405.346,0,0,0,0 +units=m +no_defs'
@@ -97,6 +99,10 @@ async function getWmtsBaseLayers (url) {
       const WMTSCapabilities = await getWMTSCapabilitiesFromUrl(url);
       const WMTSCapabilitiesParsed = parser.read(WMTSCapabilities);
       console.log(`## in getWmtsBaseLayers(${url} : WMTSCapabilitiesParsed : \n`, WMTSCapabilitiesParsed);
+      
+      const WMTSCapabilitiesSWISSTOPO = await getWMTSCapabilitiesFromUrl(urlSWISSTOPO);
+      const WMTSCapabilitiesParsedSWISSTOPO = parser.read(WMTSCapabilitiesSWISSTOPO);
+      console.log(`## in getWmtsBaseLayers(${urlSWISSTOPO} : WMTSCapabilitiesParsedSWISSTOPO : \n`, WMTSCapabilitiesParsedSWISSTOPO);
 
       arrWmtsLayers.push(
         {
@@ -183,6 +189,31 @@ async function getWmtsBaseLayers (url) {
           textStyle: {
             fill: {
               color: [0, 0, 0],
+            },
+            /*
+            stroke: {
+              color: [255, 255, 255],
+              width: 0.5
+            }
+            */
+          }
+        }
+      );
+
+      arrWmtsLayers.push(
+        {
+          title: 'SwissImage 2020 10cm (SWISSTOPO)',
+          type: 'base',
+          layer: 'ch.swisstopo.swissimage',
+          tile: createBaseOlLayerTile(
+                  WMTSCapabilitiesParsedSWISSTOPO,
+                  'SwissImage 2020',
+                  'ch.swisstopo.swissimage',
+                  (defaultBaseLayer === 'ch.swisstopo.swissimage'),
+                ),
+          textStyle: {
+            fill: {
+              color: [255, 255, 255],
             },
             /*
             stroke: {
