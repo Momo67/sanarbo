@@ -39,7 +39,7 @@ onMounted(() => {
   geolocation.on('change:position', () => {
     emit('position-changed', {
       coords: geolocation.getPosition(),
-      zoom: 22
+      zoom: 10
     });
   });
 });
