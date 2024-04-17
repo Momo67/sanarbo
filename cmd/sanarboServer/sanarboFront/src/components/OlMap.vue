@@ -428,12 +428,14 @@ onMounted(async () => {
 <template>
 
   <div id="expandCustomControl" >
+
     <TrackingControl 
       :tracking-enabled="trackingEnabled" 
       :projection="swissProjection" 
       class="ol-custom tracking-control" 
       @position-changed="setPosition">
     </TrackingControl>
+
     <LayersControl 
       :show-layers="showControlLayers" 
       :layers="tile_layers" 
@@ -442,6 +444,7 @@ onMounted(async () => {
       @show-changed="controlLayersOnClick" 
       @selected-layer="chooseLayer">
     </LayersControl>
+
     <FeaturesControl 
       :show-features="showControlFeatures" 
       :validations="dictionaries.validation" 
@@ -450,6 +453,7 @@ onMounted(async () => {
       @show-changed="controlFeaturesOnClick" 
       @selected-validation="chooseFeatures">
     </FeaturesControl>
+
     <SearchTreeControlVue
       :show-search-trees="showSearchTrees"
       :feature-source="featureSource"
@@ -457,6 +461,7 @@ onMounted(async () => {
       @show-changed="controlSearchTreeOnClick"
       @coords-found="coordsFound">
     </SearchTreeControlVue>
+    
   </div>  
 
   <div id="map" ref="mymap">
