@@ -43,14 +43,14 @@ func TestSearchTreesByName(t *testing.T) {
 	}{
 		{
 			name:    "it should return an object with name attribute matching pattern containing *",
-			args:    args{t: "*Tre*"},
-			wantRes: []*TreeList{{Name: "MyNewTree"}},
+			args:    args{t: "*Rosselet*"},
+			wantRes: []*TreeList{{Name: "Pyrus communis 'Rosselet' - secteur OUEST - SI Chauderon 23-25-27 (70852)"}},
 			wantErr: nil,
 		},
 		{
 			name:    "it should return an object with name attribute matching pattern containing %",
-			args:    args{t: "%%Tre%%"},
-			wantRes: []*TreeList{{Name: "MyNewTree"}},
+			args:    args{t: "%%Rosselet%%"},
+			wantRes: []*TreeList{{Name: "Pyrus communis 'Rosselet' - secteur OUEST - SI Chauderon 23-25-27 (70852)"}},
 			wantErr: nil,
 		},
 		{
@@ -134,6 +134,7 @@ func (w *WorkingEnv) GetStorage() error {
 func assertWorkingEnvOK(t testing.TB, got error) {
 	t.Helper()
 	if got != nil {
+		t.Errorf(got.Error())
 		t.Fatal("unable to get a working env")
 	}
 }
