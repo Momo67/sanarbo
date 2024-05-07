@@ -283,7 +283,7 @@ onMounted(async () => {
     </v-container>
     <v-container v-show="showSearchTrees" class="tree-search">
       <v-row>
-        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-6 offset-lg-3">
+        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-4 offset-lg-4">
           <v-card>
             <v-card-item>
               <v-card-title primary-title>
@@ -365,10 +365,16 @@ onMounted(async () => {
             
             </v-card-text>
             <v-divider></v-divider>
-            <v-card-actions>
-              <v-btn color="primary" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
-              <v-btn color="secondary" @click="searchTreeOnCancel">Annuler</v-btn>
-            </v-card-actions>
+            <v-card-text>
+              <v-row class="v-col-sm-9">
+                <v-col>
+                  <v-btn color="primary" type="submit" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
+                </v-col>
+                <v-col class="v-col-sm-9">
+                  <v-btn color="secondary" type="button" @click="searchTreeOnCancel">Annuler</v-btn>
+                </v-col>
+              </v-row>
+            </v-card-text>
           </v-card>
         </v-col>
       </v-row>
