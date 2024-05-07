@@ -91,10 +91,16 @@ const selectFeaturesOnCancel = () => {
               </v-container>
             </v-card-text>
             <v-divider></v-divider>
-            <v-card-actions>
-              <v-btn color="info" @click="selectFeaturesOnOK">OK</v-btn>
-              <v-btn color="info" @click="selectFeaturesOnCancel">Annuler</v-btn>
-            </v-card-actions>
+            <v-card-text>
+              <v-row class="v-col-sm-9">
+                <v-col>
+                  <v-btn color="primary" type="submit" @click="selectFeaturesOnOK">OK</v-btn>
+                </v-col>
+                <v-col class="v-col-sm-9">
+                  <v-btn color="secondary" type="button" @click="selectFeaturesOnCancel">Annuler</v-btn>
+                </v-col>
+              </v-row>
+            </v-card-text>
           </v-card>
         </v-col>
       </v-row>

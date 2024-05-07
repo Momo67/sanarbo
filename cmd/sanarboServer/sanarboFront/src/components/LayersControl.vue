@@ -93,10 +93,16 @@ const layerOnClick = (layer) => {
               </template>
             </v-card-text>
             <v-divider></v-divider>
-            <v-card-actions>
-              <v-btn color="info" @click="showLayersOnOK">OK</v-btn>
-              <v-btn color="info" @click="showLayersOnCancel">Annuler</v-btn>
-            </v-card-actions>
+            <v-card-text>
+              <v-row class="v-col-sm-9">
+                <v-col>
+                  <v-btn color="primary" type="submit" @click="showLayersOnOK">OK</v-btn>
+                </v-col>
+                <v-col class="v-col-sm-9">
+                  <v-btn color="secondary" type="button" @click="showLayersOnCancel">Annuler</v-btn>
+                </v-col>
+              </v-row>
+            </v-card-text>
           </v-card>
         </v-col>
       </v-row>
