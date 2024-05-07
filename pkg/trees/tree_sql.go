@@ -2,7 +2,7 @@ package trees
 
 const (
 	treesList = `
-	SELECT id, name, description, is_active, create_time, creator, external_id, ST_AsText(geom) as geom
+	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation') as tree_att_light
 	FROM tree_mobile
 	LIMIT $1 OFFSET $2;`
 
@@ -86,7 +86,7 @@ const (
 	
 	treesDicoGetEtatSanitaireRem = "SELECT id, remarque as value FROM thi_arbre_etat_sanitaire_remarque WHERE is_active = TRUE ORDER BY sort_order;"
 
-	treesInsertFromGoeland = `SELECT thi_arbre.idvalidation, 'INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes) 
+	treesInsertFromGoeland = `SELECT thi_arbre.idthing, 'INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes) 
 	VALUES (''' 
 		|| REPLACE(thing.name, '''', '''''')
 		|| ''',' || COALESCE('''' || REPLACE(thing.description, '''', '''''') || '''', 'NULL') 
@@ -95,32 +95,72 @@ const (
 		|| ',NULL'
 		|| ',NULL'
 		|| ',NULL'
-		|| ',' || COALESCE(thing.isvalidated,'f')
+		|| ',NULL'
 		|| ',NULL'
 		|| ',''' || thing.datecreated || ''''
 		|| ',' || thing.idcreator
-		|| ',''' || thing.datelastmodif || ''''
-		|| ',' || thing.idmodificator
-		|| ',ST_GeomFromText(''POINT(2' || to_char((thing_position.mineo/100.00), 'FM9999999.99') || ' 1' || to_char((thing_position.minsn/100.00), 'FM9999999.99') || ')'', 2056)'
-		|| ',''' || json_build_object('idvalidation', COALESCE(thi_arbre.idvalidation::text,'')::integer,
-									  'idtobechecked', COALESCE(thi_arbre.idtobechecked::text,'')::integer,
-									  'idnote', COALESCE(thi_arbre.idnote::text,'')::integer,
-									  'circonference', COALESCE(thi_arbre.circonference::varchar(10),'')::integer,
-									  'identourage', COALESCE(thi_arbre.identourage::text,'')::integer,
-									  'idchkentourage', COALESCE(thi_arbre.idchkentourage::text,'')::integer,
-									  'entouragerem', COALESCE(thi_arbre.entouragerem::text,''),
-									  'idrevsurface', COALESCE(thi_arbre.idrevsurface::text,'')::integer,
-									  'idchkrevsurface', COALESCE(thi_arbre.idchkrevsurface::text,'')::integer,
-									  'revsurfacerem', COALESCE(thi_arbre.revsurfacerem::text,''),
-									  'idetatsanitairepied', COALESCE(thi_arbre.idetatsanitairepied::text,'')::integer,
-									  'idetatsanitairetronc', COALESCE(thi_arbre.idetatsanitairetronc::text,'')::integer,
-									  'idetatsanitairecouronne', COALESCE(thi_arbre.idetatsanitairecouronne::text,'')::integer,
-									  'etatsanitairerem', COALESCE(thi_arbre.etatsanitairerem::text,''),
-									  'envracinairerem', COALESCE(thi_arbre.envracinairerem::text,''))
+		--|| ',''' || thing.datelastmodif || ''''
+		|| ',''' || COALESCE(thing.datelastmodif, '1970-01-01') || ''
+		--|| ',' || thing.idmodificator
+		|| ''',' || COALESCE(thing.idmodificator, 0)
+		|| ',ST_GeomFromText(''POINT(' || to_char((thing_position.mineo/100.00), 'FM9999999.99') || ' ' || to_char((thing_position.minsn/100.00), 'FM9999999.99') || ')'', 2056)'
+		|| ',''' || (SELECT REPLACE(row_to_json(f)::text, '''', '''''') FROM (SELECT 
+												                        attr.idthing,
+                                                attr.idvalidation,
+                                                attr.idtobechecked,
+                                                attr.idnote,
+                                                attr.circonference,
+                                                attr.identourage,
+                                                attr.idchkentourage,
+                                                attr.entouragerem,
+                                                attr.idrevsurface,
+                                                attr.idchkrevsurface,
+                                                attr.revsurfacerem,
+                                                attr.idetatsanitairepied,
+                                                attr.idetatsanitairetronc,
+                                                attr.idetatsanitairecouronne,
+                                                attr.etatsanitairerem,
+                                                attr.envracinairerem) f)
 		|| ''');'
 	FROM thi_arbre
 	INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
 	INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
-	WHERE thi_arbre.idvalidation = 5
-	LIMIT 1;`
+	INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
+	WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
+	ORDER BY thi_arbre.idthing
+	LIMIT 100000;`
+
+	secteursList = `WITH secteurs AS (
+		SELECT DISTINCT UPPER(nom_sect) AS nom
+		FROM geodata_gestion_com.spadom_surfaces
+		ORDER BY nom
+	)
+	SELECT row_number() over () AS id, nom as value
+	FROM secteurs;`
+
+	emplacementsList = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value
+	FROM geodata_gestion_com.spadom_surfaces
+	ORDER BY value;`
+
+	emplacementsListBySecteur = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value
+	FROM geodata_gestion_com.spadom_surfaces
+	WHERE UPPER(nom_sect) = $1
+	ORDER BY value;`
+
+	emplacementCentroid = `SELECT ST_ASText(ST_Centroid(ST_Collect(surface.the_geom))) AS geometry, ST_Area(ST_Collect(surface.the_geom)) AS surface
+	FROM geodata_gestion_com.spadom_surfaces AS surface
+	WHERE surface.idgo_empl = $1;`
+
+	streetsList = `SELECT str.idthing AS id, str.lastname AS value, str.longname AS subtitle
+	FROM thi_street str
+	WHERE str.idville = 632
+	ORDER BY str.lastname;`
+
+	buildingsNumberByStreet = `SELECT sba.idaddress AS id, sba.number::text || COALESCE(sba.extention, '') AS value
+	FROM thi_street_building_address sba
+	WHERE sba.idthingstreet = $1;`
+
+	buildingCenter = `SELECT 'POINT(' || (sba.coordeo / 100.0)::text || ' ' || (sba.coordsn / 100.0)::text || ')' AS geometry
+	FROM thi_street_building_address sba
+	WHERE sba.idaddress = $1`
 )
