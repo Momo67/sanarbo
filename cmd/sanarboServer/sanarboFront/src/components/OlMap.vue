@@ -152,17 +152,6 @@ const arbreStyle = (feature, resolution) => {
       }),
     );
   }
-  /*
-  if (is_validated == false) {
-    style.push(new Style({
-      image: new CircleStyle({
-        radius: 3 / (resolution + 0.5),
-        fill: new Fill({ color: 'black' }),
-        //stroke: new Stroke({ width: 1, color: 'white' }),
-      }),
-    }));
-  }
-  */
 
   return style;
 }
@@ -333,7 +322,6 @@ const setPosition = (position) => {
   let zoom = position.zoom;
   console.log('zoom:', zoom);
   if ((parseInt(coords.length) == 2) && (parseInt(coords[0]) > 2000000) && (parseInt(coords[0]) < 2900000) && (parseInt(coords[1]) > 1000000) && (parseInt(coords[1]) < 1300000)) {
-    console.log('### coords:', coords);
     map.getView().animate({
       center: coords,
       duration: 2000,
@@ -398,19 +386,6 @@ onMounted(async () => {
 
     textStyles = myOlMap.textStyles;
 		console.log("myOlMap contains a ref to your OpenLayers Map Object : ", myOlMap);
-		/*
-		const urlSWISSTOPO = 'https://wmts.geo.admin.ch/EPSG/2056/1.0.0/WMTSCapabilities.xml?lang=fr';
-		const WMTSCapabilitiesSWISSTOPO = await getWMTSCapabilitiesFromUrl(urlSWISSTOPO);
-		const WMTSCapabilitiesParsedSWISSTOPO = parser.read(WMTSCapabilitiesSWISSTOPO);
-		const olTileLayer = createBaseOlLayerTile(WMTSCapabilitiesParsedSWISSTOPO,
-		'SwissImage 2020 10cm (SWISSTOPO)',
-		'ch.swisstopo.swissimage',
-		true,
-		)
-		myOlMap.addLayer(olTileLayer);
-		
-		 */
-		//map.setView(view);
     
     const myControl = new Control({
       element: document.getElementById("expandCustomControl")
@@ -461,7 +436,7 @@ onMounted(async () => {
       @show-changed="controlSearchTreeOnClick"
       @coords-found="coordsFound">
     </SearchTreeControlVue>
-    
+
   </div>  
 
   <div id="map" ref="mymap">
