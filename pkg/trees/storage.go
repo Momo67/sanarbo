@@ -34,6 +34,20 @@ type Storage interface {
 	IsUserAdmin(id int32) bool
 
 	GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error)
+
+	GetGestionComSecteurs() ([]*Dico, error)
+
+	GetEmplacements() ([]*Dico, error)
+
+	GetGestionComEmplacementsCentroidEmplacementId(int32) (*EmplacementCentroid, error)
+
+	GetGestionComEmplacementsSecteur(string) ([]*Dico, error)
+
+	GetBuildingCenter(int32) (*Center,error) 
+	
+	GetBuildingsNumbers(int32) ([]*Dico, error)
+	
+	GetStreets() ([]*Dico, error)
 }
 
 func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {

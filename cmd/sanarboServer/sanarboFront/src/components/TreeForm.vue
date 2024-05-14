@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, reactive, ref} from 'vue';
+import {onMounted, reactive} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 
 
@@ -10,7 +10,7 @@ const urlTrees = backendUrl + "trees";
 const emit = defineEmits(['formSubmitted', 'formCanceled'])
 const props = defineProps({
   showForm: {type: Boolean, required: false, default: false},
-  treeId: {type: Number, required: false, default: ''},
+  treeId: {type: Number, required: false, default: 0},
   dictionaries: {type: Object, required: true, default: null}
 })
 
@@ -18,6 +18,7 @@ const props = defineProps({
 const Tree = reactive({
   external_id: '',
   is_active: '',
+  is_validated: '',
   create_time: '',
   creator: '',
   description: '',
@@ -45,6 +46,7 @@ onMounted(async () => {
   const tree = await useFetch(urlTrees + '/' + props.treeId, options)
   Tree.external_id = tree.data.value.external_id;
   Tree.is_active = tree.data.value.is_active;
+  Tree.is_validated = false;
   Tree.create_time = tree.data.value.create_time;
   Tree.creator = tree.data.value.creator;
   Tree.description = tree.data.value.description;
@@ -66,7 +68,7 @@ const submitForm = async () => {
 
   await useFetch(urlTrees + '/' + props.treeId, options)
 
-  emit('formSubmitted');
+  emit('formSubmitted', JSON.stringify(Tree));
 };
 
 
@@ -161,9 +163,9 @@ const handleFormCanceled = () => {
             </v-col>
             <v-col cols="12" md="12">
               <v-textarea 
+                  v-model="Tree.tree_attributes.entouragerem"
                   rows="3"
                   auto-grow
-                  v-model="Tree.tree_attributes.entouragerem"
                   label="Remarque entourage"
                   type="string"
               ></v-textarea>
@@ -201,9 +203,9 @@ const handleFormCanceled = () => {
             </v-col>
             <v-col cols="12" md="12">
               <v-textarea 
+                  v-model="Tree.tree_attributes.revsurfacerem"
                   rows="3"
                   auto-grow
-                  v-model="Tree.tree_attributes.revsurfacerem"
                   label="Remarque revêtement"
                   type="string"
               ></v-textarea>
@@ -246,9 +248,9 @@ const handleFormCanceled = () => {
           </v-col>
           <v-col cols="12" md="12">
             <v-textarea 
+                v-model="Tree.tree_attributes.etatsanitairerem"
                 rows="3"
                 auto-grow
-                v-model="Tree.tree_attributes.etatsanitairerem"
                 label="Remarque état sanitaire">
             </v-textarea>
           </v-col>

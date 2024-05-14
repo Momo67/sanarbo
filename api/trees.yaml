@@ -226,6 +226,182 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
         - JWTAuth: []
+  /gestion_com/secteurs:
+    get:
+      summary: Get dico values
+      description: get dico values
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /gestion_com/emplacements:
+    get:
+      summary: Get dico values
+      description: get dico values
+      operationId: GetEmplacements
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /gestion_com/emplacements/{secteur}:
+    get:
+      summary: Get dico values
+      description: get dico values for a given secteur
+      parameters:
+      - name: secteur
+        in: path
+        description: name of the secteur in which the emplacement is
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /gestion_com/emplacements/centroid/{emplacementId}:
+    get:
+      summary: Get centroid
+      description: get centroid of a given emplacement
+      parameters:
+        - name: emplacementId
+          in: path
+          description: id of emplacement of which we want to know the centroid
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: get centroid succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmplacementCentroid'
+        '404':
+          description: get centroid response when no centroid was found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /thing/streets:
+    get:
+      summary: Streets list
+      description: List of streets of city of Lausanne
+      operationId: GetStreets
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /thing/buildings/numbers/{streetId}:
+    get:
+      summary: Buildings numbers list
+      description: List of buildings numbers for a given street
+      operationId: GetBuildingsNumbers
+      parameters:
+        - name: streetId
+          in: path
+          description: id of street
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dico'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /thing/buildings/center/{addressId}:
+    get:
+      summary: Center of building
+      description: Get the center coordinates of a given building
+      operationId: GetBuildingCenter
+      parameters:
+        - name: addressId
+          in: path
+          description: id of the address
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        '200':
+          description: get dico succesful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Center'
+        '404':
+          description: get dico response when not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Tree:
@@ -294,6 +470,7 @@ components:
       - is_active
       - name
       - geom
+      - tree_att_light
       type: object
       properties:
         id:
@@ -311,6 +488,8 @@ components:
         is_active:
           type: boolean
           default: true
+        is_validated:
+          type: boolean
         creator:
           type: integer
           format: int32
@@ -320,6 +499,8 @@ components:
         geom:
           type: string
           pattern: '^POINT\(([0-9]{7})(\.[0-9]+)? ([0-9]{7})(\.[0-9]+)?\)$'
+        tree_att_light:
+          $ref: '#/components/schemas/TreeAttLight'
     Error:
       required:
       - code
@@ -340,9 +521,13 @@ components:
           type: string
     TreeAttributes:
       required:
+        - idthing
         - idvalidation
       type: object
       properties:
+        idthing:
+          type: integer
+          format: int32
         idvalidation:
           type: integer
           format: int32
@@ -384,6 +569,14 @@ components:
           type: string
         envracinairerem:
           type: string
+    TreeAttLight:
+      required:
+        - idvalidation
+      type: object
+      properties:
+        idvalidation:
+          type: integer
+          format: int32
     TreeDico:
       required:
         - id
@@ -400,6 +593,37 @@ components:
         sort_order:
           type: integer
           format: int32
+    Dico:
+      required:
+        - id
+        - value
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        value:
+          type: string
+        subtitle:
+          type: string
+    EmplacementCentroid:
+      required:
+        - geometry
+        - surface
+      type: object
+      properties:
+        geometry:
+          type: string
+        surface:
+          type: number
+          format: float
+    Center:
+      required:
+        - geometry
+      type: object
+      properties:
+        geometry:
+          type: string
   responses:
     UnauthorizedError:
       description: Access token is missing or invalid

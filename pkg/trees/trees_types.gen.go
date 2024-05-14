@@ -23,6 +23,24 @@ const (
 	Validation       GetDicoTableParamsTable = "validation"
 )
 
+// Center defines model for Center.
+type Center struct {
+	Geometry string `json:"geometry"`
+}
+
+// Dico defines model for Dico.
+type Dico struct {
+	Id       int32   `json:"id"`
+	Subtitle *string `json:"subtitle,omitempty"`
+	Value    string  `json:"value"`
+}
+
+// EmplacementCentroid defines model for EmplacementCentroid.
+type EmplacementCentroid struct {
+	Geometry string  `json:"geometry"`
+	Surface  float32 `json:"surface"`
+}
+
 // Error defines model for Error.
 type Error struct {
 	Code    int32  `json:"code"`
@@ -49,6 +67,11 @@ type Tree struct {
 	TreeAttributes       TreeAttributes `json:"tree_attributes"`
 }
 
+// TreeAttLight defines model for TreeAttLight.
+type TreeAttLight struct {
+	Idvalidation int32 `json:"idvalidation"`
+}
+
 // TreeAttributes defines model for TreeAttributes.
 type TreeAttributes struct {
 	Circonference           *int32  `json:"circonference,omitempty"`
@@ -63,6 +86,7 @@ type TreeAttributes struct {
 	Idetatsanitairetronc    *int32  `json:"idetatsanitairetronc,omitempty"`
 	Idnote                  *int32  `json:"idnote,omitempty"`
 	Idrevsurface            *int32  `json:"idrevsurface,omitempty"`
+	Idthing                 int32   `json:"idthing"`
 	Idtobechecked           *int32  `json:"idtobechecked,omitempty"`
 	Idvalidation            int32   `json:"idvalidation"`
 	Revsurfacerem           *string `json:"revsurfacerem,omitempty"`
@@ -78,14 +102,16 @@ type TreeDico struct {
 
 // TreeList defines model for TreeList.
 type TreeList struct {
-	CreateTime  time.Time `json:"create_time"`
-	Creator     int32     `json:"creator"`
-	Description *string   `json:"description,omitempty"`
-	ExternalId  *int32    `json:"external_id,omitempty"`
-	Geom        string    `json:"geom"`
-	Id          int32     `json:"id"`
-	IsActive    bool      `json:"is_active"`
-	Name        string    `json:"name"`
+	CreateTime   time.Time    `json:"create_time"`
+	Creator      int32        `json:"creator"`
+	Description  *string      `json:"description,omitempty"`
+	ExternalId   *int32       `json:"external_id,omitempty"`
+	Geom         string       `json:"geom"`
+	Id           int32        `json:"id"`
+	IsActive     bool         `json:"is_active"`
+	IsValidated  *bool        `json:"is_validated,omitempty"`
+	Name         string       `json:"name"`
+	TreeAttLight TreeAttLight `json:"tree_att_light"`
 }
 
 // GetDicoTableParamsTable defines parameters for GetDicoTable.
