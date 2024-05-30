@@ -1,74 +1,79 @@
-import { it, expect, describe, beforeAll, afterAll, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from '@testing-library/vue'; 
-import { setupServer } from 'msw/node'
-import { http, HttpResponse } from 'msw'
+import { mount, config } from '@vue/test-utils';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { createVuetify } from 'vuetify';
+import * as components from 'vuetify/components';
+import * as directives from 'vuetify/directives';
 import TrackingControl from '../TrackingControl.vue';
+import Geolocation from 'ol/Geolocation.js';
+
+const vuetify = createVuetify({
+  components,
+  directives,
+})
+config.global.plugins = [vuetify]
+
+global.ResizeObserver = require('resize-observer-polyfill')
+
+// Mock Geolocation class from ol
+vi.mock('ol/Geolocation.js', () => {
+  return {
+    default: vi.fn().mockImplementation(() => {
+      return {
+        setTracking: vi.fn(),
+        on: vi.fn((event, callback) => {
+          if (event === 'change:position') {
+            // Store the callback for later use
+            this.positionChangeCallback = callback;
+          }
+        }),
+        getPosition: vi.fn(() => [0, 0]),
+      };
+    }),
+  };
+});
 
 
-describe('TrackingControl', () => {
-  let server;
-
-  beforeAll(() => {
-    // Setup the mock server
-    server = setupServer(
-      // Define your mock API responses here
-      http.get('/api/tracking', (req, res, ctx) => {
-        return res(
-          ctx.json({ enabled: true }),
-        );
-      }),
-    );
-
-    // Start the mock server
-    server.listen();
-  });
-
-  afterAll(() => {
-    // Clean up the mock server
-    server.close();
-  });
+describe('TrackingControl.vue', () => {
+  let wrapper;
+  let geolocationMock;
+  const projection = {}; // Remplacez par un objet de projection valide si nécessaire
 
   beforeEach(() => {
-    // Render the component before each test
-    render(TrackingControl);
+    wrapper = mount(TrackingControl, {
+      props: {
+        trackingEnabled: false,
+        projection: projection,
+      },
+    });
+    geolocationMock = Geolocation.mock.instances[0];
   });
 
-  afterEach(() => {
-    // Clean up the rendered component after each test
-    // ...
+
+  it('renders correctly with initial props', () => {
+    expect(wrapper.exists()).toBe(true);
+    expect(wrapper.find('.btn-tracking-off').exists()).toBe(true);
+    expect(wrapper.find('.btn-tracking-on').exists()).toBe(false);
   });
 
-  it('renders the tracking control component', () => {
-    // Assert that the tracking control component is rendered
-    // ...
+  it('toggles tracking on button click', async () => {
+    const button = wrapper.find('button');
+    await button.trigger('click');
+
+    expect(wrapper.emitted()['toggle-tracking'][0]).toEqual([true]);
+    expect(wrapper.find('.btn-tracking-on').exists()).toBe(true);
+    expect(wrapper.find('.btn-tracking-off').exists()).toBe(false);
+
+    await button.trigger('click');
+
+    expect(wrapper.emitted()['toggle-tracking'][1]).toEqual([false]);
+    expect(wrapper.find('.btn-tracking-on').exists()).toBe(false);
+    expect(wrapper.find('.btn-tracking-off').exists()).toBe(true);
   });
 
-  it('displays the correct initial tracking status', () => {
-    // Assert that the initial tracking status is displayed correctly
-    // ...
+  it('emits position-changed event on geolocation position change', async () => {
+    // Simulate position change
+    geolocationMock.positionChangeCallback();
+
+    expect(wrapper.emitted()['position-changed'][0]).toEqual([{ coords: [0, 0], zoom: 10 }]);
   });
-
-  it('updates the tracking status when the toggle is clicked', async () => {
-    // Simulate a click on the tracking toggle
-    // ...
-
-    // Wait for the component to update
-    // ...
-
-    // Assert that the tracking status is updated correctly
-    // ...
-  });
-
-  it('sends a request to the server when the tracking status is updated', async () => {
-    // Simulate a click on the tracking toggle
-    // ...
-
-    // Wait for the component to update
-    // ...
-
-    // Assert that a request is sent to the server with the updated tracking status
-    // ...
-  });
-
-  // Add more tests as needed
 });
