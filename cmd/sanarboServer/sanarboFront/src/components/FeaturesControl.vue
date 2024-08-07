@@ -13,15 +13,14 @@ const props = defineProps({
     type: Object,
     required: true
   },
-  //dictionaries: {type: Object, required: true, default: null},
   validationToShow: {
     type: Array,
     required: true
-  }
+  },
 });
 
 const validationToShow = ref(props.validationToShow);
-//const showFeatures = ref(props.showFeatures);
+
 const showFeatures = computed({
   get() {
     return props.showFeatures;
@@ -32,22 +31,20 @@ const showFeatures = computed({
 });
 
 const showOnlyValidated = ref(false);
+const showOnlyPublic = ref(false);
 
 const emit = defineEmits(['selected-validation', 'show-changed']);
 
 const showFeaturesOnClick = () => {
   showFeatures.value = !showFeatures.value;
-  //emit('show-changed', showFeatures.value);
 }
 
 const selectFeaturesOnOK = () => {
   showFeatures.value = false;
-  emit('selected-validation', {validationToShow: validationToShow.value, showOnlyValidated: showOnlyValidated.value});
-  //emit('show-changed', showFeatures.value);
+  emit('selected-validation', {validationToShow: validationToShow.value, showOnlyValidated: showOnlyValidated.value, showOnlyPublic: showOnlyPublic.value});
 }
 const selectFeaturesOnCancel = () => {
   showFeatures.value = false;
-  //emit('show-changed', showFeatures.value);
 }
 
 </script>
@@ -70,7 +67,7 @@ const selectFeaturesOnCancel = () => {
           <v-card>
             <v-card-item>
               <v-card-title primary-title>
-                Types de validation
+                Choix d'affichage
               </v-card-title>
               <v-card-subtitle>
                 Sélection
@@ -84,10 +81,20 @@ const selectFeaturesOnCancel = () => {
                 </v-container>
               </template>
               <v-container grid-list-xs class="radio-btn-show">
-                <v-radio-group v-model="showOnlyValidated" inline>
-                  <v-radio label="Tous" :value="false"></v-radio>
-                  <v-radio label="Modifiés" :value="true"></v-radio>
-                </v-radio-group>
+              <v-row>
+                <v-col>
+                  <v-radio-group v-model="showOnlyValidated" inline>
+                    <v-radio label="Tous" :value="false"></v-radio>
+                    <v-radio label="Modifiés" :value="true"></v-radio>
+                  </v-radio-group>
+                </v-col>
+                <v-col>
+                  <v-radio-group v-model="showOnlyPublic" inline>
+                    <v-radio label="Publics" :value="false"></v-radio>
+                    <v-radio label="Privés" :value="true"></v-radio>
+                  </v-radio-group>
+                </v-col>
+              </v-row>
               </v-container>
             </v-card-text>
             <v-divider></v-divider>
@@ -130,7 +137,7 @@ const selectFeaturesOnCancel = () => {
 }
 
 .card-text {
-  height: 35em;
+  height: 36em;
   transform: translateY(-1em);
   -webkit-transform: translateY(-1em);
   -ms-transform: translateY(-1em);
@@ -140,5 +147,11 @@ const selectFeaturesOnCancel = () => {
   transform: translateY(1em);
   -webkit-transform: translateY(1em);
   -ms-transform: translateY(1em);
+}
+
+.radio-btn-public {
+  transform: translateY(-2em);
+  -webkit-transform: translateY(-2em);
+  -ms-transform: translateY(-2em);
 }
 </style>

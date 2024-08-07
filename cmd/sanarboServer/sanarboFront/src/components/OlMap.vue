@@ -187,14 +187,32 @@ layers.value.push(textLayer);
 
 const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
 
-const filterFeatures = (selected, showOnlyValidated) => {
+const filterFeatures = (selected, showOnlyValidated, showOnlyPublic) => {
   featureSource.clear();
 
   const filter = (query) => {
+    /*
     if (showOnlyValidated === true)
       return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')) && feature.get('is_validated') === false);
     else
       return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')));
+    */
+
+    return hiddenFeatureSource.getFeatures().filter(feature => {
+      if (showOnlyValidated === true)
+      {
+        if (showOnlyPublic === true) {
+          return query.includes(feature.get('idvalidation')) && (feature.get('is_validated') === false) && (feature.get('ispublic') === false);
+        } else {
+          return query.includes(feature.get('idvalidation')) && (feature.get('is_validated') === false) && (feature.get('ispublic') === true);
+        }
+      } else 
+        if (showOnlyPublic === true) 
+          return query.includes(feature.get('idvalidation')) && (feature.get('ispublic') === false);
+        else {
+          return query.includes(feature.get('idvalidation')) && (feature.get('ispublic') === true);
+        }
+    });
   }
 
   featureSource.addFeatures(filter(selected));
@@ -203,8 +221,9 @@ const filterFeatures = (selected, showOnlyValidated) => {
 const chooseFeatures = (featuresToShow) => {
   let selected = featuresToShow.validationToShow;
   let showOnlyValidated = featuresToShow.showOnlyValidated;
+  let showOnlyPublic = featuresToShow.showOnlyPublic;
   displayed_features.value = selected;
-  filterFeatures(selected, showOnlyValidated);
+  filterFeatures(selected, showOnlyValidated, showOnlyPublic);
 }
 
 const coordsFound = (geom) => {
@@ -334,6 +353,7 @@ const trackingEnabled = ref(false);
 
 const getFeatures = async () => {
   const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
+  console.log('### data:', data.value);
   errorFetch.value = hasError.value;
   fetchIsLoading.value = isLoading.value;
   errorFetchMessage.value = errorMessage.value;
@@ -347,6 +367,7 @@ const getFeatures = async () => {
     feature.set('idthing', d.external_id);
     feature.set('is_validated', d.is_validated);
     feature.set('idvalidation', d.tree_att_light.idvalidation);
+    feature.set('ispublic', d.tree_att_light.ispublic);
 
     return feature;
   });

@@ -70,6 +70,7 @@ type Tree struct {
 // TreeAttLight defines model for TreeAttLight.
 type TreeAttLight struct {
 	Idvalidation int32 `json:"idvalidation"`
+	Ispublic     bool  `json:"ispublic"`
 }
 
 // TreeAttributes defines model for TreeAttributes.
@@ -89,6 +90,7 @@ type TreeAttributes struct {
 	Idthing                 int32   `json:"idthing"`
 	Idtobechecked           *int32  `json:"idtobechecked,omitempty"`
 	Idvalidation            int32   `json:"idvalidation"`
+	Ispublic                bool    `json:"ispublic"`
 	Revsurfacerem           *string `json:"revsurfacerem,omitempty"`
 }
 

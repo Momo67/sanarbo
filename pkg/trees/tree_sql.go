@@ -2,7 +2,7 @@ package trees
 
 const (
 	treesList = `
-	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation') as tree_att_light
+	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation', 'ispublic', tree_attributes::json->'ispublic') as tree_att_light
 	FROM tree_mobile
 	LIMIT $1 OFFSET $2;`
 
@@ -52,7 +52,7 @@ const (
 	(
 	  id                      serial            CONSTRAINT tree_mobile_pk   primary key,
 	  name                    text  not null constraint name_min_length check (length(btrim(name)) > 2),
-	  description             text           constraint description_min_length check (length(btrim(description)) > 2),
+	  description             text           constraint description_min_length check (length(btrim(description)) > 0),
 	  external_id             int,
 	  is_active               boolean default true not null,
 	  inactivation_time       timestamp,
@@ -67,7 +67,7 @@ const (
 	  geom                    geometry(Point,2056)  not null,
 	  tree_attributes         jsonb not null
 	);
-	ALTER TABLE tree_mobile OWNER TO postgres;
+	ALTER TABLE tree_mobile OWNER TO sanarbo;
 	COMMENT ON TABLE tree_mobile is 'tree_mobile is the main table of the sanarbo application';`
 
 	treesDicoGetValidation = "SELECT id, validation as value FROM thi_arbre_validation WHERE is_active = TRUE ORDER BY sort_order;"
@@ -105,8 +105,9 @@ const (
 		|| ''',' || COALESCE(thing.idmodificator, 0)
 		|| ',ST_GeomFromText(''POINT(' || to_char((thing_position.mineo/100.00), 'FM9999999.99') || ' ' || to_char((thing_position.minsn/100.00), 'FM9999999.99') || ')'', 2056)'
 		|| ',''' || (SELECT REPLACE(row_to_json(f)::text, '''', '''''') FROM (SELECT 
-												                        attr.idthing,
+												attr.idthing,
                                                 attr.idvalidation,
+												attr.ispublic,
                                                 attr.idtobechecked,
                                                 attr.idnote,
                                                 attr.circonference,
