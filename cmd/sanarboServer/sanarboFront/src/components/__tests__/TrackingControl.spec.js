@@ -4,7 +4,6 @@ import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import TrackingControl from '../TrackingControl.vue';
-import Geolocation from 'ol/Geolocation.js';
 
 const vuetify = createVuetify({
   components,
@@ -15,27 +14,23 @@ config.global.plugins = [vuetify]
 global.ResizeObserver = require('resize-observer-polyfill')
 
 // Mock Geolocation class from ol
+let positionChangeCallback;
 vi.mock('ol/Geolocation.js', () => {
   return {
-    default: vi.fn().mockImplementation(() => {
-      return {
-        setTracking: vi.fn(),
-        on: vi.fn((event, callback) => {
-          if (event === 'change:position') {
-            // Store the callback for later use
-            this.positionChangeCallback = callback;
-          }
-        }),
-        getPosition: vi.fn(() => [0, 0]),
-      };
-    }),
+    default: vi.fn().mockImplementation(() => ({
+      setTracking: vi.fn(),
+      on: vi.fn((event, callback) => {
+        if (event === 'change:position') {
+          positionChangeCallback = callback;
+        }
+      }),
+      getPosition: vi.fn(() => [0, 0]),
+    })),
   };
 });
 
-
 describe('TrackingControl.vue', () => {
   let wrapper;
-  let geolocationMock;
   const projection = {}; // Remplacez par un objet de projection valide si nécessaire
 
   beforeEach(() => {
@@ -45,7 +40,6 @@ describe('TrackingControl.vue', () => {
         projection: projection,
       },
     });
-    geolocationMock = Geolocation.mock.instances[0];
   });
 
 
@@ -72,8 +66,10 @@ describe('TrackingControl.vue', () => {
 
   it('emits position-changed event on geolocation position change', async () => {
     // Simulate position change
-    geolocationMock.positionChangeCallback();
+    positionChangeCallback();
 
+    console.log(JSON.stringify(wrapper.emitted(), null, 2));
+    console.dir(wrapper.emitted(), { depth: null, colors: true });
     expect(wrapper.emitted()['position-changed'][0]).toEqual([{ coords: [0, 0], zoom: 10 }]);
   });
 });
