@@ -34,6 +34,7 @@
     "jsdom": "^24.0.0",
     "msw": "^2.3.0",
     "prettier": "3.0.0",
+    "resize-observer-polyfill": "^1.5.1",
     "vite": "^4.3.9",
     "vite-plugin-vuetify": "^1.0.0-alpha.12",
     "vitest": "^1.5.0",

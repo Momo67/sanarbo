@@ -22,7 +22,7 @@ else
 fi
 # for k8s namespace
 DOCKER_BIN="nerdctl -n k8s.io"
-DOCKER_BIN="nerdctl"
+# DOCKER_BIN="nerdctl"
 if $DOCKER_BIN --version;
 then
   echo "## will use \"${DOCKER_BIN}\" to build the container image on linux "
