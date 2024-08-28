@@ -36,6 +36,7 @@ func (s Service) List(ctx echo.Context, params ListParams) error {
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
+	s.Log.Debug("### List() claims:%v\n", claims)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}

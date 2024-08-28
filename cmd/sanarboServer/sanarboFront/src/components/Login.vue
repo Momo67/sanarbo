@@ -29,11 +29,20 @@ const authenticateUser = async () => {
   formData.append('login', userName.value);
   formData.append('pass', password.value);
 
+  /*
+
+  const login = {
+    password_hash: `${password.value}`,
+    usename: `${userName.value}`
+  };
+  */
+
 
   // Perform the authentication request
   const response = await fetch(loginUrl, {
     method: 'POST',
     body: formData.toString(),
+    //body: login,
     headers: {'Content-Type': 'application/x-www-form-urlencoded'}
   });
 
