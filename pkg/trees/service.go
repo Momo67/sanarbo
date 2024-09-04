@@ -7,6 +7,7 @@ import (
 
 	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
@@ -21,6 +22,7 @@ type Service struct {
 	JwtDuration int
 }
 
+/*
 type JwtCustomClaims struct {
 	jwt.RegisteredClaims
 	Id       int32  `json:"id"`
@@ -29,12 +31,13 @@ type JwtCustomClaims struct {
 	Username string `json:"username"`
 	IsAdmin  bool   `json:"is_admin"`
 }
+*/
 
 func (s Service) List(ctx echo.Context, params ListParams) error {
 	s.Log.Debug("entering List() params:%v\n", params)
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
+	claims := goHttpEcho.JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
 	s.Log.Debug("### List() claims:%v\n", claims)
 	if err != nil {
@@ -60,14 +63,14 @@ func (s Service) Create(ctx echo.Context) error {
 	s.Log.Debug("entering Create()")
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
+	claims := goHttpEcho.JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
-	if !s.Store.IsUserAdmin(currentUserId) {
+	currentUserId := claims.User.UserId
+	if !s.Store.IsUserAdmin(int32(currentUserId)) {
 		return echo.NewHTTPError(http.StatusUnauthorized, noAdminPrivilege)
 	}
 
@@ -105,14 +108,14 @@ func (s Service) Delete(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Delete(%d)\n", objectId)
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
+	claims := goHttpEcho.JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
-	if !s.Store.IsUserAdmin(currentUserId) {
+	currentUserId := claims.User.UserId
+	if !s.Store.IsUserAdmin(int32(currentUserId)) {
 		return echo.NewHTTPError(http.StatusUnauthorized, noAdminPrivilege)
 	}
 	if !s.Store.Exist(objectId) {
@@ -144,14 +147,14 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Update(%d)\n", objectId)
 
 	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
+	claims := goHttpEcho.JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
-	if !s.Store.IsUserAdmin(currentUserId) {
+	currentUserId := claims.User.UserId
+	if !s.Store.IsUserAdmin(int32(currentUserId)) {
 		return echo.NewHTTPError(http.StatusUnauthorized, noAdminPrivilege)
 	}
 	if !s.Store.Exist(objectId) {
@@ -163,7 +166,8 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	if err := ctx.Bind(tree); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Update has invalid format [%v]", err))
 	}
-	tree.LastModificationUser = &currentUserId
+	lastModificationUser := int32(claims.User.ExternalId)
+	tree.LastModificationUser = &lastModificationUser
 	if len(tree.Name) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "Tree name cannot be empty")
 	}

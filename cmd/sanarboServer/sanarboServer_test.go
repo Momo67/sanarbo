@@ -13,6 +13,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/gohttpclient"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 	"github.com/stretchr/testify/assert"
@@ -34,7 +35,7 @@ type testStruct struct {
 	body           string
 }
 
-func TestService_login(t *testing.T) {
+func TestServiceLogin(t *testing.T) {
 	type fields struct {
 		Log         golog.MyLogger
 		dbConn      database.DB
@@ -54,11 +55,14 @@ func TestService_login(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := ServiceExample{
-				Log:         tt.fields.Log,
-				dbConn:      tt.fields.dbConn,
-				JwtSecret:   tt.fields.JwtSecret,
-				JwtDuration: tt.fields.JwtDuration,
+			s := Service{
+				Logger: tt.fields.Log,
+				dbConn: tt.fields.dbConn,
+				server: &goHttpEcho.Server{
+					Authenticator: nil,
+					JwtCheck:      nil,
+					VersionReader: nil,
+				},
 			}
 			if err := s.login(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("login() error = %v, wantErr %v", err, tt.wantErr)
@@ -67,7 +71,7 @@ func TestService_login(t *testing.T) {
 	}
 }
 
-func TestService_restricted(t *testing.T) {
+func TestServiceRestricted(t *testing.T) {
 	type fields struct {
 		Log         golog.MyLogger
 		dbConn      database.DB
@@ -100,7 +104,7 @@ func TestService_restricted(t *testing.T) {
 	}
 }
 
-func Test_checkHealthy(t *testing.T) {
+func TestCheckHealthy(t *testing.T) {
 	type args struct {
 		info string
 	}
@@ -115,26 +119,6 @@ func Test_checkHealthy(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := checkHealthy(tt.args.info); got != tt.want {
 				t.Errorf("checkHealthy() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func Test_checkReady(t *testing.T) {
-	type args struct {
-		info string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := checkReady(tt.args.info); got != tt.want {
-				t.Errorf("checkReady() = %v, want %v", got, tt.want)
 			}
 		})
 	}

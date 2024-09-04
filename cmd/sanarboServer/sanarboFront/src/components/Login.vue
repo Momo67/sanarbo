@@ -1,4 +1,6 @@
 <script setup>
+import { getPasswordHash } from './Login';
+
 defineOptions({
   name: 'UserLogin',
   inheritAttrs: false
@@ -27,16 +29,7 @@ const authenticateUser = async () => {
   // Create the form data with URL-encoded key-value pairs
   const formData = new URLSearchParams();
   formData.append('login', userName.value);
-  formData.append('pass', password.value);
-
-  /*
-
-  const login = {
-    password_hash: `${password.value}`,
-    usename: `${userName.value}`
-  };
-  */
-
+  formData.append('pass', getPasswordHash(password.value));
 
   // Perform the authentication request
   const response = await fetch(loginUrl, {
