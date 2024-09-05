@@ -91,11 +91,14 @@ func TestServiceRestricted(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := ServiceExample{
-				Log:         tt.fields.Log,
-				dbConn:      tt.fields.dbConn,
-				JwtSecret:   tt.fields.JwtSecret,
-				JwtDuration: tt.fields.JwtDuration,
+			s := Service{
+				Logger: tt.fields.Log,
+				dbConn: tt.fields.dbConn,
+				server: &goHttpEcho.Server{
+					Authenticator: nil,
+					JwtCheck:      nil,
+					VersionReader: nil,
+				},
 			}
 			if err := s.restricted(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("restricted() error = %v, wantErr %v", err, tt.wantErr)
@@ -126,12 +129,8 @@ func TestCheckHealthy(t *testing.T) {
 
 // TestMainExec is instantiating the "real" main code using the env variable (in your .env.development.local files if you use the Makefile rule)
 func TestMainExec(t *testing.T) {
-	listenPort, err := config.GetPortFromEnv(defaultPort)
-	if err != nil {
-		t.Errorf("💥💥 ERROR: 'calling GetPortFromEnv got error: %v'\n", err)
-		return
-	}
-	listenAddr := fmt.Sprintf("http://localhost%s", listenPort)
+	listenPort := config.GetPortFromEnvOrPanic(defaultPort)
+	listenAddr := fmt.Sprintf("http://localhost:%d", listenPort)
 	fmt.Printf("INFO: 'Will start HTTP server listening on port %s'\n", listenAddr)
 
 	newRequest := func(method, url string, body string) *http.Request {
@@ -147,8 +146,8 @@ func TestMainExec(t *testing.T) {
 	}
 
 	formLogin := make(url.Values)
-	formLogin.Set("login", defaultUsername)
-	formLogin.Set("pass", defaultFakeStupidPass)
+	formLogin.Set("login", config.GetAdminUserFromEnvOrPanic("admin"))
+	formLogin.Set("pass", config.GetAdminPasswordFromEnvOrPanic())
 
 	tests := []testStruct{
 		{

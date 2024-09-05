@@ -439,8 +439,8 @@ func main() {
 	}
 	trees.RegisterHandlers(r, &objService)
 
-	loginExample := fmt.Sprintf("curl -v -X POST -d 'login=%s' -d 'pass=%s' http://localhost:%d/login", defaultAdminUser, config.GetAdminPasswordFromEnvOrPanic(), defaultPort)
-	getSecretExample := fmt.Sprintf(" curl -v  -H \"Authorization: Bearer ${TOKEN}\" http://localhost%d/%s/secret |jq\n", defaultPort, defaultSecuredApi)
+	loginExample := fmt.Sprintf("curl -v -X POST -d 'login=%s' -d 'pass=%s' http://localhost:%d/login", config.GetAdminUserFromEnvOrPanic(defaultAdminUser), config.GetAdminPasswordFromEnvOrPanic(), defaultPort)
+	getSecretExample := fmt.Sprintf(" curl -v  -H \"Authorization: Bearer ${TOKEN}\" http://localhost%d/%s/secret |jq\n", config.GetPortFromEnvOrPanic(defaultPort), defaultSecuredApi)
 	l.Info("From another terminal just try :\n %s", loginExample)
 	l.Info("Then type export TOKEN=your_token_above_goes_here   \n %s", getSecretExample)
 
