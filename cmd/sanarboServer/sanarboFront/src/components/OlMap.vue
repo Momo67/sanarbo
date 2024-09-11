@@ -19,14 +19,16 @@ import SearchTreeControlVue from "./SearchTreeControl.vue";
 import { createLausanneMap } from "./layers.js"
 import { getValidationColor } from './features.js';
 import { DEFAULT_BASE_LAYER } from '../config.js';
+import { getLocalJwtTokenAuth } from './Login';
 
 
 // Fetch data
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlTrees = backendUrl + "trees?offset=0&limit=1000000"
-const token = sessionStorage.getItem('token');
+//const token = sessionStorage.getItem('token');
+const token = getLocalJwtTokenAuth();
 
-const headers = {'Authorization': 'Bearer ' + token}
+const headers = {'Authorization': token}
 
 const options = {
   headers: headers
@@ -497,9 +499,7 @@ onMounted(async () => {
   max-width: 100px;
   max-height: auto;
   margin: 0px; /* important to ensure the custom control is not centered since the container has margin: auto by default */
-  left: -moz-calc(100% - 32px);
-  left: -webkit-calc(100% - 32px);
-  left: calc(100% - 100px);
+  left: calc(100% - 120px);
 }
 
 .ol-custom.tracking-control {

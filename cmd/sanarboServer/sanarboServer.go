@@ -20,6 +20,7 @@ import (
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/metadata"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/tools"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
 	"github.com/lao-tseu-is-alive/sanarbo/pkg/trees"
 	"github.com/lao-tseu-is-alive/sanarbo/pkg/version"
 )
@@ -41,7 +42,6 @@ const (
 	MIMEHtml                   = "text/html"
 	MIMEHtmlCharsetUTF8        = MIMEHtml + "; " + charsetUTF8
 )
-
 
 // content holds our static web server content.
 //
@@ -166,43 +166,6 @@ func (s ServiceExample) login(ctx echo.Context) error {
 	})
 }
 */
-
-// login is just a trivial stupid example to test this server
-// you should use the jwt token returned from LoginUser  in github.com/lao-tseu-is-alive/go-cloud-k8s-user-group'
-// and share the same secret with the above component
-func (s Service) login(ctx echo.Context) error {
-	goHttpEcho.TraceRequest("login", ctx.Request(), s.Logger)
-	login := ctx.FormValue("login")
-	passwordHash := ctx.FormValue("hashed")
-	s.Logger.Debug("login: %s, hash: %s ", login, passwordHash)
-	// maybe it was not a form but a fetch data post
-	if len(strings.Trim(login, " ")) < 1 {
-		return ctx.JSON(http.StatusUnauthorized, "invalid credentials")
-	}
-
-	if s.server.Authenticator.AuthenticateUser(login, passwordHash) {
-		userInfo, err := s.server.Authenticator.GetUserInfoFromLogin(login)
-		if err != nil {
-			errGetUInfFromLogin := fmt.Sprintf("Error getting user info from login: %v", err)
-			s.Logger.Error(errGetUInfFromLogin)
-			return ctx.JSON(http.StatusInternalServerError, errGetUInfFromLogin)
-		}
-		token, err := s.server.JwtCheck.GetTokenFromUserInfo(userInfo)
-		if err != nil {
-			errGetUInfFromLogin := fmt.Sprintf("Error getting jwt token from user info: %v", err)
-			s.Logger.Error(errGetUInfFromLogin)
-			return ctx.JSON(http.StatusInternalServerError, errGetUInfFromLogin)
-		}
-		// Prepare the response
-		response := map[string]string{
-			"token": token.String(),
-		}
-		s.Logger.Info("LoginUser(%s) successful login", login)
-		return ctx.JSON(http.StatusOK, response)
-	} else {
-		return ctx.JSON(http.StatusUnauthorized, "username not found or password invalid")
-	}
-}
 
 func (s Service) restricted(ctx echo.Context) error {
 	goHttpEcho.TraceRequest("restricted", ctx.Request(), s.Logger)
@@ -401,11 +364,21 @@ func main() {
 			Logger:        l,
 			WebRootDir:    defaultWebRootDir,
 			Content:       content,
-			RestrictedUrl: "/api/v1",
+			RestrictedUrl: "/goapi/v1",
 		},
 	)
 
+	userStore := users.GetStorageInstanceOrPanic("pgx", db, l)
+
+	userService := users.Service{
+		Logger: l,
+		DbConn: db,
+		Store:  userStore,
+		Server: server,
+	}
+
 	e := server.GetEcho()
+	e.POST("/login", userService.LoginUser)
 	e.GET("/readiness", server.GetReadinessHandler(func(info string) bool {
 		ver, err := db.GetVersion()
 		if err != nil {
@@ -422,9 +395,13 @@ func main() {
 		dbConn: db,
 		server: server,
 	}
-	e.POST("/login", yourService.login)
+
 	r := server.GetRestrictedGroup()
+	users.RegisterHandlers(r, &userService)
+
 	r.GET("/secret", yourService.restricted)
+	r.GET("/status", userService.GetStatus)
+	r.GET("/users/maxid", userService.GetMaxId)
 
 	objStore, err := trees.GetStorageInstance("pgx", db, l)
 	if err != nil {
@@ -434,13 +411,12 @@ func main() {
 	objService := trees.Service{
 		Log:         l,
 		Store:       objStore,
-		JwtSecret:   []byte(config.GetJwtSecretFromEnvOrPanic()),
-		JwtDuration: config.GetJwtDurationFromEnvOrPanic(60),
+		Server:      server,
 	}
 	trees.RegisterHandlers(r, &objService)
 
-	loginExample := fmt.Sprintf("curl -v -X POST -d 'login=%s' -d 'pass=%s' http://localhost:%d/login", config.GetAdminUserFromEnvOrPanic(defaultAdminUser), config.GetAdminPasswordFromEnvOrPanic(), defaultPort)
-	getSecretExample := fmt.Sprintf(" curl -v  -H \"Authorization: Bearer ${TOKEN}\" http://localhost%d/%s/secret |jq\n", config.GetPortFromEnvOrPanic(defaultPort), defaultSecuredApi)
+	loginExample := fmt.Sprintf("curl -v -X POST -d 'login=%s' -d 'pass=%s' http://localhost:%d/login", "your_user", "your_password", config.GetPortFromEnvOrPanic(defaultPort))
+	getSecretExample := fmt.Sprintf(" curl -v  -H \"Authorization: Bearer ${TOKEN}\" http://localhost:%d/%s/secret |jq\n", config.GetPortFromEnvOrPanic(defaultPort), defaultSecuredApi)
 	l.Info("From another terminal just try :\n %s", loginExample)
 	l.Info("Then type export TOKEN=your_token_above_goes_here   \n %s", getSecretExample)
 

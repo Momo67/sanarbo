@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
@@ -18,31 +17,16 @@ const (
 type Service struct {
 	Log         golog.MyLogger
 	Store       Storage
-	JwtSecret   []byte
-	JwtDuration int
+	Server      *goHttpEcho.Server
 }
 
-/*
-type JwtCustomClaims struct {
-	jwt.RegisteredClaims
-	Id       int32  `json:"id"`
-	Name     string `json:"name"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	IsAdmin  bool   `json:"is_admin"`
-}
-*/
 
 func (s Service) List(ctx echo.Context, params ListParams) error {
 	s.Log.Debug("entering List() params:%v\n", params)
 
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := goHttpEcho.JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	s.Log.Debug("### List() claims:%v\n", claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := claims.User.UserId
+	s.Log.Info("in UserCreate : currentUserId: %d", currentUserId)
 
 	var limit int = 100
 	if params.Limit != nil {
@@ -54,7 +38,7 @@ func (s Service) List(ctx echo.Context, params ListParams) error {
 	}
 	list, err := s.Store.List(offset, limit)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, list)
 }
@@ -62,16 +46,11 @@ func (s Service) List(ctx echo.Context, params ListParams) error {
 func (s Service) Create(ctx echo.Context) error {
 	s.Log.Debug("entering Create()")
 
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := goHttpEcho.JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
+	s.Log.Info("in UserCreate : currentUserId: %d", currentUserId)
 	if !s.Store.IsUserAdmin(int32(currentUserId)) {
-		return echo.NewHTTPError(http.StatusUnauthorized, noAdminPrivilege)
+		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
 
 	newTree := &Tree{
@@ -107,16 +86,11 @@ func (s Service) Create(ctx echo.Context) error {
 func (s Service) Delete(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Delete(%d)\n", objectId)
 
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := goHttpEcho.JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
+	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
 	if !s.Store.IsUserAdmin(int32(currentUserId)) {
-		return echo.NewHTTPError(http.StatusUnauthorized, noAdminPrivilege)
+		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Delete(%d) cannot delete this id, it does not exist !", objectId)
@@ -127,7 +101,7 @@ func (s Service) Delete(ctx echo.Context, objectId int32) error {
 		if err != nil {
 			msg := fmt.Sprintf("Delete(%d) got an error: %#v ", objectId, err)
 			s.Log.Error(msg)
-			return echo.NewHTTPError(http.StatusInternalServerError, msg)
+			return ctx.JSON(http.StatusInternalServerError, msg)
 		}
 		return ctx.NoContent(http.StatusNoContent)
 	}
@@ -138,7 +112,7 @@ func (s Service) Get(ctx echo.Context, objectId int32) error {
 
 	tree, err := s.Store.Get(objectId)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving tree :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving tree :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, tree)
 }
@@ -146,16 +120,10 @@ func (s Service) Get(ctx echo.Context, objectId int32) error {
 func (s Service) Update(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Update(%d)\n", objectId)
 
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := goHttpEcho.JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
 	if !s.Store.IsUserAdmin(int32(currentUserId)) {
-		return echo.NewHTTPError(http.StatusUnauthorized, noAdminPrivilege)
+		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
@@ -164,7 +132,7 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	}
 	tree := new(Tree)
 	if err := ctx.Bind(tree); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Update has invalid format [%v]", err))
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Update has invalid format [%v]", err))
 	}
 	lastModificationUser := int32(claims.User.ExternalId)
 	tree.LastModificationUser = &lastModificationUser
@@ -181,12 +149,12 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 		return ctx.JSON(http.StatusBadRequest, "Tree tree_attributes cannot be empty")
 	}
 	if tree.Id != objectId {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Update id : [%d] and posted Id [%v] cannot differ ", objectId, tree.Id))
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Update id : [%d] and posted Id [%v] cannot differ ", objectId, tree.Id))
 	}
 
 	updatedTree, err := s.Store.Update(objectId, *tree)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("Update got problem updating tree : %v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("Update got problem updating tree : %v", err))
 	}
 	return ctx.JSON(http.StatusOK, updatedTree)
 }
@@ -209,7 +177,7 @@ func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
 	}
 	list, err := s.Store.SearchTreesByName(search)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, list)
 
@@ -220,7 +188,7 @@ func (s Service) GetDicoTable(ctx echo.Context, table GetDicoTableParamsTable) e
 
 	treedico, err := s.Store.GetDicoTable(table)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving dico(%s) :%v", table, err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving dico(%s) :%v", table, err))
 	}
 	return ctx.JSON(http.StatusOK, treedico)
 
@@ -231,7 +199,7 @@ func (s Service) GetGestionComSecteurs(ctx echo.Context) error {
 
 	dico, err := s.Store.GetGestionComSecteurs()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving secteurs dico :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving secteurs dico :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, dico)
 }
@@ -241,7 +209,7 @@ func (s Service) GetGestionComEmplacementsSecteur(ctx echo.Context, secteur stri
 
 	dico, err := s.Store.GetGestionComEmplacementsSecteur(secteur)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements(%s) dico :%v", secteur, err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements(%s) dico :%v", secteur, err))
 	}
 	return ctx.JSON(http.StatusOK, dico)
 }
@@ -251,7 +219,7 @@ func (s Service) GetEmplacements(ctx echo.Context) error {
 
 	dico, err := s.Store.GetEmplacements()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements dico :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements dico :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, dico)
 }
@@ -261,7 +229,7 @@ func (s Service) GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context
 
 	centroid, err := s.Store.GetGestionComEmplacementsCentroidEmplacementId(idEmplacement)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving centroid(%d) dico :%v", idEmplacement, err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving centroid(%d) dico :%v", idEmplacement, err))
 	}
 	return ctx.JSON(http.StatusOK, centroid)
 }
@@ -271,7 +239,7 @@ func (s Service) GetBuildingCenter(ctx echo.Context, addressId int32) error {
 
 	center, err := s.Store.GetBuildingCenter(addressId)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving center(%d) :%v", addressId, err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving center(%d) :%v", addressId, err))
 	}
 	return ctx.JSON(http.StatusOK, center)
 }
@@ -281,7 +249,7 @@ func (s Service) GetBuildingsNumbers(ctx echo.Context, streetId int32) error {
 
 	dico, err := s.Store.GetBuildingsNumbers(streetId)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving buildingd numbers(%d) :%v", streetId, err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving buildingd numbers(%d) :%v", streetId, err))
 	}
 	return ctx.JSON(http.StatusOK, dico)
 }
@@ -291,7 +259,7 @@ func (s Service) GetStreets(ctx echo.Context) error {
 
 	dico, err := s.Store.GetStreets()
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem retrieving streets dico :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving streets dico :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, dico)
 }

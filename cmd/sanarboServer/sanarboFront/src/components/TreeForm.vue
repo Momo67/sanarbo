@@ -1,6 +1,7 @@
 <script setup>
 import {onMounted, reactive} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
+import { getLocalJwtTokenAuth } from './Login.js';
 
 
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
@@ -30,9 +31,10 @@ const Tree = reactive({
 
 
 // Get session storage token
-const token = sessionStorage.getItem('token');
+//const token = sessionStorage.getItem('token');
+const token = getLocalJwtTokenAuth();
 const headers = {
-  'Authorization': 'Bearer ' + token,
+  'Authorization': token,
   'Content-Type': 'application/json',
 }
 

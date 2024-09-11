@@ -5,6 +5,7 @@ import { WKT } from "ol/format.js";
 import OlProjection from 'ol/proj/Projection'
 import { register } from 'ol/proj/proj4';
 import { useFetch } from "../composables/FetchData.js";
+import { getLocalJwtTokenAuth } from './Login.js';
 
 const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
 const urlGestionCom = backendUrl + "gestion_com";
@@ -206,9 +207,10 @@ const searchTreeOnCancel = () => {
 }
 
 // Get session storage token
-const token = sessionStorage.getItem('token');
+//const token = sessionStorage.getItem('token');
+const token = getLocalJwtTokenAuth();
 const headers = {
-  'Authorization': 'Bearer ' + token,
+  'Authorization': token,
   'Content-Type': 'application/json',
 }
 
