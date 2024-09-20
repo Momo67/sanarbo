@@ -121,10 +121,12 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Update(%d)\n", objectId)
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	/*
 	currentUserId := claims.User.UserId
 	if !s.Store.IsUserAdmin(int32(currentUserId)) {
 		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
+	*/	
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
 		s.Log.Error(msg)
