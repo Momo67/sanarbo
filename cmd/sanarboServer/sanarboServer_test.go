@@ -1,10 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -14,7 +15,6 @@ import (
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/gohttpclient"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,42 +33,6 @@ type testStruct struct {
 	httpMethod     string
 	url            string
 	body           string
-}
-
-func TestServiceLogin(t *testing.T) {
-	type fields struct {
-		Log         golog.MyLogger
-		dbConn      database.DB
-		JwtSecret   []byte
-		JwtDuration int
-	}
-	type args struct {
-		ctx echo.Context
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := Service{
-				Logger: tt.fields.Log,
-				dbConn: tt.fields.dbConn,
-				server: &goHttpEcho.Server{
-					Authenticator: nil,
-					JwtCheck:      nil,
-					VersionReader: nil,
-				},
-			}
-			if err := s.login(tt.args.ctx); (err != nil) != tt.wantErr {
-				t.Errorf("login() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
 }
 
 func TestServiceRestricted(t *testing.T) {
@@ -127,27 +91,53 @@ func TestCheckHealthy(t *testing.T) {
 	}
 }
 
+func waitForServer(addr string, timeout time.Duration) error {
+	start := time.Now()
+	for {
+		if time.Since(start) > timeout {
+			return fmt.Errorf("server did not start within %s", timeout)
+		}
+		conn, err := net.Dial("tcp", addr)
+		if err != nil {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		conn.Close()
+		return nil
+	}
+}
+
 // TestMainExec is instantiating the "real" main code using the env variable (in your .env.development.local files if you use the Makefile rule)
 func TestMainExec(t *testing.T) {
 	listenPort := config.GetPortFromEnvOrPanic(defaultPort)
 	listenAddr := fmt.Sprintf("http://localhost:%d", listenPort)
 	fmt.Printf("INFO: 'Will start HTTP server listening on port %s'\n", listenAddr)
 
-	newRequest := func(method, url string, body string) *http.Request {
+	newRequest := func(method, url string, body string, contenttype string) *http.Request {
 		fmt.Printf("INFO: 💥💥'newRequest %s on %s ##BODY : %+v'\n", method, url, body)
 		r, err := http.NewRequest(method, url, strings.NewReader(body))
 		if err != nil {
 			t.Fatalf("### ERROR http.NewRequest %s on [%s] error is :%v\n", method, url, err)
 		}
+		/*
 		if method == http.MethodPost {
 			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		}
+		*/
+		r.Header.Set("Content-Type", contenttype)
 		return r
 	}
 
-	formLogin := make(url.Values)
-	formLogin.Set("login", config.GetAdminUserFromEnvOrPanic("admin"))
-	formLogin.Set("pass", config.GetAdminPasswordFromEnvOrPanic())
+	// Créer l'objet JSON pour le login
+	loginData := map[string]string{
+		"username":      "jimicroquette",
+		"password_hash": "58a38e08c4e6361b1f79c6c64417e7a2aed575a5158ec7d394e5d6f5f3a0d0c9", // Utiliser le mot de passe correspondant au hash stocké
+	}
+
+	jsonData, err := json.Marshal(loginData)
+	if err != nil {
+		t.Fatalf("Failed to marshal JSON: %v", err)
+	}
 
 	tests := []testStruct{
 		{
@@ -183,12 +173,12 @@ func TestMainExec(t *testing.T) {
 		{
 			name:           "4: POST to login with valid credential should return a JWT token ",
 			wantStatusCode: http.StatusOK,
-			contentType:    MIMEHtmlCharsetUTF8,
+			contentType:    echo.MIMEApplicationJSON,
 			wantBody:       "token",
 			paramKeyValues: make(map[string]string, 0),
 			httpMethod:     http.MethodPost,
 			url:            "/login",
-			body:           formLogin.Encode(),
+			body:           string(jsonData),
 		},
 	}
 
@@ -199,12 +189,16 @@ func TestMainExec(t *testing.T) {
 		defer wg.Done()
 		main()
 	}()
-	gohttpclient.WaitForHttpServer(listenAddr, 1*time.Second, 10)
+
+	err = waitForServer("localhost:9090", 10*time.Second)
+	if err != nil {
+		t.Fatalf("Server did not start in time: %v", err)
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			r := newRequest(tt.httpMethod, listenAddr+tt.url, tt.body)
+			r := newRequest(tt.httpMethod, listenAddr+tt.url, tt.body, tt.contentType)
 			//r.Header.Set(HeaderContentType, tt.contentType)
 			resp, err := http.DefaultClient.Do(r)
 			if DEBUG {
