@@ -31,9 +31,6 @@ FROM scratch
 USER 1221:1221
 WORKDIR /goapp
 
-# Copy the Pre-built binary file from the previous stage
-COPY --from=builder /app/sanarboServer .
-
 ENV PORT="${PORT}"
 ENV DB_DRIVER="${DB_DRIVER}"
 ENV DB_HOST="${DB_HOST}"
@@ -45,6 +42,9 @@ ENV DB_SSL_MODE="${DB_SSL_MODE}"
 ENV JWT_SECRET="${JWT_SECRET}"
 ENV JWT_DURATION_MINUTES="${JWT_DURATION_MINUTES}"
 ENV GO_USER_SVC_URL="${GO_USER_SVC_URL}"
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/sanarboServer .
 # Expose port  to the outside world, goCloudK8sObject will use the env PORT as listening port or 8080 as default
 EXPOSE 9999
 

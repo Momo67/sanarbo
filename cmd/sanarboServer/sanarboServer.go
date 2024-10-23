@@ -168,7 +168,7 @@ func (s ServiceExample) login(ctx echo.Context) error {
 */
 
 func (s Service) restricted(ctx echo.Context) error {
-	goHttpEcho.TraceRequest("restricted", ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest("restricted", ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
@@ -338,6 +338,7 @@ func main() {
 		config.GetJwtSecretFromEnvOrPanic(),
 		config.GetJwtIssuerFromEnvOrPanic(),
 		APP,
+		config.GetJwtContextKeyFromEnvOrPanic(),
 		config.GetJwtDurationFromEnvOrPanic(60),
 		l)
 	// Create a new Authenticator with a simple admin user

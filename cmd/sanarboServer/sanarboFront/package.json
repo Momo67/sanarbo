@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "serve": "vite preview",
-    "build": "vite build",
+    "build": "vite build --mode production",
     "dev": "vite",
     "preview": "vite preview",
     "test:unit": "vitest --environment jsdom",
