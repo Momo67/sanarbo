@@ -1,57 +1,61 @@
 <template>
   <header>
-    <Toolbar >
+    <Toolbar>
       <template #start>
         <span class="pl-2 text-white">{{ `${APP_TITLE} v.${VERSION}` }}</span>
       </template>
       <template #end>
         <template v-if="isUserAuthenticated">
-          <Button icon="pi pi-sign-out"  title="Logout" @click="logout" />
+          <Button icon="pi pi-sign-out" title="Logout" @click="logout" />
         </template>
-        <Button icon="pi pi-info-circle"  title="A propos..." @click="aboutInfo" />
+        <Button icon="pi pi-info-circle" title="A propos..." @click="aboutInfo" />
       </template>
     </Toolbar>
   </header>
   <main>
     <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
-    <template  v-if="showMap">
-      <!-- Render Map -->
-      <OlMap/>
-    </template>
-    <template v-else>
-      <div class="flex">
-        <div class="col-12">
-          <div class="justify-content-center">
-            <Toast position="top-center" />
-            <template v-if="isUserAuthenticated ">
-                <tab-view v-model:activeIndex="activeIndex">
-                  <template v-if="isUserAdmin">
-                    <tab-panel header="Utilisateurs">
-                      <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
-                    </tab-panel>
-                    <tab-panel header="Groupes">
-                      <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
-                    </tab-panel>
-                  </template>
-                  <tab-panel header="Carte">
-                    <OlMap/>
-                  </tab-panel>
-                </tab-view>
-              <h4>Connexion réussie de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
-            </template>
-            <template v-else>
-              <LoginUser
-                :msg="`Authentification ${APP_TITLE}:`"
-                :backend="BACKEND_URL"
-                :disabled="!isNetworkOk"
-                @login-ok="loginSuccess"
-                @login-error="loginFailure"
-              />
-            </template>
-          </div>
+    <div class="flex card">
+      <div class="col-12">
+        <div class="justify-content-center">
+          <Toast position="top-center" />
+          <template v-if="isUserAuthenticated">
+            <tab-view v-model:active-index="activeIndex">
+              <template v-if="isUserAdmin">
+                <tab-panel header="Utilisateurs">
+                  <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
+                </tab-panel>
+                <tab-panel header="Groupes">
+                  <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
+                </tab-panel>
+              </template>
+              <tab-panel header="Carte">
+                <OlMap />
+              </tab-panel>
+              <tab-panel header="Aide">
+                <div class="help-content">
+                  <h3>Aide</h3>
+                  <p>Bienvenue dans la section d'aide. Ici, vous trouverez des informations utiles pour vous guider à
+                    travers l'application.</p>
+                  <ul>
+                    <li><strong>Utilisateurs:</strong> Gérer les utilisateurs de l'application.</li>
+                    <li><strong>Groupes:</strong> Gérer les groupes d'utilisateurs.</li>
+                    <li><strong>Carte:</strong> Visualiser et interagir avec la carte.</li>
+                  </ul>
+                </div>
+              </tab-panel>
+            </tab-view>
+            <h4>Connexion réussie de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
+          </template>
+          <template v-else>
+            <LoginUser 
+              :msg="`Authentification ${APP_TITLE}:`" 
+              :backend="BACKEND_URL" 
+              :disabled="!isNetworkOk"
+              @login-ok="loginSuccess" @login-error="loginFailure" />
+          </template>
         </div>
       </div>
-    </template>
+    </div>
   </main>
 </template>
 

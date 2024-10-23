@@ -5,9 +5,10 @@ import { WKT } from "ol/format.js";
 import OlProjection from 'ol/proj/Projection'
 import { register } from 'ol/proj/proj4';
 import { useFetch } from "../composables/FetchData.js";
+import { BACKEND_URL, apiRestrictedUrl } from '../config.js';
 import { getLocalJwtTokenAuth } from './Login.js';
 
-const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+const backendUrl = `${BACKEND_URL}/${apiRestrictedUrl}/`;
 const urlGestionCom = backendUrl + "gestion_com";
 const urlStreets = backendUrl + "thing/streets";
 const urlBuildings = backendUrl + "thing/buildings";
@@ -285,7 +286,7 @@ onMounted(async () => {
     </v-container>
     <v-container v-show="showSearchTrees" class="tree-search">
       <v-row>
-        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-4 offset-lg-4">
+        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-6 offset-md-4 v-col-lg-5 offset-lg-4 v-col-xl-4">
           <v-card>
             <v-card-item>
               <v-card-title primary-title>
@@ -368,11 +369,11 @@ onMounted(async () => {
             </v-card-text>
             <v-divider></v-divider>
             <v-card-text>
-              <v-row class="v-col-sm-9">
+              <v-row class="v-col-xs-12 v-col-sm-12 v-col-md-12 v-col-lg-12 v-col-xl-9">
                 <v-col>
                   <v-btn color="primary" type="submit" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
                 </v-col>
-                <v-col class="v-col-sm-9">
+                <v-col class="v-col-xs-6 v-col-sm-9 v-col-md-9 v-col-lg-9 v-col-xl-9">
                   <v-btn color="secondary" type="button" @click="searchTreeOnCancel">Annuler</v-btn>
                 </v-col>
               </v-row>

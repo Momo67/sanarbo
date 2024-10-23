@@ -18,12 +18,12 @@ import FeaturesControl from "./FeaturesControl.vue";
 import SearchTreeControlVue from "./SearchTreeControl.vue";
 import { createLausanneMap } from "./layers.js"
 import { getValidationColor } from './features.js';
-import { DEFAULT_BASE_LAYER } from '../config.js';
+import { DEFAULT_BASE_LAYER, BACKEND_URL, apiRestrictedUrl } from '../config.js';
 import { getLocalJwtTokenAuth } from './Login';
 
 
 // Fetch data
-const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+const backendUrl = `${BACKEND_URL}/${apiRestrictedUrl}/`;
 const urlTrees = backendUrl + "trees?offset=0&limit=1000000"
 //const token = sessionStorage.getItem('token');
 const token = getLocalJwtTokenAuth();

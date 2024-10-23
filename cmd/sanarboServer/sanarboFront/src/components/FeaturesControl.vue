@@ -63,7 +63,7 @@ const selectFeaturesOnCancel = () => {
     </v-container>
     <v-container v-show="showFeatures" class="features-selection">
       <v-row>
-        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-4 offset-lg-4">
+        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-6 offset-md-4 v-col-lg-5 offset-lg-4">
           <v-card>
             <v-card-item>
               <v-card-title primary-title>
@@ -99,11 +99,11 @@ const selectFeaturesOnCancel = () => {
             </v-card-text>
             <v-divider></v-divider>
             <v-card-text>
-              <v-row class="v-col-sm-9">
+              <v-row class="v-col-xs-12 v-col-sm-12 v-col-md-12 v-col-lg-12">
                 <v-col>
                   <v-btn color="primary" type="submit" @click="selectFeaturesOnOK">OK</v-btn>
                 </v-col>
-                <v-col class="v-col-sm-9">
+                <v-col class="v-col-xs-6 v-col-sm-9 v-col-md-9 v-col-lg-19">
                   <v-btn color="secondary" type="button" @click="selectFeaturesOnCancel">Annuler</v-btn>
                 </v-col>
               </v-row>

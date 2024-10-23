@@ -1,10 +1,11 @@
 <script setup>
 import {onMounted, reactive} from 'vue';
 import {useFetch} from "../composables/FetchData.js";
+import { BACKEND_URL, apiRestrictedUrl } from '../config.js';
 import { getLocalJwtTokenAuth } from './Login.js';
 
 
-const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+const backendUrl = `${BACKEND_URL}/${apiRestrictedUrl}/`;
 const urlTrees = backendUrl + "trees";
 
 
