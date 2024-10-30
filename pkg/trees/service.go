@@ -12,6 +12,8 @@ import (
 
 const (
 	noAdminPrivilege = "current user has no admin privilege"
+	noObjectAdminPrivilege = "current user has no admin privilege on this object"
+	noObjectEditorPrivilege = "current user has no editor privilege on this object"
 )
 
 type Service struct {
@@ -49,7 +51,7 @@ func (s Service) Create(ctx echo.Context) error {
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
 	s.Log.Info("in UserCreate : currentUserId: %d", currentUserId)
-	if !s.Store.IsUserAdmin(int32(currentUserId)) {
+	if !s.Store.IsObjectAdmin(int32(currentUserId)) {
 		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
 
@@ -88,9 +90,8 @@ func (s Service) Delete(ctx echo.Context, objectId int32) error {
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	if !s.Store.IsUserAdmin(int32(currentUserId)) {
-		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
+	if !s.Store.IsObjectAdmin(int32(currentUserId)) {
+		return ctx.JSON(http.StatusUnauthorized, noObjectAdminPrivilege)
 	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Delete(%d) cannot delete this id, it does not exist !", objectId)
@@ -121,12 +122,10 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Update(%d)\n", objectId)
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
-	/*
 	currentUserId := claims.User.UserId
-	if !s.Store.IsUserAdmin(int32(currentUserId)) {
-		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
+	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectEditor(int32(currentUserId))) {
+		return ctx.JSON(http.StatusUnauthorized, noObjectEditorPrivilege)
 	}
-	*/	
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
 		s.Log.Error(msg)

@@ -6,7 +6,7 @@
       </template>
       <template #end>
         <template v-if="isUserAuthenticated">
-          <Button icon="pi pi-sign-out" title="Logout" @click="logout" />
+          <Button icon="pi pi-sign-out" title="Logout" class="mr-2" @click="logout" />
         </template>
         <Button icon="pi pi-info-circle" title="A propos..." @click="aboutInfo" />
       </template>
