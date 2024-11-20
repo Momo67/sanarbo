@@ -19,31 +19,49 @@
         <div class="justify-content-center">
           <Toast position="top-center" />
           <template v-if="isUserAuthenticated">
-            <tab-view v-model:active-index="activeIndex">
-              <template v-if="isUserAdmin">
-                <tab-panel header="Utilisateurs">
-                  <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
-                </tab-panel>
-                <tab-panel header="Groupes">
-                  <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
-                </tab-panel>
-              </template>
-              <tab-panel header="Carte">
-                <OlMap />
-              </tab-panel>
-              <tab-panel header="Aide">
-                <div class="help-content">
-                  <h3>Aide</h3>
-                  <p>Bienvenue dans la section d'aide. Ici, vous trouverez des informations utiles pour vous guider à
-                    travers l'application.</p>
-                  <ul>
-                    <li><strong>Utilisateurs:</strong> Gérer les utilisateurs de l'application.</li>
-                    <li><strong>Groupes:</strong> Gérer les groupes d'utilisateurs.</li>
-                    <li><strong>Carte:</strong> Visualiser et interagir avec la carte.</li>
-                  </ul>
-                </div>
-              </tab-panel>
-            </tab-view>
+            <Tabs v-model:value="activeTab">
+              <TabList>
+              <!--
+                <template v-if="isUserAdmin">
+              -->
+                  <Tab value="0" :disabled="!isUserAdmin">Utilisateurs</Tab>
+                  <Tab value="1" :disabled="!isUserAdmin">Groupes</Tab>
+              <!--
+                </template>
+              -->
+                <Tab value="2">Carte</Tab>
+                <Tab value="3">Aide</Tab>
+              </TabList>
+              <TabPanels>
+              <!--
+                <template v-if="isUserAdmin">
+              -->
+                  <TabPanel value="0">
+                    <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
+                  </TabPanel>
+                  <TabPanel value="1">
+                    <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
+                  </TabPanel>
+              <!--
+                </template>
+              -->
+                <TabPanel value="2">
+                  <OlMap />
+                </TabPanel>
+                <TabPanel value="3">
+                  <div class="help-content">
+                    <h3>Aide</h3>
+                    <p>Bienvenue dans la section d'aide. Ici, vous trouverez des informations utiles pour vous guider à
+                      travers l'application.</p>
+                    <ul>
+                      <li><strong>Utilisateurs:</strong> Gérer les utilisateurs de l'application.</li>
+                      <li><strong>Groupes:</strong> Gérer les groupes d'utilisateurs.</li>
+                      <li><strong>Carte:</strong> Visualiser et interagir avec la carte.</li>
+                    </ul>
+                  </div>
+                </TabPanel>
+              </TabPanels>
+            </Tabs>
             <h4>Connexion réussie de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
           </template>
           <template v-else>
@@ -61,11 +79,14 @@
 
 <script setup>
 import Button from 'primevue/button';
-import TabView from 'primevue/tabview';
+import Tabs from 'primevue/tabs';
+import TabList from 'primevue/tablist';
+import Tab from 'primevue/tab';
+import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import Toast from 'primevue/toast';
 import Toolbar from 'primevue/toolbar';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, computed } from 'vue';
 import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
 import {
@@ -82,7 +103,7 @@ import ListGroups from './components/ListGroups.vue';
 import OlMap from './components/OlMap.vue';
 
 const log = getLog(APP, 4, 2);
-const activeIndex = ref(0);
+//const activeIndex = ref('0');
 const isUserAuthenticated = ref(false);
 const isUserAdmin = ref(false);
 const isNetworkOk = ref(true);
@@ -187,6 +208,12 @@ const loginFailure = (v) => {
   isUserAdmin.value = false;
 };
 
+const activeTab = computed({
+  get() {
+    return isUserAdmin.value ? '0' : '2';
+  },
+});
+
 onMounted(() => {
   log.t('mounted()');
   log.w(`${APP} - ${VERSION}, du ${BUILD_DATE}`);
@@ -211,5 +238,8 @@ html, body {
   margin: 0;
   min-width: 240px;
   font-family: Arial, sans-serif;
+}
+li {
+  margin-left: 30px;
 }
 </style>
