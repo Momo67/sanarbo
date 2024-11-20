@@ -106,6 +106,29 @@ async function getWmtsBaseLayers (url) {
 
       arrWmtsLayers.push(
         {
+          title: 'Lidar 2024',
+          type: 'base',
+          layer: 'orthophotos_ortho_lidar_2024',
+          tile: createBaseOlLayerTile(
+                  WMTSCapabilitiesParsed,
+                  'Orthophoto 2024',
+                  'orthophotos_ortho_lidar_2024',
+                  (defaultBaseLayer === 'orthophotos_ortho_lidar_2024'),
+                ),
+          textStyle: {
+            fill: {
+              color: [255, 255, 255],
+            },
+            stroke: {
+              color: [0, 0, 0],
+              width: 0.5
+            }
+          }
+        }
+      );
+
+      arrWmtsLayers.push(
+        {
           title: 'Lidar 2016',
           type: 'base',
           layer: 'orthophotos_ortho_lidar_2016',

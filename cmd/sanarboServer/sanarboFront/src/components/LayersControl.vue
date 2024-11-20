@@ -79,7 +79,7 @@ const layerOnClick = (layer) => {
               </v-card-subtitle>
             </v-card-item>
             <v-divider></v-divider>
-            <v-card-text style="height: 300px;">
+            <v-card-text style="height: 340px;">
               <template v-for="(layer, key) in layers" :key="key">
                 <v-container style="height: 3.5em;">
                   <v-btn append-icon="mdi-check" :block="true" class="btn-layer" @click="layerOnClick(layer.layer.toLowerCase())">
