@@ -1,1 +1,1 @@
-DELETE FROM tree_mobile;
+TRUNCATE TABLE tree_mobile;

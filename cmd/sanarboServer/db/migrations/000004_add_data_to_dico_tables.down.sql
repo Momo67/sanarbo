@@ -1,15 +1,15 @@
-DELETE FROM thi_arbre_validation;
+TRUNCATE TABLE thi_arbre_validation;
 
-DELETE FROM thi_arbre_rev_surface;
+TRUNCATE TABLE thi_arbre_rev_surface;
 
-DELETE FROM thi_arbre_to_be_checked;
+TRUNCATE TABLE thi_arbre_to_be_checked;
 
-DELETE FROM thi_arbre_note;
+TRUNCATE TABLE thi_arbre_note;
 
-DELETE FROM thi_arbre_entourage;
+TRUNCATE TABLE thi_arbre_entourage;
 
-DELETE FROM thi_arbre_chk;
+TRUNCATE TABLE thi_arbre_chk;
 
-DELETE FROM thi_arbre_etat_sanitaire;
+TRUNCATE TABLE thi_arbre_etat_sanitaire;
 
-DELETE FROM thi_arbre_etat_sanitaire_remarque;
+TRUNCATE TABLE thi_arbre_etat_sanitaire_remarque;
