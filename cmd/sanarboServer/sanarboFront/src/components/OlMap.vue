@@ -70,12 +70,22 @@ const handleFormSubmitted = () => {
   
   formSubmitted.value = true;
   showForm.value = false;
+  
+  showMsg.value = true;
+  textMsg.value = 'Sauvegarde effectuée';
+
   selectInteraction.getFeatures().clear();
 }
 
 const handleFormCanceled = () => {
   showForm.value = false;
   selectInteraction.getFeatures().clear();
+}
+
+const showMsg = ref(false);
+const textMsg = ref('');
+const msgOnClose = () => {
+  showMsg.value = false;
 }
 
 const dictionaries = ref({
@@ -483,6 +493,14 @@ onMounted(async () => {
         </TreeForm>
       </v-card-text>
     </v-card>
+  </v-dialog>
+
+  <v-dialog 
+    v-model="showMsg"
+    scrollable
+    width="auto"
+  >
+    <v-alert v-model="showMsg" type="success" :text="textMsg" closable close-label="Fermer" @click:close="msgOnClose"></v-alert>
   </v-dialog>
 
 </template>
