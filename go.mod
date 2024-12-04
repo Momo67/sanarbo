@@ -1,6 +1,6 @@
 module github.com/lao-tseu-is-alive/sanarbo
 
-go 1.23.0
+go 1.23
 
 require (
 	github.com/georgysavva/scany/v2 v2.1.3
