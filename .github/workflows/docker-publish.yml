@@ -22,7 +22,7 @@ jobs:
       # https://docs.github.com/en/actions/using-containerized-services/creating-postgresql-service-containers
       postgres:
         # Docker Hub image
-        image: postgres
+        image: postgis/postgis:14-3.3
         # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: postgres
