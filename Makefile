@@ -81,7 +81,7 @@ ifeq ($(shell git status -s),)  # check if repo is clean
 else
 	(echo "ERROR : your local git repo is dirty : it contains modified and/or untracked files :" && ( git status -s) && exit 1)
 endif
-	#git push origin $(APP_VERSION)
+	git push origin $(APP_VERSION)
 
 # check some dependencies
 .PHONY: dependencies-openapi
