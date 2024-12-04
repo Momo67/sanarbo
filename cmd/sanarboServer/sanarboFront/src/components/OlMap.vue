@@ -133,11 +133,6 @@ const tile_layers = ref([]);
 
 
 const hiddenFeatureSource = new VectorSource();
-const hiddenFeatureLayer = new VectorLayer({
-  source: hiddenFeatureSource,
-  visible: false
-});
-layers.value.push(hiddenFeatureLayer);
 
 const arbreStyle = (feature, resolution) => {
   let color = getValidationColor(feature.get('idvalidation'));
@@ -172,6 +167,7 @@ const vectorLayer = new VectorLayer({
   id: 'arbre_layer',
   source: featureSource,
   style: arbreStyle,
+  maxResolution: 0.4,
   visible: true
 });
 layers.value.push(vectorLayer);
@@ -183,7 +179,6 @@ const arbreIdStyle = (feature, resolution) => {
       font: '10px Arial',
       offsetY: -25 / (resolution + 1),
       fill: new Fill({ color: 'rgb(255, 255, 255)' }),
-      //stroke: new Stroke({color: 'rgb(0, 0, 0)', width: 0.5}),
       scale: 1 / (resolution + 0.5)
     })
   });
@@ -203,12 +198,6 @@ const filterFeatures = (selected, showOnlyValidated, showOnlyPublic) => {
   featureSource.clear();
 
   const filter = (query) => {
-    /*
-    if (showOnlyValidated === true)
-      return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')) && feature.get('is_validated') === false);
-    else
-      return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')));
-    */
 
     return hiddenFeatureSource.getFeatures().filter(feature => {
       if (showOnlyValidated === true)
@@ -435,72 +424,69 @@ onMounted(async () => {
 
 <template>
 
-  <div id="expandCustomControl" >
+  <div id="expandCustomControl">
 
     <TrackingControl 
       :tracking-enabled="trackingEnabled" 
-      :projection="swissProjection" 
-      class="ol-custom tracking-control" 
-      @position-changed="setPosition">
-    </TrackingControl>
+      :projection="swissProjection"
+      class="ol-custom tracking-control" @position-changed="setPosition"
+    />
 
     <LayersControl 
       :show-layers="showControlLayers" 
       :layers="tile_layers" 
-      :current-layer="selectedLayer" 
+      :current-layer="selectedLayer"
       class="ol-custom layers-control" 
       @show-changed="controlLayersOnClick" 
-      @selected-layer="chooseLayer">
-    </LayersControl>
+      @selected-layer="chooseLayer"
+    />
 
     <FeaturesControl 
       :show-features="showControlFeatures" 
-      :validations="dictionaries.validation" 
+      :validations="dictionaries.validation"
       :validation-to-show="displayed_features" 
       class="ol-custom features-control" 
-      @show-changed="controlFeaturesOnClick" 
-      @selected-validation="chooseFeatures">
-    </FeaturesControl>
+      @show-changed="controlFeaturesOnClick"
+      @selected-validation="chooseFeatures"
+    />
 
-    <SearchTreeControlVue
-      :show-search-trees="showSearchTrees"
+    <SearchTreeControlVue 
+      :show-search-trees="showSearchTrees" 
       :feature-source="featureSource"
-      class="ol-custom search-control"
-      @show-changed="controlSearchTreeOnClick"
-      @coords-found="coordsFound">
-    </SearchTreeControlVue>
+      class="ol-custom search-control" 
+      @show-changed="controlSearchTreeOnClick" 
+      @coords-found="coordsFound"
+    />
 
-  </div>  
+  </div>
 
   <div id="map" ref="mymap">
     <div v-if="fetchIsLoading">Loading...</div>
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>
 
-  <v-dialog
-      v-model="showForm"
-      scrollable
-      width="auto"
-  >
+  <v-dialog v-model="showForm" scrollable width="auto">
     <v-card>
       <v-card-text>
         <TreeForm 
           :show-form='showForm' 
           :tree-id="treeId" 
-          :dictionaries="dictionaries" 
-          @form-canceled="handleFormCanceled"
-          @form-submitted='handleFormSubmitted'>
-        </TreeForm>
+          :dictionaries="dictionaries"
+          @form-canceled="handleFormCanceled" 
+          @form-submitted='handleFormSubmitted'
+        />
       </v-card-text>
     </v-card>
   </v-dialog>
 
-  <v-dialog 
-    v-model="showMsg"
-    scrollable
-    width="auto"
-  >
-    <v-alert v-model="showMsg" type="success" :text="textMsg" closable close-label="Fermer" @click:close="msgOnClose"></v-alert>
+  <v-dialog v-model="showMsg" scrollable width="auto">
+    <v-alert 
+      v-model="showMsg" 
+      type="success" 
+      :text="textMsg" 
+      closable 
+      close-label="Fermer"
+      @click:close="msgOnClose"/>
   </v-dialog>
 
 </template>
