@@ -131,7 +131,7 @@ func TestMainExec(t *testing.T) {
 
 	// Créer l'objet JSON pour le login
 	loginData := map[string]string{
-		"username":      "jimicroquette",
+		"username":      "go-admin",
 		"password_hash": "58a38e08c4e6361b1f79c6c64417e7a2aed575a5158ec7d394e5d6f5f3a0d0c9", // Utiliser le mot de passe correspondant au hash stocké
 	}
 
