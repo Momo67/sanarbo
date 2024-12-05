@@ -191,7 +191,7 @@ func TestMainExec(t *testing.T) {
 		main()
 	}()
 
-	err = waitForServer(listenAddr, 2*time.Second)
+	err = waitForServer(fmt.Sprintf("0.0.0.0:%d", listenPort), 2*time.Second)
 	if err != nil {
 		t.Fatalf("Server did not start in time: %v", err)
 	}
