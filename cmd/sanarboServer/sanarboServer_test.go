@@ -110,7 +110,8 @@ func waitForServer(addr string, timeout time.Duration) error {
 // TestMainExec is instantiating the "real" main code using the env variable (in your .env.development.local files if you use the Makefile rule)
 func TestMainExec(t *testing.T) {
 	listenPort := config.GetPortFromEnvOrPanic(defaultPort)
-	listenAddr := fmt.Sprintf("http://localhost:%d", listenPort)
+	listenIP := config.GetListenIpFromEnvOrPanic("0.0.0.0")
+	listenAddr := fmt.Sprintf("%s://%s:%d", "http", listenIP, listenPort)
 	fmt.Printf("INFO: 'Will start HTTP server listening on port %s'\n", listenAddr)
 
 	newRequest := func(method, url string, body string, contenttype string) *http.Request {
@@ -190,7 +191,7 @@ func TestMainExec(t *testing.T) {
 		main()
 	}()
 
-	err = waitForServer(listenAddr, 10*time.Second)
+	err = waitForServer(listenAddr, 2*time.Second)
 	if err != nil {
 		t.Fatalf("Server did not start in time: %v", err)
 	}
