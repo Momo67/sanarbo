@@ -190,7 +190,7 @@ func TestMainExec(t *testing.T) {
 		main()
 	}()
 
-	err = waitForServer("localhost:9090", 10*time.Second)
+	err = waitForServer(listenAddr, 10*time.Second)
 	if err != nil {
 		t.Fatalf("Server did not start in time: %v", err)
 	}
