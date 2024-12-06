@@ -5,7 +5,6 @@ import (
 	"runtime"
 	"testing"
 
-	_ "github.com/golang-migrate/migrate/v4/database/pgx"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
@@ -43,14 +42,14 @@ func TestSearchTreesByName(t *testing.T) {
 	}{
 		{
 			name:    "it should return an object with name attribute matching pattern containing *",
-			args:    args{t: "*Rosselet*"},
-			wantRes: []*TreeList{{Name: "Pyrus communis 'Rosselet' - secteur OUEST - SI Chauderon 23-25-27 (70852)"}},
+			args:    args{t: "*Aesculus*"},
+			wantRes: []*TreeList{{Name: "Aesculus hippocastanum - Arbres sur avenue - secteur EST"}},
 			wantErr: nil,
 		},
 		{
 			name:    "it should return an object with name attribute matching pattern containing %",
-			args:    args{t: "%%Rosselet%%"},
-			wantRes: []*TreeList{{Name: "Pyrus communis 'Rosselet' - secteur OUEST - SI Chauderon 23-25-27 (70852)"}},
+			args:    args{t: "%%Aesculus%%"},
+			wantRes: []*TreeList{{Name: "Aesculus hippocastanum - Arbres sur avenue - secteur EST"}},
 			wantErr: nil,
 		},
 		{
@@ -106,13 +105,9 @@ func (w *WorkingEnv) GetLogger() error {
 }
 
 func (w *WorkingEnv) GetDb() error {
-	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
-		tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
-	if err != nil {
-		return fmt.Errorf("error doing config.GetPgDbDsnUrlFromEnv error: %v\n", err)
-	}
+	dbDsn := config.GetPgDbDsnUrlFromEnvOrPanic(defaultDBIp, defaultDBPort, tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
 	var dbConn database.DB
-	dbConn, err = database.GetInstance("pgx", dbDsn, runtime.NumCPU(), w.l)
+	dbConn, err := database.GetInstance("pgx", dbDsn, runtime.NumCPU(), w.l)
 	if err != nil {
 		return fmt.Errorf("error doing database.GetInstance(\"pgx\", dbDsn)  : %v\n", err)
 	} else {

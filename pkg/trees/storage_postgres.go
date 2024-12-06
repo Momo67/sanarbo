@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
@@ -23,7 +23,6 @@ type PGX struct {
 	log golog.MyLogger
 }
 
-//var NoRecordFound = errors.New(noRecords)
 
 func (P PGX) List(offset, limit int) ([]*TreeList, error) {
 	P.log.Debug("entering List(%d, %d)", offset, limit)
@@ -191,13 +190,50 @@ func (P PGX) IsTreeActive(id int32) bool {
 
 func (P PGX) IsUserAdmin(id int32) bool {
 	P.log.Debug("entering IsUserAdmin(%d)", id)
-	//TODO implement a better user check...
-	//Now only user with id(999) (bill board) is considered as admin
-	if id == 999 {
-		return true
-	} else {
+	var isLocked bool
+	var isUserAdmin bool
+	err := P.con.QueryRow(context.Background(), "SELECT is_locked, is_admin FROM go_user WHERE id = $1", id).Scan(&isLocked, &isUserAdmin)
+	if err != nil {
+		P.log.Error("IsUserAdmin(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
 		return false
 	}
+	if isLocked {
+		P.log.Error("IsUserAdmin(%d) user is locked", id)
+		return false
+	}
+	return isUserAdmin
+}
+
+func (P PGX) IsObjectAdmin(id int32) bool {
+	P.log.Debug("entering IsObjectAdmin(%d)", id)
+	var isLocked bool
+	var isObjectAdmin bool
+	err := P.con.QueryRow(context.Background(), "SELECT is_locked, (2 = ANY(groups_id)) AS is_object_admin FROM go_user WHERE id = $1", id).Scan(&isLocked, &isObjectAdmin)
+	if err != nil {
+		P.log.Error("IsObjectAdmin(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
+		return false
+	}
+	if isLocked {
+		P.log.Error("IsObjectAdmin(%d) user is locked", id)
+		return false
+	}
+	return isObjectAdmin
+}
+
+func (P PGX) IsObjectEditor(id int32) bool {
+	P.log.Debug("entering IsObjectEditor(%d)", id)
+	var isLocked bool
+	var isObjectEditor bool
+	err := P.con.QueryRow(context.Background(), "SELECT is_locked, (3 = ANY(groups_id)) AS is_object_editor FROM go_user WHERE id = $1", id).Scan(&isLocked, &isObjectEditor)
+	if err != nil {
+		P.log.Error("IsObjectEditor(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
+		return false
+	}
+	if isLocked {
+		P.log.Error("IsObjectEditor(%d) user is locked", id)
+		return false
+	}	
+	return isObjectEditor
 }
 
 func CompareTree(t1, t2 *TreeList, attr string) bool {
@@ -263,7 +299,7 @@ func (P PGX) GetGestionComSecteurs() ([]*Dico, error) {
 
 	err := pgxscan.Select(context.Background(), P.con, &res, secteursList)
 	if err != nil {
-		P.log.Error("List pgxscan.Select unexpectedly failed, error : %v", err)
+		P.log.Error("GetGestionComSecteurs pgxscan.Select unexpectedly failed, error : %v", err)
 		return nil, err
 	}
 	if res == nil {
@@ -280,11 +316,11 @@ func (P PGX) GetEmplacements() ([]*Dico, error) {
 
 	err := pgxscan.Select(context.Background(), P.con, &res, emplacementsList)
 	if err != nil {
-		P.log.Error("List pgxscan.Select unexpectedly failed, error : %v", err)
+		P.log.Error("GetEmplacements pgxscan.Select unexpectedly failed, error : %v", err)
 		return nil, err
 	}
 	if res == nil {
-		P.log.Info("GetGestionComSecteurs returned no results ")
+		P.log.Info("GetEmplacements returned no results ")
 		return nil, errors.New(noRecords)
 	}
 
@@ -301,7 +337,7 @@ func (P PGX) GetGestionComEmplacementsSecteur(secteur string) ([]*Dico, error) {
 		return nil, err
 	}
 	if res == nil {
-		P.log.Info("GetGestionComSecteurs returned no results ")
+		P.log.Info("GetGestionComEmplacementsSecteur returned no results ")
 		return nil, errors.New(noRecords)
 	}
 
@@ -318,7 +354,7 @@ func (P PGX) GetGestionComEmplacementsCentroidEmplacementId(idemplacement int32)
 		return nil, err
 	}
 	if res == (&EmplacementCentroid{}) {
-		P.log.Info("Get(%d) returned no results ", idemplacement)
+		P.log.Info("GetGestionComEmplacementsCentroidEmplacementId(%d) returned no results ", idemplacement)
 		return nil, errors.New(noRecords)
 	}
 	return res, nil
@@ -334,7 +370,7 @@ func (P PGX) GetBuildingCenter(idaddress int32) (*Center, error) {
 		return nil, err
 	}
 	if res == (&Center{}) {
-		P.log.Info("Get(%d) returned no results ", idaddress)
+		P.log.Info("GetBuildingCenter(%d) returned no results ", idaddress)
 		return nil, errors.New(noRecords)
 	}
 	return res, nil
@@ -371,4 +407,3 @@ func (P PGX) GetStreets() ([]*Dico, error) {
 	}
 	return res, nil
 }
-

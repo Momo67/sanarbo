@@ -1,10 +1,11 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
-	"net/url"
 	"strings"
 	"sync"
 	"testing"
@@ -13,7 +14,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/gohttpclient"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 	"github.com/stretchr/testify/assert"
 )
@@ -34,7 +35,7 @@ type testStruct struct {
 	body           string
 }
 
-func TestService_login(t *testing.T) {
+func TestServiceRestricted(t *testing.T) {
 	type fields struct {
 		Log         golog.MyLogger
 		dbConn      database.DB
@@ -54,44 +55,14 @@ func TestService_login(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := ServiceExample{
-				Log:         tt.fields.Log,
-				dbConn:      tt.fields.dbConn,
-				JwtSecret:   tt.fields.JwtSecret,
-				JwtDuration: tt.fields.JwtDuration,
-			}
-			if err := s.login(tt.args.ctx); (err != nil) != tt.wantErr {
-				t.Errorf("login() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestService_restricted(t *testing.T) {
-	type fields struct {
-		Log         golog.MyLogger
-		dbConn      database.DB
-		JwtSecret   []byte
-		JwtDuration int
-	}
-	type args struct {
-		ctx echo.Context
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := ServiceExample{
-				Log:         tt.fields.Log,
-				dbConn:      tt.fields.dbConn,
-				JwtSecret:   tt.fields.JwtSecret,
-				JwtDuration: tt.fields.JwtDuration,
+			s := Service{
+				Logger: tt.fields.Log,
+				dbConn: tt.fields.dbConn,
+				server: &goHttpEcho.Server{
+					Authenticator: nil,
+					JwtCheck:      nil,
+					VersionReader: nil,
+				},
 			}
 			if err := s.restricted(tt.args.ctx); (err != nil) != tt.wantErr {
 				t.Errorf("restricted() error = %v, wantErr %v", err, tt.wantErr)
@@ -100,7 +71,7 @@ func TestService_restricted(t *testing.T) {
 	}
 }
 
-func Test_checkHealthy(t *testing.T) {
+func TestCheckHealthy(t *testing.T) {
 	type args struct {
 		info string
 	}
@@ -120,51 +91,54 @@ func Test_checkHealthy(t *testing.T) {
 	}
 }
 
-func Test_checkReady(t *testing.T) {
-	type args struct {
-		info string
-	}
-	tests := []struct {
-		name string
-		args args
-		want bool
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := checkReady(tt.args.info); got != tt.want {
-				t.Errorf("checkReady() = %v, want %v", got, tt.want)
-			}
-		})
+func waitForServer(addr string, timeout time.Duration) error {
+	start := time.Now()
+	for {
+		if time.Since(start) > timeout {
+			return fmt.Errorf("server did not start within %s", timeout)
+		}
+		conn, err := net.Dial("tcp", addr)
+		if err != nil {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		conn.Close()
+		return nil
 	}
 }
 
 // TestMainExec is instantiating the "real" main code using the env variable (in your .env.development.local files if you use the Makefile rule)
 func TestMainExec(t *testing.T) {
-	listenPort, err := config.GetPortFromEnv(defaultPort)
-	if err != nil {
-		t.Errorf("💥💥 ERROR: 'calling GetPortFromEnv got error: %v'\n", err)
-		return
-	}
-	listenAddr := fmt.Sprintf("http://localhost%s", listenPort)
+	listenPort := config.GetPortFromEnvOrPanic(defaultPort)
+	listenIP := config.GetListenIpFromEnvOrPanic("0.0.0.0")
+	listenAddr := fmt.Sprintf("%s://%s:%d", "http", listenIP, listenPort)
 	fmt.Printf("INFO: 'Will start HTTP server listening on port %s'\n", listenAddr)
 
-	newRequest := func(method, url string, body string) *http.Request {
+	newRequest := func(method, url string, body string, contenttype string) *http.Request {
 		fmt.Printf("INFO: 💥💥'newRequest %s on %s ##BODY : %+v'\n", method, url, body)
 		r, err := http.NewRequest(method, url, strings.NewReader(body))
 		if err != nil {
 			t.Fatalf("### ERROR http.NewRequest %s on [%s] error is :%v\n", method, url, err)
 		}
+		/*
 		if method == http.MethodPost {
 			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		}
+		*/
+		r.Header.Set("Content-Type", contenttype)
 		return r
 	}
 
-	formLogin := make(url.Values)
-	formLogin.Set("login", defaultUsername)
-	formLogin.Set("pass", defaultFakeStupidPass)
+	// Créer l'objet JSON pour le login
+	loginData := map[string]string{
+		"username":      "go-admin",
+		"password_hash": "db48f76f6c362ce9c767f53d9e0dfc10f67690e9f72d23cab0454a90a56acc76", // Utiliser le mot de passe correspondant au hash stocké
+	}
+
+	jsonData, err := json.Marshal(loginData)
+	if err != nil {
+		t.Fatalf("Failed to marshal JSON: %v", err)
+	}
 
 	tests := []testStruct{
 		{
@@ -200,12 +174,12 @@ func TestMainExec(t *testing.T) {
 		{
 			name:           "4: POST to login with valid credential should return a JWT token ",
 			wantStatusCode: http.StatusOK,
-			contentType:    MIMEHtmlCharsetUTF8,
+			contentType:    echo.MIMEApplicationJSON,
 			wantBody:       "token",
 			paramKeyValues: make(map[string]string, 0),
 			httpMethod:     http.MethodPost,
 			url:            "/login",
-			body:           formLogin.Encode(),
+			body:           string(jsonData),
 		},
 	}
 
@@ -216,12 +190,16 @@ func TestMainExec(t *testing.T) {
 		defer wg.Done()
 		main()
 	}()
-	gohttpclient.WaitForHttpServer(listenAddr, 1*time.Second, 10)
+
+	err = waitForServer(fmt.Sprintf("0.0.0.0:%d", listenPort), 2*time.Second)
+	if err != nil {
+		t.Fatalf("Server did not start in time: %v", err)
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			r := newRequest(tt.httpMethod, listenAddr+tt.url, tt.body)
+			r := newRequest(tt.httpMethod, listenAddr+tt.url, tt.body, tt.contentType)
 			//r.Header.Set(HeaderContentType, tt.contentType)
 			resp, err := http.DefaultClient.Do(r)
 			if DEBUG {

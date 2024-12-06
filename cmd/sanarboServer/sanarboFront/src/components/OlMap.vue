@@ -18,15 +18,17 @@ import FeaturesControl from "./FeaturesControl.vue";
 import SearchTreeControlVue from "./SearchTreeControl.vue";
 import { createLausanneMap } from "./layers.js"
 import { getValidationColor } from './features.js';
-import { DEFAULT_BASE_LAYER } from '../config.js';
+import { DEFAULT_BASE_LAYER, BACKEND_URL, apiRestrictedUrl } from '../config.js';
+import { getLocalJwtTokenAuth } from './Login';
 
 
 // Fetch data
-const backendUrl = import.meta.env.VITE_BACKEND_API_URL;
+const backendUrl = `${BACKEND_URL}/${apiRestrictedUrl}/`;
 const urlTrees = backendUrl + "trees?offset=0&limit=1000000"
-const token = sessionStorage.getItem('token');
+//const token = sessionStorage.getItem('token');
+const token = getLocalJwtTokenAuth();
 
-const headers = {'Authorization': 'Bearer ' + token}
+const headers = {'Authorization': token}
 
 const options = {
   headers: headers
@@ -68,12 +70,22 @@ const handleFormSubmitted = () => {
   
   formSubmitted.value = true;
   showForm.value = false;
+  
+  showMsg.value = true;
+  textMsg.value = 'Sauvegarde effectuée';
+
   selectInteraction.getFeatures().clear();
 }
 
 const handleFormCanceled = () => {
   showForm.value = false;
   selectInteraction.getFeatures().clear();
+}
+
+const showMsg = ref(false);
+const textMsg = ref('');
+const msgOnClose = () => {
+  showMsg.value = false;
 }
 
 const dictionaries = ref({
@@ -121,11 +133,6 @@ const tile_layers = ref([]);
 
 
 const hiddenFeatureSource = new VectorSource();
-const hiddenFeatureLayer = new VectorLayer({
-  source: hiddenFeatureSource,
-  visible: false
-});
-layers.value.push(hiddenFeatureLayer);
 
 const arbreStyle = (feature, resolution) => {
   let color = getValidationColor(feature.get('idvalidation'));
@@ -160,6 +167,7 @@ const vectorLayer = new VectorLayer({
   id: 'arbre_layer',
   source: featureSource,
   style: arbreStyle,
+  maxResolution: 0.4,
   visible: true
 });
 layers.value.push(vectorLayer);
@@ -171,7 +179,6 @@ const arbreIdStyle = (feature, resolution) => {
       font: '10px Arial',
       offsetY: -25 / (resolution + 1),
       fill: new Fill({ color: 'rgb(255, 255, 255)' }),
-      //stroke: new Stroke({color: 'rgb(0, 0, 0)', width: 0.5}),
       scale: 1 / (resolution + 0.5)
     })
   });
@@ -187,14 +194,26 @@ layers.value.push(textLayer);
 
 const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
 
-const filterFeatures = (selected, showOnlyValidated) => {
+const filterFeatures = (selected, showOnlyValidated, showOnlyPublic) => {
   featureSource.clear();
 
   const filter = (query) => {
-    if (showOnlyValidated === true)
-      return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')) && feature.get('is_validated') === false);
-    else
-      return hiddenFeatureSource.getFeatures().filter(feature => query.includes(feature.get('idvalidation')));
+
+    return hiddenFeatureSource.getFeatures().filter(feature => {
+      if (showOnlyValidated === true)
+      {
+        if (showOnlyPublic === true) {
+          return query.includes(feature.get('idvalidation')) && (feature.get('is_validated') === false) && (feature.get('ispublic') === false);
+        } else {
+          return query.includes(feature.get('idvalidation')) && (feature.get('is_validated') === false) && (feature.get('ispublic') === true);
+        }
+      } else 
+        if (showOnlyPublic === true) 
+          return query.includes(feature.get('idvalidation')) && (feature.get('ispublic') === false);
+        else {
+          return query.includes(feature.get('idvalidation')) && (feature.get('ispublic') === true);
+        }
+    });
   }
 
   featureSource.addFeatures(filter(selected));
@@ -203,8 +222,9 @@ const filterFeatures = (selected, showOnlyValidated) => {
 const chooseFeatures = (featuresToShow) => {
   let selected = featuresToShow.validationToShow;
   let showOnlyValidated = featuresToShow.showOnlyValidated;
+  let showOnlyPublic = featuresToShow.showOnlyPublic;
   displayed_features.value = selected;
-  filterFeatures(selected, showOnlyValidated);
+  filterFeatures(selected, showOnlyValidated, showOnlyPublic);
 }
 
 const coordsFound = (geom) => {
@@ -334,6 +354,7 @@ const trackingEnabled = ref(false);
 
 const getFeatures = async () => {
   const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
+  console.log('### data:', data.value);
   errorFetch.value = hasError.value;
   fetchIsLoading.value = isLoading.value;
   errorFetchMessage.value = errorMessage.value;
@@ -347,6 +368,7 @@ const getFeatures = async () => {
     feature.set('idthing', d.external_id);
     feature.set('is_validated', d.is_validated);
     feature.set('idvalidation', d.tree_att_light.idvalidation);
+    feature.set('ispublic', d.tree_att_light.ispublic);
 
     return feature;
   });
@@ -402,64 +424,69 @@ onMounted(async () => {
 
 <template>
 
-  <div id="expandCustomControl" >
+  <div id="expandCustomControl">
 
     <TrackingControl 
       :tracking-enabled="trackingEnabled" 
-      :projection="swissProjection" 
-      class="ol-custom tracking-control" 
-      @position-changed="setPosition">
-    </TrackingControl>
+      :projection="swissProjection"
+      class="ol-custom tracking-control" @position-changed="setPosition"
+    />
 
     <LayersControl 
       :show-layers="showControlLayers" 
       :layers="tile_layers" 
-      :current-layer="selectedLayer" 
+      :current-layer="selectedLayer"
       class="ol-custom layers-control" 
       @show-changed="controlLayersOnClick" 
-      @selected-layer="chooseLayer">
-    </LayersControl>
+      @selected-layer="chooseLayer"
+    />
 
     <FeaturesControl 
       :show-features="showControlFeatures" 
-      :validations="dictionaries.validation" 
+      :validations="dictionaries.validation"
       :validation-to-show="displayed_features" 
       class="ol-custom features-control" 
-      @show-changed="controlFeaturesOnClick" 
-      @selected-validation="chooseFeatures">
-    </FeaturesControl>
+      @show-changed="controlFeaturesOnClick"
+      @selected-validation="chooseFeatures"
+    />
 
-    <SearchTreeControlVue
-      :show-search-trees="showSearchTrees"
+    <SearchTreeControlVue 
+      :show-search-trees="showSearchTrees" 
       :feature-source="featureSource"
-      class="ol-custom search-control"
-      @show-changed="controlSearchTreeOnClick"
-      @coords-found="coordsFound">
-    </SearchTreeControlVue>
+      class="ol-custom search-control" 
+      @show-changed="controlSearchTreeOnClick" 
+      @coords-found="coordsFound"
+    />
 
-  </div>  
+  </div>
 
   <div id="map" ref="mymap">
     <div v-if="fetchIsLoading">Loading...</div>
     <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
   </div>
 
-  <v-dialog
-      v-model="showForm"
-      scrollable
-      width="auto"
-  >
+  <v-dialog v-model="showForm" scrollable width="auto">
     <v-card>
       <v-card-text>
         <TreeForm 
           :show-form='showForm' 
           :tree-id="treeId" 
-          :dictionaries="dictionaries" 
-          @form-canceled="handleFormCanceled"
-          @form-submitted='handleFormSubmitted'>
-        </TreeForm>
+          :dictionaries="dictionaries"
+          @form-canceled="handleFormCanceled" 
+          @form-submitted='handleFormSubmitted'
+        />
       </v-card-text>
     </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="showMsg" scrollable width="auto">
+    <v-alert 
+      v-model="showMsg" 
+      type="success" 
+      :text="textMsg" 
+      closable 
+      close-label="Fermer"
+      @click:close="msgOnClose"/>
   </v-dialog>
 
 </template>
@@ -476,9 +503,7 @@ onMounted(async () => {
   max-width: 100px;
   max-height: auto;
   margin: 0px; /* important to ensure the custom control is not centered since the container has margin: auto by default */
-  left: -moz-calc(100% - 32px);
-  left: -webkit-calc(100% - 32px);
-  left: calc(100% - 100px);
+  left: calc(100% - 120px);
 }
 
 .ol-custom.tracking-control {

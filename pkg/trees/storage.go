@@ -33,6 +33,10 @@ type Storage interface {
 
 	IsUserAdmin(id int32) bool
 
+	IsObjectAdmin(id int32) bool
+
+	IsObjectEditor(id int32) bool
+
 	GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error)
 
 	GetGestionComSecteurs() ([]*Dico, error)

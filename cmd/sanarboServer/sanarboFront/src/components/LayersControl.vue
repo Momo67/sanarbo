@@ -68,7 +68,7 @@ const layerOnClick = (layer) => {
     </v-container>
     <v-container v-show="showLayers" class="layers-selection">
       <v-row>
-        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-4 offset-md-4 v-col-lg-4 offset-lg-4">
+        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-6 offset-md-4 v-col-lg-5 offset-lg-4 v-col-xl-4">
           <v-card>
             <v-card-item>
               <v-card-title primary-title>
@@ -79,7 +79,7 @@ const layerOnClick = (layer) => {
               </v-card-subtitle>
             </v-card-item>
             <v-divider></v-divider>
-            <v-card-text style="height: 300px;">
+            <v-card-text style="height: 340px;">
               <template v-for="(layer, key) in layers" :key="key">
                 <v-container style="height: 3.5em;">
                   <v-btn append-icon="mdi-check" :block="true" class="btn-layer" @click="layerOnClick(layer.layer.toLowerCase())">
@@ -94,11 +94,11 @@ const layerOnClick = (layer) => {
             </v-card-text>
             <v-divider></v-divider>
             <v-card-text>
-              <v-row class="v-col-sm-9">
+              <v-row class="v-col-xs-12 v-col-sm-12 v-col-md-12 v-col-lg-12 v-col-xl-9">
                 <v-col>
                   <v-btn color="primary" type="submit" @click="showLayersOnOK">OK</v-btn>
                 </v-col>
-                <v-col class="v-col-sm-9">
+                <v-col class="v-col-xs-6 v-col-sm-9 v-col-md-9 v-col-lg-9 v-col-xl-9">
                   <v-btn color="secondary" type="button" @click="showLayersOnCancel">Annuler</v-btn>
                 </v-col>
               </v-row>

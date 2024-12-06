@@ -523,6 +523,7 @@ components:
       required:
         - idthing
         - idvalidation
+        - ispublic
       type: object
       properties:
         idthing:
@@ -531,6 +532,8 @@ components:
         idvalidation:
           type: integer
           format: int32
+        ispublic:
+          type: boolean
         idtobechecked:
           type: integer
           format: int32
@@ -572,11 +575,14 @@ components:
     TreeAttLight:
       required:
         - idvalidation
+        - ispublic
       type: object
       properties:
         idvalidation:
           type: integer
           format: int32
+        ispublic:
+          type: boolean
     TreeDico:
       required:
         - id

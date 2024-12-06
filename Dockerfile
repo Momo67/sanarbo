@@ -1,5 +1,5 @@
 # Start from the latest golang base image
-FROM golang:1-alpine3.17 AS builder
+FROM golang:1.23.1-alpine AS builder
 
 # Add Maintainer Info
 LABEL maintainer="cgil"
@@ -15,7 +15,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the source from the current directory to the Working Directory inside the container
-COPY . ./
+COPY cmd/sanarboServer ./cmd/sanarboServer
+COPY cmd/sanarboServer/sanarboFront/dist ./cmd/sanarboServer/sanarboFront/dist
+COPY pkg ./pkg
 
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o sanarboServer ./cmd/sanarboServer
@@ -31,9 +33,6 @@ FROM scratch
 USER 1221:1221
 WORKDIR /goapp
 
-# Copy the Pre-built binary file from the previous stage
-COPY --from=builder /app/sanarboServer .
-
 ENV PORT="${PORT}"
 ENV DB_DRIVER="${DB_DRIVER}"
 ENV DB_HOST="${DB_HOST}"
@@ -44,6 +43,10 @@ ENV DB_PASSWORD="${DB_PASSWORD}"
 ENV DB_SSL_MODE="${DB_SSL_MODE}"
 ENV JWT_SECRET="${JWT_SECRET}"
 ENV JWT_DURATION_MINUTES="${JWT_DURATION_MINUTES}"
+ENV GO_USER_SVC_URL="${GO_USER_SVC_URL}"
+
+# Copy the Pre-built binary file from the previous stage
+COPY --from=builder /app/sanarboServer .
 # Expose port  to the outside world, goCloudK8sObject will use the env PORT as listening port or 8080 as default
 EXPOSE 9999
 
