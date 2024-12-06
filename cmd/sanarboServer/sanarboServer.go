@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -59,7 +61,6 @@ type Service struct {
 	dbConn database.DB
 	server *goHttpEcho.Server
 }
-	
 
 /*
 // login is just a trivial stupid example to test this server
@@ -186,6 +187,51 @@ func checkHealthy(info string) bool {
 	//	return false
 	//}
 	return true
+}
+
+// GetAuthenticationUrlFromEnvOrPanic returns the authentication url to be used for JWT the content of the env variable:
+// GO_USER_SVC_URL : string containing the authentication url to use for JWT authentication
+func GetAuthenticationUrlFromEnvOrPanic(defaultAuthenticationUrl string) string {
+	authenticationUrl := defaultAuthenticationUrl
+	val, exist := os.LookupEnv("GO_USER_SVC_URL")
+	if exist {
+		authenticationUrl = val
+	}
+	if utf8.RuneCountInString(authenticationUrl) < 10 {
+		panic(fmt.Sprintf("💥💥 ERROR: CONFIG ENV GO_USER_SVC_URL should contain at least 10 characters (got %d).",
+			utf8.RuneCountInString(val)))
+	}
+	return fmt.Sprintf("%s", authenticationUrl)
+}
+
+// GetBackendUrlFromEnvOrPanic returns the backend url to be used for JWT the content of the env variable:
+// GO_BACKEND_URL : string containing the backend url to use for API calls
+func GetBackendUrlFromEnvOrPanic(defaultBackendUrl string) string {
+	backendUrl := defaultBackendUrl
+	val, exist := os.LookupEnv("GO_BACKEND_URL")
+	if exist {
+		backendUrl = val
+	}
+	if utf8.RuneCountInString(backendUrl) < 10 {
+		panic(fmt.Sprintf("💥💥 ERROR: CONFIG ENV GO_BACKEND_URL should contain at least 10 characters (got %d).",
+			utf8.RuneCountInString(val)))
+	}
+	return fmt.Sprintf("%s", backendUrl)
+}
+
+func GetInfoHandlerOrPanic() echo.HandlerFunc {
+	myBackendUrl := GetBackendUrlFromEnvOrPanic("/")
+	myAuthenticationUrl := GetAuthenticationUrlFromEnvOrPanic("/login")
+	return func(ctx echo.Context) error {
+		return ctx.JSON(http.StatusOK, echo.Map{
+			"app":                APP,
+			"version":            version.VERSION,
+			"repo":               version.REPOSITORY,
+			"backend_url":        myBackendUrl,
+			"authentication_url": myAuthenticationUrl,
+			"restricted_url":     defaultSecuredApi,
+		})
+	}
 }
 
 /*
@@ -390,6 +436,7 @@ func main() {
 		return true
 	}, "Connection to DB"))
 	e.GET("/health", server.GetHealthHandler(checkHealthy, "Connection to DB"))
+	e.GET("/info", GetInfoHandlerOrPanic())
 
 	yourService := Service{
 		Logger: l,
@@ -410,9 +457,9 @@ func main() {
 	}
 	// now with restricted group reference you can register your secured handlers defined in OpenApi objects.yaml
 	objService := trees.Service{
-		Log:         l,
-		Store:       objStore,
-		Server:      server,
+		Log:    l,
+		Store:  objStore,
+		Server: server,
 	}
 	trees.RegisterHandlers(r, &objService)
 
