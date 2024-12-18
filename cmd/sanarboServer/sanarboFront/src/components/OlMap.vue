@@ -139,29 +139,25 @@ const arbreStyle = (feature, resolution) => {
   let is_validated = feature.get('is_validated');
   let style = [];
 
-  if (is_validated == false) {
-    style.push(new Style({
-      image: new RegularShape({
+  let shape = (is_validated !== false)
+    ? new CircleStyle({
+        radius: 5 / (resolution + 0.5),
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ width: 1, color: color }),
+      })
+    : new RegularShape({
         fill: new Fill({ color: color }),
         stroke: new Stroke({ width: 1, color: color }),
         points: 4,
         radius: 6 / (resolution + 0.5),
         //angle: Math.PI / 4,
-      }),
-    }));
-  } else {
-    style.push(new Style({
-        image: new CircleStyle({
-          radius: 5 / (resolution + 0.5),
-          fill: new Fill({ color: color }),
-          stroke: new Stroke({ width: 1, color: color }),
-        }),
-      }),
-    );
-  }
+      });
+
+  style.push(new Style({ image: shape }));
 
   return style;
 }
+
 const featureSource = new VectorSource();
 const vectorLayer = new VectorLayer({
   id: 'arbre_layer',
