@@ -16,10 +16,34 @@
 
 [Json Web Token for Go (RFC 7519)](https://github.com/cristalhq/jwt)
 
+[OpenLayers](https://openlayers.org/)
+
 [Common libraries package to other Micro Service in our goeland team](https://github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs)
 
 
 ## Project Layout and conventions
 This project uses the Standard Go Project Layout : https://github.com/golang-standards/project-layout
 
- 
+## Configuration
+Add in the root directory of the project an .env file based on .env_sample with your own values.
+
+The following goeland tables are needed to use this application:
+* in the public schema:
+    * go_metadata_db_schema
+    * go_group
+    * go_orgunit
+    * go_user
+    * thi_arbre_chk
+    * thi_arbre_entourage
+    * thi_arbre_etat_sanitaire
+    * thi_arbre_etat_sanitaire_remarque
+    * thi_arbre_note
+    * thi_arbre_rev_surface
+    * thi_arbre_to_be_checked
+    * thi_arbre_validation
+    * thi_street
+    * thi_street_building_address
+    
+* in the geodata_gestion_com schema:
+    * spadom_secteurs
+    * spadom_surfaces
