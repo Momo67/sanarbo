@@ -43,7 +43,9 @@ The following goeland tables are needed to use this application:
     * thi_arbre_validation
     * thi_street
     * thi_street_building_address
-    
+
 * in the geodata_gestion_com schema:
     * spadom_secteurs
     * spadom_surfaces
+
+The sanarbo role must have at least SELECT privileges on these tables
