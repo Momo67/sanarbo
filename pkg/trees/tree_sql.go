@@ -51,9 +51,9 @@ const (
 	CREATE TABLE IF NOT EXISTS tree_mobile
 	(
 	  id                      serial            CONSTRAINT tree_mobile_pk   primary key,
-	  name                    text  not null constraint name_min_length check (length(btrim(name)) > 2),
-	  description             text           constraint description_min_length check (length(btrim(description)) > 0),
-	  external_id             int,
+	  name                    text  not null 	CONSTRAINT name_min_length check (length(btrim(name)) > 2),
+	  description             text           	CONSTRAINT description_min_length check (length(btrim(description)) > 0),
+	  external_id             int 				CONSTRAINT unique_external_id UNIQUE (external_id),
 	  is_active               boolean default true not null,
 	  inactivation_time       timestamp,
 	  inactivation_reason     text,
@@ -135,7 +135,7 @@ const (
 	treesInsertFromGoeland = `INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes)
 	SELECT
 		REPLACE(thing.name, '''', ''''''),
-		COALESCE(REPLACE(thing.description, '''', ''''''), 'NULL'),
+		COALESCE(REPLACE(thing.description, '''', ''''''), NULL),
 		thing.idthing,
 		't',
 		NULL,
@@ -149,9 +149,9 @@ const (
 		COALESCE(thing.idmodificator, 0),
 		ST_GeomFromText(CONCAT('POINT(', to_char((thing_position.mineo/100.00), 'FM9999999.99'), ' ', to_char((thing_position.minsn/100.00), 'FM9999999.99'), ')'), 2056),
 		(SELECT row_to_json(f) FROM (SELECT 
-												attr.idthing,
+						attr.idthing,
 						attr.idvalidation,
-												attr.ispublic,
+						attr.ispublic,
 						attr.idtobechecked,
 						attr.idnote,
 						attr.circonference,
@@ -168,14 +168,11 @@ const (
 						attr.envracinairerem) f)
 	FROM thi_arbre
 	INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
-		INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
-		INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
-		WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
-		ORDER BY thi_arbre.idthing
-	LIMIT 1000
-
+	INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
+	INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
+	WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
+	ORDER BY thi_arbre.idthing
 	ON CONFLICT (external_id) DO NOTHING;`
-
 
 	secteursList = `WITH secteurs AS (
 		SELECT DISTINCT UPPER(nom_sect) AS nom
