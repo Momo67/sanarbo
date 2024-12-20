@@ -33,6 +33,9 @@ The following goeland tables are needed to use this application:
     * go_group
     * go_orgunit
     * go_user
+    * thi_arbre
+    * thing
+    * thing_position
     * thi_arbre_chk
     * thi_arbre_entourage
     * thi_arbre_etat_sanitaire
