@@ -81,6 +81,10 @@
       <small v-if="submitted && !dataCurrentUser.email" class="p-error">L'email est obligatoire.</small>
     </div>
     <div class="field">
+      <label for="external_id">Id Goéland</label>
+      <InputText id="external_id" v-model.trim.number="dataCurrentUser.external_id" />
+    </div>
+    <div class="field">
       <label for="orgunit">OrgUnit</label>
       <InputText id="orgunit" v-model.trim="dataCurrentUser.orgunit_id" />
     </div>
@@ -238,7 +242,8 @@ const getNumUsers = computed(() => {
   }
   if (loadedData.value) {
     return dataUsers.value.length;
-  } if ((isNullOrUndefined(dataUsers.value)) || dataUsers.value.length < 1 || !loadingData.value) {
+  } 
+  if ((isNullOrUndefined(dataUsers.value)) || dataUsers.value.length < 1 || !loadingData.value) {
     user.getList((retval, statusMessage) => {
       if (statusMessage === 'SUCCESS') {
         dataUsers.value = retval;
