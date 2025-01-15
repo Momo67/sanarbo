@@ -71,8 +71,7 @@ const handleFormSubmitted = () => {
   formSubmitted.value = true;
   showForm.value = false;
   
-  showMsg.value = true;
-  textMsg.value = 'Sauvegarde effectuée';
+  showAlert();
 
   selectInteraction.getFeatures().clear();
 }
@@ -84,9 +83,18 @@ const handleFormCanceled = () => {
 
 const showMsg = ref(false);
 const textMsg = ref('');
+const timeout = 3000;
 const msgOnClose = () => {
   showMsg.value = false;
 }
+
+const showAlert = () => {
+  showMsg.value = true;
+  textMsg.value = 'Sauvegarde effectuée';
+  setTimeout(() => {
+    showMsg.value = false;
+  }, timeout);
+} 
 
 const dictionaries = ref({
   "validation": {},
@@ -215,10 +223,14 @@ const filterFeatures = (selected, showOnlyValidated, showOnlyPublic) => {
   featureSource.addFeatures(filter(selected));
 }
 
+let selected = displayed_features.value;
+let showOnlyValidated = false;
+let showOnlyPublic = false;
+
 const chooseFeatures = (featuresToShow) => {
-  let selected = featuresToShow.validationToShow;
-  let showOnlyValidated = featuresToShow.showOnlyValidated;
-  let showOnlyPublic = featuresToShow.showOnlyPublic;
+  selected = featuresToShow.validationToShow;
+  showOnlyValidated = featuresToShow.showOnlyValidated;
+  showOnlyPublic = featuresToShow.showOnlyPublic;
   displayed_features.value = selected;
   filterFeatures(selected, showOnlyValidated, showOnlyPublic);
 }
@@ -372,7 +384,7 @@ const getFeatures = async () => {
   hiddenFeatureSource.clear();
   hiddenFeatureSource.addFeatures(features);
 
-  filterFeatures(displayed_features.value)
+  filterFeatures(selected, showOnlyValidated, showOnlyPublic);
 }
 
 onMounted(async () => {
@@ -480,9 +492,11 @@ onMounted(async () => {
       v-model="showMsg" 
       type="success" 
       :text="textMsg" 
+      transistion="fade-transition"
       closable 
       close-label="Fermer"
-      @click:close="msgOnClose"/>
+      @click:close="msgOnClose">
+    </v-alert>
   </v-dialog>
 
 </template>
@@ -524,5 +538,14 @@ onMounted(async () => {
   position: relative;
   z-index: 1000;
   top: 0.5em;
+}
+
+.fade-transition-enter-active,
+.fade-transition-leave-active {
+  transition: all 2s ease;
+}
+.fade-transition-enter-from,
+.fade-transition-leave-to {
+  opacity: 0;
 }
 </style>
