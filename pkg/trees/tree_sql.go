@@ -86,52 +86,6 @@ const (
 	
 	treesDicoGetEtatSanitaireRem = "SELECT id, remarque as value FROM thi_arbre_etat_sanitaire_remarque WHERE is_active = TRUE ORDER BY sort_order;"
 
-	/*
-	treesInsertFromGoeland = `SELECT thi_arbre.idthing, 'INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes) 
-	VALUES (''' 
-		|| REPLACE(thing.name, '''', '''''')
-		|| ''',' || COALESCE('''' || REPLACE(thing.description, '''', '''''') || '''', 'NULL') 
-		|| ',' || thing.idthing
-		|| ',''t'''
-		|| ',NULL'
-		|| ',NULL'
-		|| ',NULL'
-		|| ',NULL'
-		|| ',NULL'
-		|| ',''' || thing.datecreated || ''''
-		|| ',' || thing.idcreator
-		--|| ',''' || thing.datelastmodif || ''''
-		|| ',''' || COALESCE(thing.datelastmodif, '1970-01-01') || ''
-		--|| ',' || thing.idmodificator
-		|| ''',' || COALESCE(thing.idmodificator, 0)
-		|| ',ST_GeomFromText(''POINT(' || to_char((thing_position.mineo/100.00), 'FM9999999.99') || ' ' || to_char((thing_position.minsn/100.00), 'FM9999999.99') || ')'', 2056)'
-		|| ',''' || (SELECT REPLACE(row_to_json(f)::text, '''', '''''') FROM (SELECT 
-												attr.idthing,
-                                                attr.idvalidation,
-												attr.ispublic,
-                                                attr.idtobechecked,
-                                                attr.idnote,
-                                                attr.circonference,
-                                                attr.identourage,
-                                                attr.idchkentourage,
-                                                attr.entouragerem,
-                                                attr.idrevsurface,
-                                                attr.idchkrevsurface,
-                                                attr.revsurfacerem,
-                                                attr.idetatsanitairepied,
-                                                attr.idetatsanitairetronc,
-                                                attr.idetatsanitairecouronne,
-                                                attr.etatsanitairerem,
-                                                attr.envracinairerem) f)
-		|| ''');'
-	FROM thi_arbre
-	INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
-	INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
-	INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
-	WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
-	ORDER BY thi_arbre.idthing
-	LIMIT 100000;`
-*/
 	treesInsertFromGoeland = `INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes)
 	SELECT
 		REPLACE(thing.name, '''', ''''''),
@@ -173,6 +127,39 @@ const (
 	WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
 	ORDER BY thi_arbre.idthing
 	ON CONFLICT (external_id) DO NOTHING;`
+
+	thiArbreUpdate = `
+	UPDATE thi_arbre
+	SET 
+		idthing = (tree_attributes->>'idthing')::INT,
+		idvalidation = (tree_attributes->>'idvalidation')::INT,
+		ispublic = (tree_attributes->>'ispublic')::BOOLEAN,
+		idtobechecked = (tree_attributes->>'idtobechecked')::INT,
+		idnote = (tree_attributes->>'idnote')::INT,
+		circonference = (tree_attributes->>'circonference')::INT,
+		identourage = (tree_attributes->>'identourage')::INT,
+		idchkentourage = (tree_attributes->>'idchkentourage')::INT,
+		entouragerem = tree_attributes->>'entouragerem',
+		idrevsurface = (tree_attributes->>'idrevsurface')::INT,
+		idchkrevsurface = (tree_attributes->>'idchkrevsurface')::INT,
+		revsurfacerem = tree_attributes->>'revsurfacerem',
+		idetatsanitairepied = (tree_attributes->>'idetatsanitairepied')::INT,
+		idetatsanitairetronc = (tree_attributes->>'idetatsanitairetronc')::INT,
+		idetatsanitairecouronne = (tree_attributes->>'idetatsanitairecouronne')::INT,
+		etatsanitairerem = tree_attributes->>'etatsanitairerem',
+		envracinairerem = tree_attributes->>'envracinairerem'
+	FROM tree_mobile 
+	WHERE thi_arbre.idthing = external_id AND is_validated = FALSE;`
+
+	thingUpdate = `
+	UPDATE thing
+	SET
+		idmodificator = tm.last_modification_user,
+		datelastmodif = tm.last_modification_time,
+		isvalidated = FALSE,
+		datevalidation = NULL
+	FROM tree_mobile tm
+	WHERE thing.idtypething = 74 AND thing.idthing = tm.external_id AND tm.is_validated = FALSE;`
 
 	secteursList = `WITH secteurs AS (
 		SELECT DISTINCT UPPER(nom_sect) AS nom
