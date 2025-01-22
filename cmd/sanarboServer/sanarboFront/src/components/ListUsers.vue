@@ -86,7 +86,7 @@
     </div>
     <div class="field">
       <label for="orgunit">OrgUnit</label>
-      <InputText id="orgunit" v-model.trim="dataCurrentUser.orgunit_id" />
+      <InputText id="orgunit" v-model.number="dataCurrentUser.orgunit_id" />
     </div>
     <div class="field">
       <label for="groups">Groupes</label>
