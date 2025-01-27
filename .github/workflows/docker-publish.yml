@@ -68,6 +68,7 @@ jobs:
           JWT_CONTEXT_KEY: ${{ secrets.JWT_CONTEXT_KEY }}
           JWT_DURATION_MINUTES: 30
           GO_BACKEND_URL: http://sanarbo.lausanne.ch
+          GO_USER_SVC_URL: http://ingress.local/user-group
           ADMIN_USER: ${{ secrets.ADMIN_USER }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
