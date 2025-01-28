@@ -43,13 +43,13 @@ func TestSearchTreesByName(t *testing.T) {
 		{
 			name:    "it should return an object with name attribute matching pattern containing *",
 			args:    args{t: "*Culotte suisse*"},
-			wantRes: []*TreeList{{Name: "Pyrus communis ''Culotte suisse'' - secteur OUEST - Valency plantage (45904)"}},
+			wantRes: []*TreeList{{Name: "Pyrus communis \"Culotte suisse\" - secteur OUEST - Valency plantage (45904)"}},
 			wantErr: nil,
 		},
 		{
 			name:    "it should return an object with name attribute matching pattern containing %",
 			args:    args{t: "%%Culotte suisse%%"},
-			wantRes: []*TreeList{{Name: "Pyrus communis ''Culotte suisse'' - secteur OUEST - Valency plantage (45904)"}},
+			wantRes: []*TreeList{{Name: "Pyrus communis \"Culotte suisse\" - secteur OUEST - Valency plantage (45904)"}},
 			wantErr: nil,
 		},
 		{
