@@ -52,14 +52,12 @@ func TestSearchTreesByName(t *testing.T) {
 			wantRes: []*TreeList{{Name: "Pyrus communis ''Culotte suisse'' - secteur OUEST - Valency plantage (45904)"}},
 			wantErr: nil,
 		},
-		/*
 		{
 			name:    "should return an error if no tree found",
 			args:    args{t: "666"},
 			wantRes: nil,
 			wantErr: ErrNoRecordFound,
 		},
-		*/
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
