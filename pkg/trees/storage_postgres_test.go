@@ -129,7 +129,7 @@ func (w *WorkingEnv) GetStorage() error {
 func assertWorkingEnvOK(t testing.TB, got error) {
 	t.Helper()
 	if got != nil {
-		t.Errorf(got.Error())
+		t.Error(got.Error())
 		t.Fatal("unable to get a working env")
 	}
 }
