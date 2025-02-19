@@ -147,7 +147,7 @@ const arbreStyle = (feature, resolution) => {
   let is_validated = feature.get('is_validated');
   let style = [];
 
-  let shape = (is_validated !== false)
+  let shape = ((is_validated !== false) && (is_validated !== true))
     ? new CircleStyle({
         radius: 5 / (resolution + 0.5),
         fill: new Fill({ color: color }),
