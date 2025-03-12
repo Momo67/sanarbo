@@ -123,7 +123,6 @@ const getIsObjectValidator = async () => {
   if (doesCurrentSessionExist()) {
     await doesUserBelongToGroup('object_validator')
     .then((retVal) => {
-      console.log('### retVal:', retVal);
       if (retVal instanceof Error) {
         log.e('# doesUserBelongToGroup() ERROR err: ', retVal);
         if (retVal.message === 'Network Error') {
@@ -259,8 +258,6 @@ watch(isUserAuthenticated, async (newVal) => {
   } else {
     isObjectValidator.value = false;
   }
-  console.log('### newVal:', newVal);
-  console.log('### isObjectValidator:', isObjectValidator.value);
 });
 
 onMounted(() => {

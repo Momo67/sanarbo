@@ -197,15 +197,15 @@ export const doesUserBelongToGroup = async (groupName, baseServerUrl = BACKEND_U
     const groupId = res.data[0].id;
     let response = false;
     if (doesCurrentSessionExist()) {  // attention qu'une session existe en local veut pas dire que le jwt token est encore valide !
-      if (sessionStorage.getItem(`${APP}_goapi_groups`) == null) response = false;
-      if (sessionStorage.getItem(`${APP}_goapi_groups`) === 'null') response = false;
-      // let's clone it and converting to an array of integers
-      const tmp = sessionStorage.getItem(`${APP}_goapi_groups`);
-      if (tmp.indexOf(',') > 0) {
-        const tmpArr = tmp.split(',').map((i) => parseInt(i, 10));
-        response = tmpArr.includes(groupId);
-      } else {
-        response = parseInt(tmp, 10) === groupId;
+      if ((sessionStorage.getItem(`${APP}_goapi_groups`) != null) && (sessionStorage.getItem(`${APP}_goapi_groups`) !== 'null')) {
+        // let's clone it and converting to an array of integers
+        const tmp = sessionStorage.getItem(`${APP}_goapi_groups`);
+        if (tmp.indexOf(',') > 0) {
+          const tmpArr = tmp.split(',').map((i) => parseInt(i, 10));
+          response = tmpArr.includes(groupId);
+        } else {
+          response = parseInt(tmp, 10) === groupId;
+        }
       }
     }  
     return {
