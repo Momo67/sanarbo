@@ -37,8 +37,6 @@ const setBaseLayer = (olMap, baseLayerName) => {
 		     .forEach((layer) => {
 				     const type = layer.get('type');
 				     const source = layer.getSource();
-				     console.log(`### layername : ${source.layer_}`)
-				     console.log(`### type : ${layer.get('type')}`)
 				     if (type === 'base') {
 						     const currentBaseLayer = source.getLayer();
 						     console.log(`currentBaseLayer : ${currentBaseLayer}`)

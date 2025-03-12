@@ -45,6 +45,53 @@ const (
 
 	treesSearchByName = "SELECT id, name, description, is_active, create_time, creator, external_id FROM tree_mobile WHERE name LIKE $1;"
 
+	treesToValidate = `
+	(
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		FROM tree_mobile t
+		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
+			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
+		WHERE ($1::TEXT IS NOT NULL AND ss.nom_sect = $1::TEXT AND $2::INTEGER IS NULL) 
+			AND t.is_validated IS NOT NULL
+	)
+	UNION ALL
+	(
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		FROM tree_mobile t
+		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
+			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
+		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NOT NULL AND ss.idgo_empl = $2::INTEGER) 
+			AND t.is_validated IS NOT NULL
+	)
+	UNION ALL
+	(
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		FROM tree_mobile t
+		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		INNER JOIN geodata_gestion_com.spadom_surfaces sect 
+			ON ST_Contains(ST_Force2D(sect.the_geom), t.geom) 
+		INNER JOIN geodata_gestion_com.spadom_surfaces empl 
+			ON ST_Contains(ST_Force2D(empl.the_geom), t.geom) 
+		WHERE ($1::TEXT IS NOT NULL AND sect.nom_sect = $1::TEXT AND $2::INTEGER IS NOT NULL AND empl.idgo_empl = $2::INTEGER)
+			AND t.is_validated IS NOT NULL
+	)
+	UNION ALL
+	(
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		FROM tree_mobile t
+		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NULL) 
+			AND t.is_validated IS NOT NULL
+	)
+	ORDER BY external_id;`
+
+	validateTrees = `
+	UPDATE tree_mobile
+	SET is_validated = $2, id_validator = $3
+	WHERE external_id = $1;`
+
 	treesIsActive = "SELECT isactive FROM tree_mobile WHERE id = $1;"
 
 	treesCreateTable = `
@@ -164,14 +211,15 @@ const (
 	secteursList = `WITH secteurs AS (
 		SELECT DISTINCT UPPER(nom_sect) AS nom
 		FROM geodata_gestion_com.spadom_surfaces
+		WHERE nom_sect IS NOT NULL AND nom_sect <> ''
 		ORDER BY nom
 	)
 	SELECT row_number() over () AS id, nom as value
 	FROM secteurs;`
 
-	emplacementsList = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value
-	FROM geodata_gestion_com.spadom_surfaces
-	ORDER BY value;`
+	emplacementsList = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value, idgo_sect
+        FROM geodata_gestion_com.spadom_surfaces WHERE nomgo_empl IS NOT NULL
+        ORDER BY value;`
 
 	emplacementsListBySecteur = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value
 	FROM geodata_gestion_com.spadom_surfaces
@@ -194,4 +242,8 @@ const (
 	buildingCenter = `SELECT 'POINT(' || (sba.coordeo / 100.0)::text || ' ' || (sba.coordsn / 100.0)::text || ')' AS geometry
 	FROM thi_street_building_address sba
 	WHERE sba.idaddress = $1`
+
+	groupByName = `SELECT id, name, create_time, creator, last_modification_time, last_modification_user, is_active, inactivation_time, inactivation_reason, comment	
+	FROM go_group
+	WHERE name = $1;`
 )

@@ -393,7 +393,7 @@ const editUser = (currentUser) => {
       // let's retrieve all groups
       loadGroupsList(() => {
         userDialog.value = true;
-      });
+      });toast
     } else {
       log.e(`# ERROR in editUser user.getUser callback: ${statusMessage} \n error:`, retval);
       toast.add({

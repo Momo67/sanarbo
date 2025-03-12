@@ -146,20 +146,33 @@ const arbreStyle = (feature, resolution) => {
   let color = getValidationColor(feature.get('idvalidation'));
   let is_validated = feature.get('is_validated');
   let style = [];
+  let shape = null;
 
-  let shape = ((is_validated !== false) && (is_validated !== true))
-    ? new CircleStyle({
-        radius: 5 / (resolution + 0.5),
-        fill: new Fill({ color: color }),
-        stroke: new Stroke({ width: 1, color: color }),
-      })
-    : new RegularShape({
+  switch (is_validated) {
+    case true:
+      shape = new RegularShape({
         fill: new Fill({ color: color }),
         stroke: new Stroke({ width: 1, color: color }),
         points: 4,
         radius: 6 / (resolution + 0.5),
         //angle: Math.PI / 4,
       });
+      break;
+    case false:
+      shape = new CircleStyle({
+        radius: 5 / (resolution + 0.5),
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ width: 2, color: "rgb(255, 255, 255)" }),
+      });
+      break;
+    default:
+      shape = new CircleStyle({
+        radius: 5 / (resolution + 0.5),
+        fill: new Fill({ color: color }),
+        stroke: new Stroke({ width: 1, color: color }),
+      });
+      break;
+  }
 
   style.push(new Style({ image: shape }));
 
@@ -362,7 +375,6 @@ const trackingEnabled = ref(false);
 
 const getFeatures = async () => {
   const {hasError, errorMessage, isLoading, data} = await useFetch(urlTrees, options);
-  console.log('### data:', data.value);
   errorFetch.value = hasError.value;
   fetchIsLoading.value = isLoading.value;
   errorFetchMessage.value = errorMessage.value;
@@ -407,11 +419,8 @@ onMounted(async () => {
 				     const type = layer.get('type');
 				     const source = layer.getSource();
 				     if (type === 'base') {
-	  			      const currentBaseLayer = source.getLayer();
-                console.log(`currentBaseLayer : ${currentBaseLayer}`)
                 tile_layers.value.push({title: layer.getProperties().title , layer: source.getLayer()});
 				     }
-             console.log('### layer:', layer);
 		       });
 
     textStyles = myOlMap.textStyles;

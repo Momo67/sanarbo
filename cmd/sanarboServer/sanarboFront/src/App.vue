@@ -21,34 +21,26 @@
           <template v-if="isUserAuthenticated">
             <Tabs v-model:value="activeTab">
               <TabList>
-              <!--
-                <template v-if="isUserAdmin">
-              -->
-                  <Tab value="0" :disabled="!isUserAdmin">Utilisateurs</Tab>
-                  <Tab value="1" :disabled="!isUserAdmin">Groupes</Tab>
-              <!--
-                </template>
-              -->
+                <Tab value="0" :disabled="!isUserAdmin">Utilisateurs</Tab>
+                <Tab value="1" :disabled="!isUserAdmin">Groupes</Tab>
                 <Tab value="2">Carte</Tab>
-                <Tab value="3">Aide</Tab>
+                <Tab value="3" :disabled="!isObjectValidator">Validation</Tab>
+                <Tab value="4">Aide</Tab>
               </TabList>
               <TabPanels>
-              <!--
-                <template v-if="isUserAdmin">
-              -->
-                  <TabPanel value="0">
-                    <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
-                  </TabPanel>
-                  <TabPanel value="1">
-                    <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
-                  </TabPanel>
-              <!--
-                </template>
-              -->
+                <TabPanel value="0">
+                  <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
+                </TabPanel>
+                <TabPanel value="1">
+                  <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
+                </TabPanel>
                 <TabPanel value="2">
                   <OlMap />
                 </TabPanel>
                 <TabPanel value="3">
+                  <TreeValidation @user-invalid-session="logout" />
+                </TabPanel>
+                <TabPanel value="4">
                   <div class="help-content">
                     <h3>Aide</h3>
                     <p>Bienvenue dans la section d'aide. Ici, vous trouverez des informations utiles pour vous guider à
@@ -57,6 +49,7 @@
                       <li><strong>Utilisateurs:</strong> Gérer les utilisateurs de l'application.</li>
                       <li><strong>Groupes:</strong> Gérer les groupes d'utilisateurs.</li>
                       <li><strong>Carte:</strong> Visualiser et interagir avec la carte.</li>
+                      <li><strong>Validation:</strong> Gérer la validation des arbres modifiés.</li>
                     </ul>
                   </div>
                 </TabPanel>
@@ -86,13 +79,13 @@ import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import Toast from 'primevue/toast';
 import Toolbar from 'primevue/toolbar';
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
 import {
   getUserId,
   getUserEmail, getUserIsAdmin, getTokenStatus, clearSessionStorage,
-  doesCurrentSessionExist, getUserLogin,
+  doesCurrentSessionExist, getUserLogin, doesUserBelongToGroup,
 } from './components/Login';
 import {
   APP, APP_TITLE, BACKEND_URL, BUILD_DATE, VERSION, getLog, HOME,
@@ -101,11 +94,13 @@ import { isNullOrUndefined } from './tools/utils';
 import ListUsers from './components/ListUsers.vue';
 import ListGroups from './components/ListGroups.vue';
 import OlMap from './components/OlMap.vue';
+import TreeValidation from './components/TreeValidation.vue';
 
 const log = getLog(APP, 4, 2);
 //const activeIndex = ref('0');
 const isUserAuthenticated = ref(false);
 const isUserAdmin = ref(false);
+const isObjectValidator = ref(false);
 const isNetworkOk = ref(true);
 const feedback = ref(null);
 
@@ -120,10 +115,54 @@ const displayFeedBack = (text, type) => {
   feedbackVisible.value = true;
   feedback.value.displayFeedBack(feedbackMsg, feedbackType);
 };
+
+const getIsObjectValidator = async () => {
+  log.t('# IN getIsObjectValidator()');
+
+  let res = false;
+  if (doesCurrentSessionExist()) {
+    await doesUserBelongToGroup('object_validator')
+    .then((retVal) => {
+      console.log('### retVal:', retVal);
+      if (retVal instanceof Error) {
+        log.e('# doesUserBelongToGroup() ERROR err: ', retVal);
+        if (retVal.message === 'Network Error') {
+          displayFeedBack(`Il semble qu'il y a un problème de réseau !${retVal}`, 'error');
+        }
+        log.e('# doesUserBelongToGroup() ERROR err.response: ', retVal.response);
+        log.w('# doesUserBelongToGroup() ERROR err.response.data: ', retVal.response.data);
+        if (!isNullOrUndefined(retVal.response)) {
+          let reason = retVal.response.data;
+          if (!isNullOrUndefined(retVal.response.data.message)) {
+            reason = retVal.response.data.message;
+          }
+          log.w(`# doesUserBelongToGroup() SERVER SAYS REASON : ${reason}`);
+        }
+        res = false;
+      } else {
+        log.l('# doesUserBelongToGroup() SUCCESS res: ', retVal);
+        if (isNullOrUndefined(retVal.err) && (retVal.status === 200)) {
+          res = retVal.data;
+        }
+        if (retVal.status === 401) {
+          res = false;
+        }
+
+      }
+    })
+    .catch((err) => {
+      log.e('# doesUserBelongToGroup() in catch ERROR err: ', err);
+      displayFeedBack(`Il semble qu'il y a eu un problème réseau ! erreur: ${err}`, 'error');
+      res = false;
+    });
+  }
+  return res;
+};
+
 const aboutInfo = () => {
   const appInfo = `${APP_TITLE}, v.${VERSION} ${BUILD_DATE}`;
   if (isUserAuthenticated.value) {
-    const userInfo = `${getUserLogin()} id[${getUserId()}] Admin:${getUserIsAdmin()}`;
+    const userInfo = `${getUserLogin()} id[${getUserId()}] Admin:${getUserIsAdmin()} Validator:${isObjectValidator.value}`;
     displayFeedBack(`${appInfo} ⇒ 😊 vous êtes authentifié comme ${userInfo}`, 'info');
   } else {
     displayFeedBack(`${appInfo} ⇒ vous n'êtes pas encore authentifié`, 'info');
@@ -208,10 +247,20 @@ const loginFailure = (v) => {
   isUserAdmin.value = false;
 };
 
-const activeTab = computed({
-  get() {
-    return isUserAdmin.value ? '0' : '2';
-  },
+const activeTab = ref(isUserAdmin.value ? '0' : '2');
+
+watch(isUserAdmin, (newVal) => {
+  activeTab.value = newVal ? '0' : '2';
+});
+
+watch(isUserAuthenticated, async (newVal) => {
+  if (newVal) {
+    isObjectValidator.value = await getIsObjectValidator();
+  } else {
+    isObjectValidator.value = false;
+  }
+  console.log('### newVal:', newVal);
+  console.log('### isObjectValidator:', isObjectValidator.value);
 });
 
 onMounted(() => {

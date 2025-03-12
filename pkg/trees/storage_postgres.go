@@ -177,6 +177,45 @@ func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
 	return res, nil
 }
 
+// TreesToValidate implements Storage.
+func (P PGX) TreesToValidate(sectName string, idEmplacement int32) ([]*ValidationList, error) {
+	P.log.Debug("entering TreesToValidate(%s, %d)", sectName, idEmplacement)
+	var res []*ValidationList
+
+	var secteur *string
+	if sectName == "" {
+		secteur = nil
+	} else {
+		secteur = &sectName
+	}
+	var emplacement *int32
+	if idEmplacement == -1 {
+		emplacement = nil
+	} else {
+		emplacement = &idEmplacement
+	}
+	err := pgxscan.Select(context.Background(), P.con, &res, treesToValidate, &secteur, &emplacement)
+	if err != nil {
+		return nil, GetErrorF("error : TreesToValidate query failed", err)
+	}
+	if res == nil {
+		P.log.Info("TreesToValidate returned no results ")
+		return []*ValidationList{}, nil
+	}
+
+	return res, nil
+}
+
+func (P PGX) ValidateTree(id int32, isValidated bool, idValidator int32) error {
+	P.log.Debug("entering ValidateTree(%d, %d, %v)", id, idValidator, isValidated)
+	_, err := P.con.Exec(context.Background(), validateTrees, id, isValidated, idValidator)
+	if err != nil {
+		return GetErrorF("error : ValidateTree query failed", err)
+	}
+
+	return nil
+}
+
 func (P PGX) IsTreeActive(id int32) bool {
 	P.log.Debug("entering IsTreeActive(%d)", id)
 	var isActive bool
@@ -232,8 +271,25 @@ func (P PGX) IsObjectEditor(id int32) bool {
 	if isLocked {
 		P.log.Error("IsObjectEditor(%d) user is locked", id)
 		return false
-	}	
+	}
 	return isObjectEditor
+}
+
+// IsObjectValidator implements Storage.
+func (P PGX) IsObjectValidator(id int32) bool {
+	P.log.Debug("entering IsObjectValidator(%d)", id)
+	var isLocked bool
+	var isObjectValidator bool
+	err := P.con.QueryRow(context.Background(), "SELECT is_locked, (6 = ANY(groups_id)) AS is_object_validator FROM go_user WHERE id = $1", id).Scan(&isLocked, &isObjectValidator)
+	if err != nil {
+		P.log.Error("IsObjectValidator(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
+		return false
+	}
+	if isLocked {
+		P.log.Error("IsObjectValidator(%d) user is locked", id)
+		return false
+	}
+	return isObjectValidator
 }
 
 func CompareTree(t1, t2 *TreeList, attr string) bool {
@@ -402,7 +458,23 @@ func (P PGX) GetStreets() ([]*Dico, error) {
 		return nil, err
 	}
 	if res == nil {
-		P.log.Info("Select returned no results ",)
+		P.log.Info("Select returned no results ")
+		return nil, errors.New(noRecords)
+	}
+	return res, nil
+}
+
+func (P PGX) GetGroupByName(name string) ([]*Group, error) {
+	P.log.Debug("entering GetGroupByName(%s)", name)
+
+	var res []*Group
+	err := pgxscan.Select(context.Background(), P.con, &res, groupByName, name)
+	if err != nil {
+		P.log.Error("GetGroupByName(%s) pgxscan.Select unexpectedly failed, error : %v", name, err)
+		return nil, err	
+	}	
+	if res == nil {
+		P.log.Info("GetGroupByName(%s) returned no results ", name)
 		return nil, errors.New(noRecords)
 	}
 	return res, nil

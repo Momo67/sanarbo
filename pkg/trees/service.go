@@ -11,15 +11,16 @@ import (
 )
 
 const (
-	noAdminPrivilege = "current user has no admin privilege"
-	noObjectAdminPrivilege = "current user has no admin privilege on this object"
+	noAdminPrivilege        = "current user has no admin privilege"
+	noObjectAdminPrivilege  = "current user has no admin privilege on this object"
 	noObjectEditorPrivilege = "current user has no editor privilege on this object"
+	noObjectValidatorPrivilege = "current user has no validator privilege on this object"
 )
 
 type Service struct {
-	Log         golog.MyLogger
-	Store       Storage
-	Server      *goHttpEcho.Server
+	Log    golog.MyLogger
+	Store  Storage
+	Server *goHttpEcho.Server
 }
 
 
@@ -123,10 +124,10 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	/*
-	currentUserId := claims.User.UserId
-	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectEditor(int32(currentUserId))) {
-		return ctx.JSON(http.StatusUnauthorized, noObjectEditorPrivilege)
-	}
+		currentUserId := claims.User.UserId
+		if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectEditor(int32(currentUserId))) {
+			return ctx.JSON(http.StatusUnauthorized, noObjectEditorPrivilege)
+		}
 	*/
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
@@ -184,6 +185,60 @@ func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
 	}
 	return ctx.JSON(http.StatusOK, list)
 
+}
+
+func (s *Service) ValidationList(ctx echo.Context, params ValidationListParams) error {
+	s.Log.Debug("entering ValidationList() params:%v\n", params)
+
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := claims.User.UserId
+	s.Log.Info("in ValidationList : currentUserId: %d", currentUserId)
+	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
+		return ctx.JSON(http.StatusUnauthorized, noObjectEditorPrivilege)
+	}
+
+	var sectName string = ""
+	if params.Secteur != nil {
+		sectName = string(*params.Secteur)
+	}
+	var idEmplacement int32 = -1
+	if params.Emplacement != nil {
+		idEmplacement = int32(*params.Emplacement)
+	}
+	list, err := s.Store.TreesToValidate(sectName, idEmplacement)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.TreesToValidate :%v", err))
+	}
+	return ctx.JSON(http.StatusOK, list)
+}
+
+func (s *Service) SaveValidation(ctx echo.Context) error {
+	s.Log.Debug("entering SaveValidation()")
+
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := claims.User.UserId
+	s.Log.Info("in SaveValidation : current	UserId: %d", currentUserId)
+	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
+		return ctx.JSON(http.StatusUnauthorized, noObjectValidatorPrivilege)
+	}
+
+	var validationList []TreesToValidate
+	if err := ctx.Bind(&validationList); err != nil {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("SaveValidation has invalid format [%v]", err))
+	}
+	if len(validationList) < 1 {
+		return ctx.JSON(http.StatusBadRequest, "SaveValidation list cannot be empty")
+	}
+	for _, tree := range validationList {
+		if tree.ExternalId < 1 {
+			return ctx.JSON(http.StatusBadRequest, "SaveValidation tree externalId cannot be empty")
+		}
+		if tree.IsValidated {
+			s.Store.ValidateTree(tree.ExternalId, tree.IsValidated, int32(currentUserId))
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, "SaveValidation")
 }
 
 func (s Service) GetDicoTable(ctx echo.Context, table GetDicoTableParamsTable) error {
@@ -267,3 +322,12 @@ func (s Service) GetStreets(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, dico)
 }
 
+func (s *Service) GetGroupByName(ctx echo.Context, name string) error {
+	s.Log.Debug("entering GetGroupByName(%s)", name)
+	
+    group, err := s.Store.GetGroupByName(name)
+    if err != nil {
+        return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting group by name: %v", err))
+    }
+    return ctx.JSON(http.StatusOK, group)
+}

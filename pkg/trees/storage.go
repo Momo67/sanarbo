@@ -28,6 +28,10 @@ type Storage interface {
 	Delete(id int32) error
 	// SearchTreesByName list of existing objects where the name contains the given search pattern or err if not found
 	SearchTreesByName(pattern string) ([]*TreeList, error)
+	// TreesToValidate returns a list of trees to be validated given sector and emplacement
+	TreesToValidate(secteur string, idEmplacement int32) ([]*ValidationList, error)
+
+	ValidateTree(id int32, isValidated bool, idValidator int32) error
 	// IsTreeActive returns true if the object with the specified id has the is_active attribute set to true
 	IsTreeActive(id int32) bool
 
@@ -36,6 +40,8 @@ type Storage interface {
 	IsObjectAdmin(id int32) bool
 
 	IsObjectEditor(id int32) bool
+
+	IsObjectValidator(id int32) bool
 
 	GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error)
 
@@ -47,11 +53,13 @@ type Storage interface {
 
 	GetGestionComEmplacementsSecteur(string) ([]*Dico, error)
 
-	GetBuildingCenter(int32) (*Center,error) 
-	
+	GetBuildingCenter(int32) (*Center, error)
+
 	GetBuildingsNumbers(int32) ([]*Dico, error)
-	
+
 	GetStreets() ([]*Dico, error)
+
+	GetGroupByName(string) ([]*Group, error)
 }
 
 func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {

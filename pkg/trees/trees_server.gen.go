@@ -28,6 +28,9 @@ type ServerInterface interface {
 	// Get dico values
 	// (GET /gestion_com/secteurs)
 	GetGestionComSecteurs(ctx echo.Context) error
+	// Get group by name
+	// (GET /groups/{name})
+	GetGroupByName(ctx echo.Context, name string) error
 	// Center of building
 	// (GET /thing/buildings/center/{addressId})
 	GetBuildingCenter(ctx echo.Context, addressId int32) error
@@ -52,6 +55,12 @@ type ServerInterface interface {
 	// Update allows to modify information about a specific treeId
 	// (PUT /trees/{treeId})
 	Update(ctx echo.Context, treeId int32) error
+	// Get list of tress to be validated
+	// (GET /validation)
+	ValidationList(ctx echo.Context, params ValidationListParams) error
+	// Save will save the validation for a group of trees
+	// (POST /validation)
+	SaveValidation(ctx echo.Context) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -124,6 +133,22 @@ func (w *ServerInterfaceWrapper) GetGestionComSecteurs(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetGestionComSecteurs(ctx)
+	return err
+}
+
+// GetGroupByName converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGroupByName(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "name", ctx.Param("name"), &name, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetGroupByName(ctx, name)
 	return err
 }
 
@@ -260,6 +285,44 @@ func (w *ServerInterfaceWrapper) Update(ctx echo.Context) error {
 	return err
 }
 
+// ValidationList converts echo context to params.
+func (w *ServerInterfaceWrapper) ValidationList(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(JWTAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ValidationListParams
+	// ------------- Optional query parameter "secteur" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "secteur", ctx.QueryParams(), &params.Secteur)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter secteur: %s", err))
+	}
+
+	// ------------- Optional query parameter "emplacement" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "emplacement", ctx.QueryParams(), &params.Emplacement)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter emplacement: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.ValidationList(ctx, params)
+	return err
+}
+
+// SaveValidation converts echo context to params.
+func (w *ServerInterfaceWrapper) SaveValidation(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(JWTAuthScopes, []string{})
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SaveValidation(ctx)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -293,6 +356,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/gestion_com/emplacements/centroid/:emplacementId", wrapper.GetGestionComEmplacementsCentroidEmplacementId)
 	router.GET(baseURL+"/gestion_com/emplacements/:secteur", wrapper.GetGestionComEmplacementsSecteur)
 	router.GET(baseURL+"/gestion_com/secteurs", wrapper.GetGestionComSecteurs)
+	router.GET(baseURL+"/groups/:name", wrapper.GetGroupByName)
 	router.GET(baseURL+"/thing/buildings/center/:addressId", wrapper.GetBuildingCenter)
 	router.GET(baseURL+"/thing/buildings/numbers/:streetId", wrapper.GetBuildingsNumbers)
 	router.GET(baseURL+"/thing/streets", wrapper.GetStreets)
@@ -301,5 +365,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/trees/:treeId", wrapper.Delete)
 	router.GET(baseURL+"/trees/:treeId", wrapper.Get)
 	router.PUT(baseURL+"/trees/:treeId", wrapper.Update)
+	router.GET(baseURL+"/validation", wrapper.ValidationList)
+	router.POST(baseURL+"/validation", wrapper.SaveValidation)
 
 }

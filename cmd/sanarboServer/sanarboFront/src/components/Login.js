@@ -39,6 +39,7 @@ export const getToken = async (baseServerUrl, username, passwordHash) => {
         sessionStorage.setItem(`${APP}_goapi_username`, jwtValues.User.login);
         sessionStorage.setItem(`${APP}_goapi_email`, jwtValues.User.email);
         sessionStorage.setItem(`${APP}_goapi_isadmin`, jwtValues.User.is_admin);
+        sessionStorage.setItem(`${APP}_goapi_groups`, jwtValues.User.groups);
         sessionStorage.setItem(`${APP}_goapi_date_expiration`, jwtValues.exp);
       }
       return response.data;
@@ -183,6 +184,62 @@ export const getUserFirstGroups = () => {
     return parseInt(tmpArr, 10);
   }
   return null;
+};
+
+export const doesUserBelongToGroup = async (groupName, baseServerUrl = BACKEND_URL) => {
+  const method = 'doesUserBelongToGroup';
+  log.t(`## IN ${method}`);
+  
+  axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
+  try {
+    const res = await axios.get(`${baseServerUrl}/${apiRestrictedUrl}/groups/${groupName}`);
+    log.l(`${method} axios.get Success ! response :`, res);
+    const groupId = res.data[0].id;
+    let response = false;
+    if (doesCurrentSessionExist()) {  // attention qu'une session existe en local veut pas dire que le jwt token est encore valide !
+      if (sessionStorage.getItem(`${APP}_goapi_groups`) == null) response = false;
+      if (sessionStorage.getItem(`${APP}_goapi_groups`) === 'null') response = false;
+      // let's clone it and converting to an array of integers
+      const tmp = sessionStorage.getItem(`${APP}_goapi_groups`);
+      if (tmp.indexOf(',') > 0) {
+        const tmpArr = tmp.split(',').map((i) => parseInt(i, 10));
+        response = tmpArr.includes(groupId);
+      } else {
+        response = parseInt(tmp, 10) === groupId;
+      }
+    }  
+    return {
+      msg:'SUCCESS', err: null, status: res.status, data: response,
+    };
+
+  } catch (error) {
+    const msg = `Error: in ${method} ## axios.get(${baseServerUrl}/${apiRestrictedUrl}/groups/${groupName}) ERROR ## error :${error}`;
+    log.w(msg);
+    if (error.response) {
+      const errResponse = error.response;
+      return {
+        msg, err: error, status: errResponse.status, data: null,
+      };
+    }
+    return {
+      msg, err: error, status: null, data: null,
+    };
+  }
+};
+
+export const isUserInGroup = (groupId) => {
+  if (doesCurrentSessionExist()) {  // attention qu'une session existe en local veut pas dire que le jwt token est encore valide !
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) == null) return false;
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) === 'null') return false;
+    // let's clone it and converting to an array of integers
+    const tmp = sessionStorage.getItem(`${APP}_goapi_groups`);
+    if (tmp.indexOf(',') > 0) {
+      const tmpArr = tmp.split(',').map((i) => parseInt(i, 10));
+      return tmpArr.includes(groupId);
+    }
+    return parseInt(tmp, 10) === groupId;
+  }
+  return false;
 };
 
 export const getUserGroupsArray = () => {

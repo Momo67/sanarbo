@@ -47,6 +47,20 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Group defines model for Group.
+type Group struct {
+	Comment              *string    `json:"comment,omitempty"`
+	CreateTime           *time.Time `json:"create_time,omitempty"`
+	Creator              *int32     `json:"creator,omitempty"`
+	Id                   int32      `json:"id"`
+	InactivationReason   *string    `json:"inactivation_reason,omitempty"`
+	InactivationTime     *time.Time `json:"inactivation_time,omitempty"`
+	IsActive             *bool      `json:"is_active,omitempty"`
+	LastModificationTime *time.Time `json:"last_modification_time,omitempty"`
+	LastModificationUser *int32     `json:"last_modification_user,omitempty"`
+	Name                 string     `json:"name"`
+}
+
 // Tree defines model for Tree.
 type Tree struct {
 	Comment              *string        `json:"comment,omitempty"`
@@ -116,6 +130,26 @@ type TreeList struct {
 	TreeAttLight TreeAttLight `json:"tree_att_light"`
 }
 
+// TreesToValidate defines model for TreesToValidate.
+type TreesToValidate struct {
+	ExternalId  int32 `json:"external_id"`
+	IdValidator int32 `json:"id_validator"`
+	IsValidated bool  `json:"is_validated"`
+}
+
+// ValidationList defines model for ValidationList.
+type ValidationList struct {
+	Description          *string      `json:"description,omitempty"`
+	ExternalId           int32        `json:"external_id"`
+	Geom                 string       `json:"geom"`
+	Id                   int32        `json:"id"`
+	IsValidated          *bool        `json:"is_validated,omitempty"`
+	LastModificationTime string       `json:"last_modification_time"`
+	LastModificationUser string       `json:"last_modification_user"`
+	Name                 string       `json:"name"`
+	TreeAttLight         TreeAttLight `json:"tree_att_light"`
+}
+
 // GetDicoTableParamsTable defines parameters for GetDicoTable.
 type GetDicoTableParamsTable string
 
@@ -128,8 +162,23 @@ type ListParams struct {
 	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// ValidationListParams defines parameters for ValidationList.
+type ValidationListParams struct {
+	// Secteur sector where trees must be located
+	Secteur *string `form:"secteur,omitempty" json:"secteur,omitempty"`
+
+	// Emplacement location where trees must be located
+	Emplacement *int32 `form:"emplacement,omitempty" json:"emplacement,omitempty"`
+}
+
+// SaveValidationJSONBody defines parameters for SaveValidation.
+type SaveValidationJSONBody = []TreesToValidate
+
 // CreateJSONRequestBody defines body for Create for application/json ContentType.
 type CreateJSONRequestBody = Tree
 
 // UpdateFormdataRequestBody defines body for Update for application/x-www-form-urlencoded ContentType.
 type UpdateFormdataRequestBody = Tree
+
+// SaveValidationJSONRequestBody defines body for SaveValidation for application/json ContentType.
+type SaveValidationJSONRequestBody = SaveValidationJSONBody
