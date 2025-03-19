@@ -196,17 +196,17 @@ const (
 		etatsanitairerem = tree_attributes->>'etatsanitairerem',
 		envracinairerem = tree_attributes->>'envracinairerem'
 	FROM tree_mobile 
-	WHERE thi_arbre.idthing = external_id AND is_validated = FALSE;`
+	WHERE thi_arbre.idthing = external_id AND is_validated = TRUE;`
 
 	thingUpdate = `
 	UPDATE thing
 	SET
 		idmodificator = tm.last_modification_user,
 		datelastmodif = tm.last_modification_time,
-		isvalidated = FALSE,
-		datevalidation = NULL
+		isvalidated = TRUE,
+		datevalidation = NOW()
 	FROM tree_mobile tm
-	WHERE thing.idtypething = 74 AND thing.idthing = tm.external_id AND tm.is_validated = FALSE;`
+	WHERE thing.idtypething = 74 AND thing.idthing = tm.external_id AND tm.is_validated = TRUE;`
 
 	secteursList = `WITH secteurs AS (
 		SELECT DISTINCT UPPER(nom_sect) AS nom
