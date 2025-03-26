@@ -304,7 +304,6 @@ const save = () => {
       is_validated: tree.is_validated,
     };
   });
-  console.log('###treesToSave:', treesToSave);
   if (treesToSave.length === 0) {
     toast.add({
       severity: 'info', summary: 'Info', detail: '⚠⚠ Aucune validation à sauver !', life: timeToDisplayError,

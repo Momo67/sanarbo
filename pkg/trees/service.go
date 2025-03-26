@@ -217,7 +217,8 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
-	s.Log.Info("in SaveValidation : current	UserId: %d", currentUserId)
+	externalUserId := claims.User.ExternalId
+	s.Log.Info("in SaveValidation : external UserId: %d", externalUserId)
 	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
 		return ctx.JSON(http.StatusUnauthorized, noObjectValidatorPrivilege)
 	}
@@ -234,7 +235,7 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 			return ctx.JSON(http.StatusBadRequest, "SaveValidation tree externalId cannot be empty")
 		}
 		if tree.IsValidated {
-			s.Store.ValidateTree(tree.ExternalId, tree.IsValidated, int32(currentUserId))
+			s.Store.ValidateTree(tree.ExternalId, tree.IsValidated, int32(externalUserId))
 		}
 	}
 

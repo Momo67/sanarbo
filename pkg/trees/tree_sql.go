@@ -173,7 +173,9 @@ const (
 	INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
 	WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
 	ORDER BY thi_arbre.idthing
-	ON CONFLICT (external_id) DO NOTHING;`
+	ON CONFLICT (external_id) DO UPDATE
+	SET geom = EXCLUDED.geom,
+		tree_attributes = jsonb_set(EXCLUDED.tree_attributes, '{idvalidation}', (EXCLUDED.tree_attributes->>'idvalidation')::jsonb);`
 
 	thiArbreUpdate = `
 	UPDATE thi_arbre

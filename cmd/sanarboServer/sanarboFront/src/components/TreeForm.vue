@@ -1,88 +1,3 @@
-<script setup>
-import {onMounted, reactive} from 'vue';
-import {useFetch} from "../composables/FetchData.js";
-import { BACKEND_URL, apiRestrictedUrl } from '../config.js';
-import { getLocalJwtTokenAuth } from './Login.js';
-
-
-const backendUrl = `${BACKEND_URL}/${apiRestrictedUrl}/`;
-const urlTrees = backendUrl + "trees";
-
-
-const emit = defineEmits(['formSubmitted', 'formCanceled'])
-const props = defineProps({
-  showForm: {type: Boolean, required: false, default: false},
-  treeId: {type: Number, required: false, default: 0},
-  dictionaries: {type: Object, required: true, default: null}
-})
-
-
-const Tree = reactive({
-  external_id: '',
-  is_active: '',
-  is_validated: '',
-  create_time: '',
-  creator: '',
-  description: '',
-  id: '',
-  name: '',
-  geom: '',
-  tree_attributes: {},
-});
-
-
-// Get session storage token
-//const token = sessionStorage.getItem('token');
-const token = getLocalJwtTokenAuth();
-const headers = {
-  'Authorization': token,
-  'Content-Type': 'application/json',
-}
-
-const options = {
-  headers: headers
-}
-
-
-onMounted(async () => {
-
-  const tree = await useFetch(urlTrees + '/' + props.treeId, options)
-  Tree.external_id = tree.data.value.external_id;
-  Tree.is_active = tree.data.value.is_active;
-  Tree.is_validated = false;
-  Tree.create_time = tree.data.value.create_time;
-  Tree.creator = tree.data.value.creator;
-  Tree.description = tree.data.value.description;
-  Tree.id = tree.data.value.id;
-  Tree.name = tree.data.value.name;
-  Tree.tree_attributes = tree.data.value.tree_attributes;
-  Tree.geom = tree.data.value.geom;
-})
-
-
-// eslint-disable-next-line no-unused-vars
-const submitForm = async () => {
-
-  const options = {
-    headers: headers,
-    method: 'PUT',
-    body: JSON.stringify(Tree)
-  }
-
-  await useFetch(urlTrees + '/' + props.treeId, options)
-
-  emit('formSubmitted', JSON.stringify(Tree));
-};
-
-
-const handleFormCanceled = () => {
-  emit('formCanceled')
-}
-
-
-</script>
-
-
 <template>
   <div>
     <v-form @submit.prevent="submitForm">
@@ -92,22 +7,33 @@ const handleFormCanceled = () => {
         <div style="font-style: italic">{{ Tree.description }}</div>
         <v-row class="py-5">
           <v-col cols="12" md="12">
-            <v-select
-                v-model.number="Tree.tree_attributes.idtobechecked"
-                :items="dictionaries.to_be_checked.data"
-                item-title="value"
-                item-value="id"
-                label="À contrôler"
-            >
-            </v-select>
-          </v-col>
-          <v-col cols="12" md="12">
+          <!--
             <v-select
                 v-model.number="Tree.tree_attributes.idvalidation"
                 :items="dictionaries.validation.data"
                 item-title="value"
                 item-value="id"
                 label="Statut"
+                disabled
+            >
+            </v-select>
+            -->
+            <v-text-field
+                v-model.number="statut"
+                label="Statut"
+                outlined
+                readonly
+                disabled
+            >
+            </v-text-field>
+          </v-col>
+          <v-col cols="12" md="12">
+            <v-select
+                v-model.number="Tree.tree_attributes.idtobechecked"
+                :items="dictionaries.to_be_checked.data"
+                item-title="value"
+                item-value="id"
+                label="À contrôler"
             >
             </v-select>
           </v-col>
@@ -271,7 +197,86 @@ const handleFormCanceled = () => {
   </div>
 </template>
 
+<script setup>
+import { onMounted, reactive, ref } from 'vue';
+import {useFetch} from "../composables/FetchData.js";
+import { BACKEND_URL, apiRestrictedUrl } from '../config.js';
+import { getLocalJwtTokenAuth } from './Login.js';
 
-<style scoped>
 
-</style>
+const backendUrl = `${BACKEND_URL}/${apiRestrictedUrl}/`;
+const urlTrees = backendUrl + "trees";
+
+
+const emit = defineEmits(['formSubmitted', 'formCanceled'])
+const props = defineProps({
+  showForm: {type: Boolean, required: false, default: false},
+  treeId: {type: Number, required: false, default: 0},
+  dictionaries: {type: Object, required: true, default: null}
+})
+
+
+const Tree = reactive({
+  external_id: '',
+  is_active: '',
+  is_validated: '',
+  create_time: '',
+  creator: '',
+  description: '',
+  id: '',
+  name: '',
+  geom: '',
+  tree_attributes: {},
+});
+
+const statut = ref('');
+
+// Get session storage token
+//const token = sessionStorage.getItem('token');
+const token = getLocalJwtTokenAuth();
+const headers = {
+  'Authorization': token,
+  'Content-Type': 'application/json',
+}
+
+const options = {
+  headers: headers
+}
+
+
+onMounted(async () => {
+
+  const tree = await useFetch(urlTrees + '/' + props.treeId, options)
+  Tree.external_id = tree.data.value.external_id;
+  Tree.is_active = tree.data.value.is_active;
+  Tree.is_validated = false;
+  Tree.create_time = tree.data.value.create_time;
+  Tree.creator = tree.data.value.creator;
+  Tree.description = tree.data.value.description;
+  Tree.id = tree.data.value.id;
+  Tree.name = tree.data.value.name;
+  Tree.tree_attributes = tree.data.value.tree_attributes;
+  Tree.geom = tree.data.value.geom;
+  statut.value = props.dictionaries.validation.data.find(x => x.id === Tree.tree_attributes.idvalidation).value;
+})
+
+
+// eslint-disable-next-line no-unused-vars
+const submitForm = async () => {
+
+  const options = {
+    headers: headers,
+    method: 'PUT',
+    body: JSON.stringify(Tree)
+  }
+
+  await useFetch(urlTrees + '/' + props.treeId, options)
+
+  emit('formSubmitted', JSON.stringify(Tree));
+};
+
+
+const handleFormCanceled = () => {
+  emit('formCanceled')
+}
+</script>
