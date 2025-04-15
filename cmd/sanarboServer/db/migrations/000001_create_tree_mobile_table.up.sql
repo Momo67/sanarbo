@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS tree_mobile
   comment                 text,
   is_validated            boolean default false,
   id_validator            int,
+  datevalidation    		  timestamp without time zone,
   create_time             timestamp default now() not null,
   creator                 integer  not null,
   last_modification_time  timestamp,

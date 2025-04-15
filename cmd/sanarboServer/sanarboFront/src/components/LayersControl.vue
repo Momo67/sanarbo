@@ -1,59 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue';
-
-const props = defineProps({
-  showLayers: {
-    type: Boolean,
-    required: false,
-    default: false
-  },
-  layers: {
-    type: Array,
-    required: true
-  },
-  currentLayer: {
-    type: String,
-    required: true
-  }
-});
-
-const layers = ref(props.layers);
-const currentLayer = ref(props.currentLayer);
-let oldLayer = currentLayer.value;
-const showLayers = computed({
-  get() {
-    return props.showLayers;
-  },
-  set(value) {
-    emit('show-changed', value);
-  }
-});
-
-const emit = defineEmits(['selected-layer', 'show-changed']);
-
-const showLayersOnClick = () => {
-  showLayers.value = !showLayers.value;
-}
-
-const showLayersOnOK = () => {
-  showLayers.value = false;
-  oldLayer = currentLayer.value;
-  emit('selected-layer', currentLayer.value); 
-}
-
-const showLayersOnCancel = () => {
-  showLayers.value = false;
-  currentLayer.value = oldLayer;
-  emit('selected-layer', currentLayer.value);
-}
-
-const layerOnClick = (layer) => {
-  currentLayer.value = layer;
-  emit('selected-layer', currentLayer.value);
-}
-
-</script>
-
 <template>
   <div d-flex>
     <v-container fluid class="ol-custom layers-control">
@@ -110,6 +54,62 @@ const layerOnClick = (layer) => {
   </div>
 </template>
 
+<script setup>
+import { computed, ref } from 'vue';
+
+const props = defineProps({
+  showLayers: {
+    type: Boolean,
+    required: false,
+    default: false
+  },
+  layers: {
+    type: Array,
+    required: true
+  },
+  currentLayer: {
+    type: String,
+    required: true
+  }
+});
+
+const layers = ref(props.layers);
+const currentLayer = ref(props.currentLayer);
+let oldLayer = currentLayer.value;
+const showLayers = computed({
+  get() {
+    return props.showLayers;
+  },
+  set(value) {
+    emit('show-changed', value);
+  }
+});
+
+const emit = defineEmits(['selected-layer', 'show-changed']);
+
+const showLayersOnClick = () => {
+  showLayers.value = !showLayers.value;
+}
+
+const showLayersOnOK = () => {
+  showLayers.value = false;
+  oldLayer = currentLayer.value;
+  emit('selected-layer', currentLayer.value); 
+}
+
+const showLayersOnCancel = () => {
+  showLayers.value = false;
+  currentLayer.value = oldLayer;
+  emit('selected-layer', currentLayer.value);
+}
+
+const layerOnClick = (layer) => {
+  currentLayer.value = layer;
+  emit('selected-layer', currentLayer.value);
+}
+
+</script>
+
 <style scoped>
 .btn-showlayers-on {
   background-color: white;
@@ -124,7 +124,7 @@ const layerOnClick = (layer) => {
 .layers-selection {
   position: fixed;
   z-index: 1000;
-  top: 10em;
+  top: 1em;
   left: 50%;
   -webkit-transform: translateX(-50%);
   -ms-transform: translateX(-50%);

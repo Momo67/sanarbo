@@ -1,3 +1,117 @@
+<template>
+  <div d-flex>
+    <v-container fluid class="ol-custom sesrch-control">
+      <v-tooltip top>
+        <template #activator="{ props }">
+          <v-btn v-bind="props" :class="{ 'btn-treesearch-on': showSearchTrees, 'btn-treesearch-off': !showSearchTrees }" icon="mdi-magnify" density="default" @click="showTreesOnClick"></v-btn>
+        </template>
+        <slot name="tooltip">
+          <span>Recherche d'un arbre</span>
+        </slot>
+      </v-tooltip>
+    </v-container>
+    <v-container v-show="showSearchTrees" class="tree-search">
+      <v-row>
+        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-6 offset-md-4 v-col-lg-5 offset-lg-4 v-col-xl-4">
+          <v-card>
+            <v-card-item>
+              <v-card-title primary-title>
+                Recherche d'arbres
+              </v-card-title>
+            </v-card-item>
+            <v-divider></v-divider>
+            <v-card-text>
+              <v-form ref="form" @submit.prevent="submitForm">
+                <v-container>
+
+                  <v-row class="py-1">
+                    <v-col cols="12" md="12">
+                      <v-text-field v-model="idThing" clearable label="Identifiant de l'arbre" :rules="[rules.valid]" @click:clear="onClear"></v-text-field>
+                    </v-col>
+                  </v-row>
+
+                  <v-row class="py-1">
+                    <v-col cols="4" md="4">
+                      <v-select
+                        v-model="secteurName"
+                        :items="gestion_com.secteurs.data"
+                        item-title="value"
+                        item-value="value"
+                        label="Secteur"
+                      >
+                      </v-select>
+                    </v-col>
+                    <v-col cols="8" md="8">
+                      <v-autocomplete
+                        v-model.number="idEmplacement"
+                        auto-select-first
+                        :items="gestion_com.emplacements.data"
+                        no-data-text="Aucune donnée"
+                        item-title="value"
+                        item-value="id"
+                        label="Emplacement"
+                      >
+                      </v-autocomplete>
+                    </v-col>
+                  </v-row>
+
+                  <v-row class="py-1">
+                    <v-col cols="8" md="8">
+                      <v-autocomplete
+                        v-model="idStreet"
+                        auto-select-first
+                        :items="things.streets.data"
+                        no-data-text="Aucune donnée"
+                        item-title="value"
+                        item-value="id"
+                        label="Rue"
+                      >
+                       <template #item="{ props, item }">
+                        <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
+                       </template> 
+                      </v-autocomplete>
+                    </v-col>
+                    <v-col cols="4" md="4">
+                      <v-select
+                        v-model.number="idAddress"
+                        :items="things.buildings.data"
+                        no-data-text="Aucune donnée"
+                        item-title="value"
+                        item-value="id"
+                        label="N°"
+                      >
+                      </v-select>
+                    </v-col>
+                  </v-row>
+
+                </v-container>
+              </v-form>
+            </v-card-text>
+            <v-card-text>
+
+              <v-alert v-model="showAlert" type="warning" :text="textAlert" closable close-label="Fermer" @click:close="alertOnClose">
+              </v-alert>
+            
+            </v-card-text>
+            <v-divider></v-divider>
+            <v-card-text>
+              <v-row class="v-col-xs-12 v-col-sm-12 v-col-md-12 v-col-lg-12 v-col-xl-9">
+                <v-col>
+                  <v-btn color="primary" type="submit" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
+                </v-col>
+                <v-col class="v-col-xs-6 v-col-sm-9 v-col-md-9 v-col-lg-9 v-col-xl-9">
+                  <v-btn color="secondary" type="button" @click="searchTreeOnCancel">Annuler</v-btn>
+                </v-col>
+              </v-row>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+    
+  </div>
+</template>
+
 <script setup>
 import { computed, ref, reactive, watch, onMounted } from 'vue';
 import proj4 from 'proj4';
@@ -272,120 +386,6 @@ onMounted(async () => {
 
 </script>
 
-<template>
-  <div d-flex>
-    <v-container fluid class="ol-custom sesrch-control">
-      <v-tooltip top>
-        <template #activator="{ props }">
-          <v-btn v-bind="props" :class="{ 'btn-treesearch-on': showSearchTrees, 'btn-treesearch-off': !showSearchTrees }" icon="mdi-magnify" density="default" @click="showTreesOnClick"></v-btn>
-        </template>
-        <slot name="tooltip">
-          <span>Recherche d'un arbre</span>
-        </slot>
-      </v-tooltip>
-    </v-container>
-    <v-container v-show="showSearchTrees" class="tree-search">
-      <v-row>
-        <v-col class="v-col-xs-12 v-col-sm-6 offset-sm-3 v-col-md-6 offset-md-4 v-col-lg-5 offset-lg-4 v-col-xl-4">
-          <v-card>
-            <v-card-item>
-              <v-card-title primary-title>
-                Recherche d'arbres
-              </v-card-title>
-            </v-card-item>
-            <v-divider></v-divider>
-            <v-card-text>
-              <v-form ref="form" @submit.prevent="submitForm">
-                <v-container>
-
-                  <v-row class="py-1">
-                    <v-col cols="12" md="12">
-                      <v-text-field v-model="idThing" clearable label="Identifiant de l'arbre" :rules="[rules.valid]" @click:clear="onClear"></v-text-field>
-                    </v-col>
-                  </v-row>
-
-                  <v-row class="py-1">
-                    <v-col cols="4" md="4">
-                      <v-select
-                        v-model="secteurName"
-                        :items="gestion_com.secteurs.data"
-                        item-title="value"
-                        item-value="value"
-                        label="Secteur"
-                      >
-                      </v-select>
-                    </v-col>
-                    <v-col cols="8" md="8">
-                      <v-autocomplete
-                        v-model.number="idEmplacement"
-                        auto-select-first
-                        :items="gestion_com.emplacements.data"
-                        no-data-text="Aucune donnée"
-                        item-title="value"
-                        item-value="id"
-                        label="Emplacement"
-                      >
-                      </v-autocomplete>
-                    </v-col>
-                  </v-row>
-
-                  <v-row class="py-1">
-                    <v-col cols="8" md="8">
-                      <v-autocomplete
-                        v-model="idStreet"
-                        auto-select-first
-                        :items="things.streets.data"
-                        no-data-text="Aucune donnée"
-                        item-title="value"
-                        item-value="id"
-                        label="Rue"
-                      >
-                       <template #item="{ props, item }">
-                        <v-list-item v-bind="props" :subtitle="item.raw.subtitle"></v-list-item>
-                       </template> 
-                      </v-autocomplete>
-                    </v-col>
-                    <v-col cols="4" md="4">
-                      <v-select
-                        v-model.number="idAddress"
-                        :items="things.buildings.data"
-                        no-data-text="Aucune donnée"
-                        item-title="value"
-                        item-value="id"
-                        label="N°"
-                      >
-                      </v-select>
-                    </v-col>
-                  </v-row>
-
-                </v-container>
-              </v-form>
-            </v-card-text>
-            <v-card-text>
-
-              <v-alert v-model="showAlert" type="warning" :text="textAlert" closable close-label="Fermer" @click:close="alertOnClose">
-              </v-alert>
-            
-            </v-card-text>
-            <v-divider></v-divider>
-            <v-card-text>
-              <v-row class="v-col-xs-12 v-col-sm-12 v-col-md-12 v-col-lg-12 v-col-xl-9">
-                <v-col>
-                  <v-btn color="primary" type="submit" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
-                </v-col>
-                <v-col class="v-col-xs-6 v-col-sm-9 v-col-md-9 v-col-lg-9 v-col-xl-9">
-                  <v-btn color="secondary" type="button" @click="searchTreeOnCancel">Annuler</v-btn>
-                </v-col>
-              </v-row>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-container>
-    
-  </div>
-</template>
-
 <style scoped>
 .btn-treesearch-on {
   background-color: white;
@@ -400,7 +400,7 @@ onMounted(async () => {
 .tree-search {
   position: fixed;
   z-index: 1000;
-  top: 10em;
+  top: 1em;
   left: 50%;
   -webkit-transform: translateX(-50%);
   -ms-transform: translateX(-50%);

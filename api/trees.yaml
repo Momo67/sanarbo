@@ -545,6 +545,9 @@ components:
         id_validator:
           type: integer
           format: int32
+        datevalidation:
+          type: string
+          format: date-time
         create_time:
           type: string
           format: date-time

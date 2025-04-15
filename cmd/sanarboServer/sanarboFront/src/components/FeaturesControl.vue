@@ -1,54 +1,3 @@
-<script setup>
-import { computed, ref } from 'vue';
-import { getValidationColor } from './features.js';
-
-
-const props = defineProps({
-  showFeatures: {
-    type: Boolean,
-    required: false,
-    default: false,
-  },
-  validations: {
-    type: Object,
-    required: true
-  },
-  validationToShow: {
-    type: Array,
-    required: true
-  },
-});
-
-const validationToShow = ref(props.validationToShow);
-
-const showFeatures = computed({
-  get() {
-    return props.showFeatures;
-  },
-  set(value) {
-    emit('show-changed', value);
-  }
-});
-
-const showOnlyValidated = ref(false);
-const showOnlyPublic = ref(false);
-
-const emit = defineEmits(['selected-validation', 'show-changed']);
-
-const showFeaturesOnClick = () => {
-  showFeatures.value = !showFeatures.value;
-}
-
-const selectFeaturesOnOK = () => {
-  showFeatures.value = false;
-  emit('selected-validation', {validationToShow: validationToShow.value, showOnlyValidated: showOnlyValidated.value, showOnlyPublic: showOnlyPublic.value});
-}
-const selectFeaturesOnCancel = () => {
-  showFeatures.value = false;
-}
-
-</script>
-
 <template>
   <div d-flex>
     <v-container fluid class="ol-custom features-control">
@@ -115,6 +64,57 @@ const selectFeaturesOnCancel = () => {
   </div>
 </template>
 
+<script setup>
+import { computed, ref } from 'vue';
+import { getValidationColor } from './features.js';
+
+
+const props = defineProps({
+  showFeatures: {
+    type: Boolean,
+    required: false,
+    default: false,
+  },
+  validations: {
+    type: Object,
+    required: true
+  },
+  validationToShow: {
+    type: Array,
+    required: true
+  },
+});
+
+const validationToShow = ref(props.validationToShow);
+
+const showFeatures = computed({
+  get() {
+    return props.showFeatures;
+  },
+  set(value) {
+    emit('show-changed', value);
+  }
+});
+
+const showOnlyValidated = ref(false);
+const showOnlyPublic = ref(false);
+
+const emit = defineEmits(['selected-validation', 'show-changed']);
+
+const showFeaturesOnClick = () => {
+  showFeatures.value = !showFeatures.value;
+}
+
+const selectFeaturesOnOK = () => {
+  showFeatures.value = false;
+  emit('selected-validation', {validationToShow: validationToShow.value, showOnlyValidated: showOnlyValidated.value, showOnlyPublic: showOnlyPublic.value});
+}
+const selectFeaturesOnCancel = () => {
+  showFeatures.value = false;
+}
+
+</script>
+
 <style scoped>
 .btn-showfeatures-on {
   background-color: white;
@@ -129,7 +129,7 @@ const selectFeaturesOnCancel = () => {
 .features-selection {
   position: fixed;
   z-index: 1000;
-  top: 10em;
+  top: 1em;
   left: 50%;
   -webkit-transform: translateX(-50%);
   -ms-transform: translateX(-50%);

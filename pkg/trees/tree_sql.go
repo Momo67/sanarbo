@@ -49,48 +49,85 @@ const (
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
 			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
 		WHERE ($1::TEXT IS NOT NULL AND ss.nom_sect = $1::TEXT AND $2::INTEGER IS NULL) 
-			AND t.is_validated IS NOT NULL
+			AND t.is_validated = FALSE
 	)
 	UNION ALL
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
 			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
 		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NOT NULL AND ss.idgo_empl = $2::INTEGER) 
-			AND t.is_validated IS NOT NULL
+			AND t.is_validated = FALSE
 	)
 	UNION ALL
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		INNER JOIN geodata_gestion_com.spadom_surfaces sect 
 			ON ST_Contains(ST_Force2D(sect.the_geom), t.geom) 
 		INNER JOIN geodata_gestion_com.spadom_surfaces empl 
 			ON ST_Contains(ST_Force2D(empl.the_geom), t.geom) 
 		WHERE ($1::TEXT IS NOT NULL AND sect.nom_sect = $1::TEXT AND $2::INTEGER IS NOT NULL AND empl.idgo_empl = $2::INTEGER)
-			AND t.is_validated IS NOT NULL
+			AND t.is_validated = FALSE
 	)
 	UNION ALL
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON t.last_modification_user = u.id
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NULL) 
-			AND t.is_validated IS NOT NULL
+			AND t.is_validated = FALSE
 	)
 	ORDER BY external_id;`
 
 	validateTrees = `
 	UPDATE tree_mobile
-	SET is_validated = $2, id_validator = $3
+	SET is_validated = $2, id_validator = $3, datevalidation = NULL
 	WHERE external_id = $1;`
+
+	treesValidatedToUpdate = `
+	SELECT xmlelement(name "Arbres",
+		xmlagg(
+			xmlelement(name "ThiArbre",
+				xmlforest(
+					t.idthing AS "IdObjet",
+					t.name AS "Nom",
+					t.description AS "Commentaire",
+					t.idtypething AS "IdTypeThing",
+					'arbre' AS "TypeThing",
+					t.idmodificator AS "IdModificator",
+					CASE WHEN t.isvalidated THEN 1 ELSE 0 END AS "IsValidated",
+					t.datevalidation AS "DateValidation",
+					a.idcirconference AS "IdCirconference",
+					a.circonference AS "Circonference",
+					a.identourage AS "IdEntourage",
+					a.idchkentourage AS "IdChkEntourage",
+					a.entouragerem AS "EntourageRem",
+					a.idrevsurface AS "IdRevSurface",
+					a.idchkrevsurface AS "IdChkRevSurface",
+					a.revsurfacerem AS "RevSurfaceRem",
+					a.idetatsanitairepied AS "IdEtatSanitairePied",
+					a.idetatsanitairetronc AS "IdEtatSanitaireTronc",
+					a.idetatsanitairecouronne AS "IdEtatSanitaireCouronne",
+					a.idtobechecked AS "IdToBeChecked",
+					a.idvalidation AS "IdValidation",
+					a.idnote AS "IdNote",
+					a.etatsanitairerem AS "EtatSanitaireRem"
+				)
+			)
+	)
+	) AS xml_result
+	FROM tree_mobile tm
+	JOIN thing t ON t.idthing = tm.external_id
+	JOIN thi_arbre a ON t.idthing = a.idthing
+	WHERE tm.is_validated = TRUE AND tm.datevalidation IS NULL;`
 
 	treesIsActive = "SELECT isactive FROM tree_mobile WHERE id = $1;"
 
@@ -107,6 +144,7 @@ const (
 	  comment                 text,
 	  is_validated            boolean default false,
 	  id_validator            int,
+	  datevalidation		  timestamp without time zone,
 	  create_time             timestamp default now() not null,
 	  creator                 integer  not null,
 	  last_modification_time  timestamp,
@@ -133,49 +171,52 @@ const (
 	
 	treesDicoGetEtatSanitaireRem = "SELECT id, remarque as value FROM thi_arbre_etat_sanitaire_remarque WHERE is_active = TRUE ORDER BY sort_order;"
 
-	treesInsertFromGoeland = `INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes)
-	SELECT
-		REPLACE(thing.name, '''', ''''''),
-		COALESCE(REPLACE(thing.description, '''', ''''''), NULL),
-		thing.idthing,
-		't',
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		thing.datecreated,
-		thing.idcreator,
-		COALESCE(thing.datelastmodif, '1970-01-01'),
-		COALESCE(thing.idmodificator, 0),
-		ST_GeomFromText(CONCAT('POINT(', to_char((thing_position.mineo/100.00), 'FM9999999.99'), ' ', to_char((thing_position.minsn/100.00), 'FM9999999.99'), ')'), 2056),
-		(SELECT row_to_json(f) FROM (SELECT 
-						attr.idthing,
-						attr.idvalidation,
-						attr.ispublic,
-						attr.idtobechecked,
-						attr.idnote,
-						attr.circonference,
-						attr.identourage,
-						attr.idchkentourage,
-						attr.entouragerem,
-						attr.idrevsurface,
-						attr.idchkrevsurface,
-						attr.revsurfacerem,
-						attr.idetatsanitairepied,
-						attr.idetatsanitairetronc,
-						attr.idetatsanitairecouronne,
-						attr.etatsanitairerem,
-						attr.envracinairerem) f)
-	FROM thi_arbre
-	INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
-	INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
-	INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
-	WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
-	ORDER BY thi_arbre.idthing
-	ON CONFLICT (external_id) DO UPDATE
-	SET geom = EXCLUDED.geom,
-		tree_attributes = jsonb_set(EXCLUDED.tree_attributes, '{idvalidation}', (EXCLUDED.tree_attributes->>'idvalidation')::jsonb);`
+	treesInsertFromGoeland = `INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, datevalidation, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes)
+        SELECT
+                REPLACE(thing.name, '''', ''''''),
+                COALESCE(REPLACE(thing.description, '''', ''''''), NULL),
+                thing.idthing,
+                't',
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                NULL,
+                thing.datecreated,
+                thing.idcreator,
+                COALESCE(thing.datelastmodif, '1970-01-01'),
+                COALESCE(thing.idmodificator, 0),
+                ST_GeomFromText(CONCAT('POINT(', to_char((thing_position.mineo/100.00), 'FM9999999.99'), ' ', to_char((thing_position.minsn/100.00), 'FM9999999.99'), ')'), 2056),
+                (SELECT row_to_json(f) FROM (SELECT
+                                                attr.idthing,
+                                                attr.idvalidation,
+                                                attr.ispublic,
+                                                attr.idtobechecked,
+                                                attr.idnote,
+                                                attr.circonference,
+                                                attr.identourage,
+                                                attr.idchkentourage,
+                                                attr.entouragerem,
+                                                attr.idrevsurface,
+                                                attr.idchkrevsurface,
+                                                attr.revsurfacerem,
+                                                attr.idetatsanitairepied,
+                                                attr.idetatsanitairetronc,
+                                                attr.idetatsanitairecouronne,
+                                                attr.etatsanitairerem,
+                                                attr.envracinairerem) f)
+        FROM thi_arbre
+        INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
+        INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
+        INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
+        WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
+        ORDER BY thi_arbre.idthing
+        ON CONFLICT (external_id) DO UPDATE
+        SET name = EXCLUDED.name,
+            description = EXCLUDED.description,
+            datevalidation = EXCLUDED.datevalidation,
+            tree_attributes = jsonb_set(EXCLUDED.tree_attributes, '{idvalidation}', (EXCLUDED.tree_attributes->>'idvalidation')::jsonb);`
 
 	thiArbreUpdate = `
 	UPDATE thi_arbre
@@ -225,7 +266,7 @@ const (
 
 	emplacementsListBySecteur = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value
 	FROM geodata_gestion_com.spadom_surfaces
-	WHERE UPPER(nom_sect) = $1
+	WHERE UPPER(nom_sect) = $1 AND nomgo_empl IS NOT NULL
 	ORDER BY value;`
 
 	emplacementCentroid = `SELECT ST_ASText(ST_Centroid(ST_Collect(surface.the_geom))) AS geometry, ST_Area(ST_Collect(surface.the_geom)) AS surface

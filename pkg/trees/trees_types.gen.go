@@ -66,6 +66,7 @@ type Tree struct {
 	Comment              *string        `json:"comment,omitempty"`
 	CreateTime           time.Time      `json:"create_time"`
 	Creator              int32          `json:"creator"`
+	Datevalidation       *time.Time     `json:"datevalidation,omitempty"`
 	Description          *string        `json:"description,omitempty"`
 	ExternalId           *int32         `json:"external_id,omitempty"`
 	Geom                 string         `json:"geom"`

@@ -1,3 +1,89 @@
+<template>
+
+  <div id="rotateMap">
+
+    <v-container fluid class="ol-custom redress-control">
+      <v-tooltip top>
+        <template #activator="{ props }">
+          <v-btn v-bind="props"  icon="mdi-format-rotate-90" density="default" @click="redressMapOnClick"></v-btn>
+        </template>
+        <slot name="tooltip">
+          <span>Réorienter la carte</span>
+        </slot>
+      </v-tooltip>
+    </v-container>
+
+  </div>
+
+  <div id="expandCustomControl">
+
+    <TrackingControl 
+      :tracking-enabled="trackingEnabled" 
+      :projection="swissProjection"
+      class="ol-custom tracking-control" @position-changed="setPosition"
+    />
+
+    <LayersControl 
+      :show-layers="showControlLayers" 
+      :layers="tile_layers" 
+      :current-layer="selectedLayer"
+      class="ol-custom layers-control" 
+      @show-changed="controlLayersOnClick" 
+      @selected-layer="chooseLayer"
+    />
+
+    <FeaturesControl 
+      :show-features="showControlFeatures" 
+      :validations="dictionaries.validation"
+      :validation-to-show="displayed_features" 
+      class="ol-custom features-control" 
+      @show-changed="controlFeaturesOnClick"
+      @selected-validation="chooseFeatures"
+    />
+
+    <SearchTreeControlVue 
+      :show-search-trees="showSearchTrees" 
+      :feature-source="featureSource"
+      class="ol-custom search-control" 
+      @show-changed="controlSearchTreeOnClick" 
+      @coords-found="coordsFound"
+    />
+
+  </div>
+
+  <div id="map" ref="mymap">
+    <div v-if="fetchIsLoading">Loading...</div>
+    <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
+  </div>
+
+  <v-dialog v-model="showForm" scrollable width="auto">
+    <v-card>
+      <v-card-text>
+        <TreeForm 
+          :show-form='showForm' 
+          :tree-id="treeId" 
+          :dictionaries="dictionaries"
+          @form-canceled="handleFormCanceled" 
+          @form-submitted='handleFormSubmitted'
+        />
+      </v-card-text>
+    </v-card>
+  </v-dialog>
+
+  <v-dialog v-model="showMsg" scrollable width="auto">
+    <v-alert 
+      v-model="showMsg" 
+      type="success" 
+      :text="textMsg" 
+      transistion="fade-transition"
+      closable 
+      close-label="Fermer"
+      @click:close="msgOnClose">
+    </v-alert>
+  </v-dialog>
+
+</template>
+
 <script setup>
 import { onMounted, ref, reactive } from "vue";
 import VectorLayer from 'ol/layer/Vector.js';
@@ -173,8 +259,16 @@ const arbreStyle = (feature, resolution) => {
       });
       break;
   }
-
   style.push(new Style({ image: shape }));
+
+  // On ajoute un cercle transparent pour afin de faciliter le clic
+  const pointStyle = new CircleStyle({
+    radius: 20,
+    fill: new Fill({
+      color: 'rgba(0, 0, 0, 0)' // Rouge avec 30% d'opacité
+    }),
+  });
+  style.push(new Style({ image: pointStyle }));
 
   return style;
 }
@@ -297,6 +391,10 @@ const controlLayersOnClick = (state) => {
   if (showControlLayers.value) {
     switchOffControls('layers');
   }
+}
+
+const redressMapOnClick = () => {
+  map.getView().setRotation(0);
 }
 
 const chooseLayer = (selected) => {
@@ -430,6 +528,10 @@ onMounted(async () => {
       element: document.getElementById("expandCustomControl")
     });
     map.addControl(myControl);
+
+    map.addControl(new Control({
+      element: document.getElementById("rotateMap")
+    }));
   
     map.addInteraction(selectInteraction)
     setDefaultBaseLayer();
@@ -437,79 +539,6 @@ onMounted(async () => {
 
 });
 </script>
-
-
-<template>
-
-  <div id="expandCustomControl">
-
-    <TrackingControl 
-      :tracking-enabled="trackingEnabled" 
-      :projection="swissProjection"
-      class="ol-custom tracking-control" @position-changed="setPosition"
-    />
-
-    <LayersControl 
-      :show-layers="showControlLayers" 
-      :layers="tile_layers" 
-      :current-layer="selectedLayer"
-      class="ol-custom layers-control" 
-      @show-changed="controlLayersOnClick" 
-      @selected-layer="chooseLayer"
-    />
-
-    <FeaturesControl 
-      :show-features="showControlFeatures" 
-      :validations="dictionaries.validation"
-      :validation-to-show="displayed_features" 
-      class="ol-custom features-control" 
-      @show-changed="controlFeaturesOnClick"
-      @selected-validation="chooseFeatures"
-    />
-
-    <SearchTreeControlVue 
-      :show-search-trees="showSearchTrees" 
-      :feature-source="featureSource"
-      class="ol-custom search-control" 
-      @show-changed="controlSearchTreeOnClick" 
-      @coords-found="coordsFound"
-    />
-
-  </div>
-
-  <div id="map" ref="mymap">
-    <div v-if="fetchIsLoading">Loading...</div>
-    <div v-else-if="errorFetch">Error: {{ errorFetchMessage }}</div>
-  </div>
-
-  <v-dialog v-model="showForm" scrollable width="auto">
-    <v-card>
-      <v-card-text>
-        <TreeForm 
-          :show-form='showForm' 
-          :tree-id="treeId" 
-          :dictionaries="dictionaries"
-          @form-canceled="handleFormCanceled" 
-          @form-submitted='handleFormSubmitted'
-        />
-      </v-card-text>
-    </v-card>
-  </v-dialog>
-
-  <v-dialog v-model="showMsg" scrollable width="auto">
-    <v-alert 
-      v-model="showMsg" 
-      type="success" 
-      :text="textMsg" 
-      transistion="fade-transition"
-      closable 
-      close-label="Fermer"
-      @click:close="msgOnClose">
-    </v-alert>
-  </v-dialog>
-
-</template>
-
 
 <style scoped>
 #map {
@@ -547,6 +576,30 @@ onMounted(async () => {
   position: relative;
   z-index: 1000;
   top: 0.5em;
+}
+
+#rotateMap {
+  position: static;
+  width: auto;
+  max-height: auto;
+  margin: 0px; /* important to ensure the custom control is not centered since the container has margin: auto by default */
+  /*left: calc(100% - 120px);*/
+}
+
+.ol-custom.redress-control {
+  position: absolute;
+  z-index: 1000;
+  width: auto;  
+  top: 60px;
+  left: -5px;
+}
+
+.ol-custom.redress-control .v-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 0;
+  background-color: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .fade-transition-enter-active,

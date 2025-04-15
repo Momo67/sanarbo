@@ -280,6 +280,7 @@ export async function createLausanneMap (
 						projection: swissProjection,
 						center: centerOfMap,
 						zoom: zoomLevel,
+            constrainRotation: true,
 				}),
 		});
 		setBaseLayer(map, baseLayer);
