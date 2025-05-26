@@ -97,10 +97,10 @@
             <v-card-text>
               <v-row class="v-col-xs-12 v-col-sm-12 v-col-md-12 v-col-lg-12 v-col-xl-9">
                 <v-col>
-                  <v-btn color="primary" type="submit" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
+                  <v-btn color="success" type="submit" :disabled="submitBtnDisabled" @click="submitForm">OK</v-btn>
                 </v-col>
                 <v-col class="v-col-xs-6 v-col-sm-9 v-col-md-9 v-col-lg-9 v-col-xl-9">
-                  <v-btn color="secondary" type="button" @click="searchTreeOnCancel">Annuler</v-btn>
+                  <v-btn color="error" type="button" @click="searchTreeOnCancel">Annuler</v-btn>
                 </v-col>
               </v-row>
             </v-card-text>

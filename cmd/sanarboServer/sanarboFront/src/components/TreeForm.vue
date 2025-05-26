@@ -176,6 +176,14 @@
             </v-select>
           </v-col>
           <v-col cols="12" md="12">
+            <v-select
+                v-model="etat_sanitaire_rem"              
+                :items="dictionaries.etat_sanitaire_rem.data"
+                item-title="value"
+                item-value="value"
+                label="Remarque"
+            >
+            </v-select>
             <v-textarea 
                 v-model="Tree.tree_attributes.etatsanitairerem"
                 rows="3"
@@ -186,10 +194,10 @@
         </v-row>
         <v-row>
           <v-col cols="12" md="2">
-            <v-btn color="primary" type="submit" @click="submitForm">Sauver</v-btn>
+            <v-btn color="success" type="submit" @click="submitForm">Sauver</v-btn>
           </v-col>
           <v-col cols="12" md="2">
-            <v-btn color="secondary" type="button" @click="handleFormCanceled">Annuler</v-btn>
+            <v-btn color="error" type="button" @click="handleFormCanceled">Annuler</v-btn>
           </v-col>
         </v-row>
       </v-container>
@@ -198,7 +206,7 @@
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref, watch } from 'vue';
 import {useFetch} from "../composables/FetchData.js";
 import { BACKEND_URL, apiRestrictedUrl } from '../config.js';
 import { getLocalJwtTokenAuth } from './Login.js';
@@ -215,6 +223,15 @@ const props = defineProps({
   dictionaries: {type: Object, required: true, default: null}
 })
 
+const etat_sanitaire_rem = ref('');
+
+watch(etat_sanitaire_rem, () => {
+  if (etat_sanitaire_rem.value == null || etat_sanitaire_rem.value == '') {
+    return;
+  }
+  Tree.tree_attributes.etatsanitairerem = etat_sanitaire_rem.value + ". " + (Tree.tree_attributes.etatsanitairerem != null ? Tree.tree_attributes.etatsanitairerem : '');
+  etat_sanitaire_rem.value = '';
+});
 
 const Tree = reactive({
   external_id: '',
