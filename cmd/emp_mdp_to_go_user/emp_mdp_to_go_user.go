@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/lib/pq"
-	_ "github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -153,46 +152,50 @@ func main() {
     `
 
 	for _, u := range users {
-		groupsID, err := parsePGArray(u.GroupsIDStr)
-		if err != nil {
-			log.Println("Erreur parsing groups_id pour", u.Username, ":", err)
-			continue
-		}
-
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.PasswordPlain), 4)
-		if err != nil {
-			log.Println("Erreur Bcrypt pour", u.Username, ":", err)
-			continue
-		}
-
-		_, err = db.Exec(stmt,
-			u.Name,
-			u.Email,
-			u.Username,
-			string(hashedPassword),
-			u.ExternalID,
-			u.OrgUnitID,
-			pq.Array(groupsID),
-			u.Phone,
-			parseBool(u.IsLockedStr),
-			parseBool(u.IsAdminStr),
-			u.CreateTime,
-			u.Creator,
-			u.LastModificationTime,
-			u.LastModificationUser,
-			parseBool(u.IsActiveStr),
-			u.InactivationTime,
-			u.InactivationReason,
-			u.Comment,
-			u.BadPasswordCount,
-		)
-
-		if err != nil {
-			log.Println("❌ Erreur insertion:", u.Username, "->", err)
-		} else {
-			fmt.Println("✅ Utilisateur inséré:", u.Username)
-		}
+		insertUser(db, stmt, u)
 	}
 
 	fmt.Println("🎉 Import terminé avec hachage cost=4.")
+}
+
+func insertUser(db *sql.DB, stmt string, u User) {
+	groupsID, err := parsePGArray(u.GroupsIDStr)
+	if err != nil {
+		log.Println("Erreur parsing groups_id pour", u.Username, ":", err)
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.PasswordPlain), 4)
+	if err != nil {
+		log.Println("Erreur Bcrypt pour", u.Username, ":", err)
+		return
+	}
+
+	_, err = db.Exec(stmt,
+		u.Name,
+		u.Email,
+		u.Username,
+		string(hashedPassword),
+		u.ExternalID,
+		u.OrgUnitID,
+		pq.Array(groupsID),
+		u.Phone,
+		parseBool(u.IsLockedStr),
+		parseBool(u.IsAdminStr),
+		u.CreateTime,
+		u.Creator,
+		u.LastModificationTime,
+		u.LastModificationUser,
+		parseBool(u.IsActiveStr),
+		u.InactivationTime,
+		u.InactivationReason,
+		u.Comment,
+		u.BadPasswordCount,
+	)
+
+	if err != nil {
+		log.Println("❌ Erreur insertion:", u.Username, "->", err)
+	} else {
+		fmt.Println("✅ Utilisateur inséré:", u.Username)
+	}
 }
