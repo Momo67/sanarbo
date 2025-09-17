@@ -727,6 +727,8 @@ components:
           format: int32
         ispublic:
           type: boolean
+        essence:
+          type: string
         idtobechecked:
           type: integer
           format: int32

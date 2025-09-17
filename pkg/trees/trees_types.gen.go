@@ -94,6 +94,7 @@ type TreeAttributes struct {
 	Circonference           *int32  `json:"circonference,omitempty"`
 	Entouragerem            *string `json:"entouragerem,omitempty"`
 	Envracinairerem         *string `json:"envracinairerem,omitempty"`
+	Essence                 *string `json:"essence,omitempty"`
 	Etatsanitairerem        *string `json:"etatsanitairerem,omitempty"`
 	Idchkentourage          *int32  `json:"idchkentourage,omitempty"`
 	Idchkrevsurface         *int32  `json:"idchkrevsurface,omitempty"`
