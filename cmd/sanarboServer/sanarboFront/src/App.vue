@@ -4,6 +4,9 @@
       <template #start>
         <span class="pl-2 text-white">{{ `${APP_TITLE} v.${VERSION}` }}</span>
       </template>
+      <template #center>
+        <h2></h2>
+      </template>
       <template #end>
         <template v-if="isUserAuthenticated">
           <Button icon="pi pi-sign-out" title="Logout" class="mr-2" @click="logout" />
@@ -161,7 +164,7 @@ const getIsObjectValidator = async () => {
 const aboutInfo = () => {
   const appInfo = `${APP_TITLE}, v.${VERSION} ${BUILD_DATE}`;
   if (isUserAuthenticated.value) {
-    const userInfo = `${getUserLogin()} id[${getUserId()}] Admin:${getUserIsAdmin()} Validator:${isObjectValidator.value}`;
+    const userInfo = `${getUserLogin()} id[${getUserId()}] Admin:${getUserIsAdmin() ? 'oui' : 'non'} Validator:${isObjectValidator.value ? 'oui' : 'non'}`;
     displayFeedBack(`${appInfo} ⇒ 😊 vous êtes authentifié comme ${userInfo}`, 'info');
   } else {
     displayFeedBack(`${appInfo} ⇒ vous n'êtes pas encore authentifié`, 'info');

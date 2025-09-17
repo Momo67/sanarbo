@@ -2,7 +2,7 @@ package trees
 
 const (
 	treesList = `
-	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation', 'ispublic', tree_attributes::json->'ispublic') as tree_att_light
+	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation', 'ispublic', tree_attributes::json->'ispublic', 'essence', tree_attributes::json->'essence') as tree_att_light
 	FROM tree_mobile
 	LIMIT $1 OFFSET $2;`
 
@@ -47,7 +47,7 @@ const (
 
 	treesToValidate = `
 	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
 		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
@@ -57,7 +57,7 @@ const (
 	)
 	UNION ALL
 	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
 		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
@@ -67,7 +67,7 @@ const (
 	)
 	UNION ALL
 	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
 		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		INNER JOIN geodata_gestion_com.spadom_surfaces sect 
@@ -79,7 +79,7 @@ const (
 	)
 	UNION ALL
 	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, TO_CHAR(t.last_modification_time, 'DD.MM.YYYY') AS last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
+		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
 		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
 		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NULL) 
@@ -192,6 +192,10 @@ const (
                                                 attr.idthing,
                                                 attr.idvalidation,
                                                 attr.ispublic,
+												CASE
+													WHEN attr.idgenre = 127 OR attr.idespece IS NULL THEN '?'
+													ELSE UPPER(SUBSTRING(thi_arbre_genre.genre, 1, 1)) || SUBSTRING(thi_arbre_espece.espece, 1, 1)
+												END AS essence,
                                                 attr.idtobechecked,
                                                 attr.idnote,
                                                 attr.circonference,
@@ -210,6 +214,8 @@ const (
         INNER JOIN thing ON thing.idthing = thi_arbre.idthing AND thing.isactive = true
         INNER JOIN thing_position ON thing_position.idthing = thi_arbre.idthing
         INNER JOIN thi_arbre attr ON attr.idthing = thing.idthing
+        LEFT JOIN thi_arbre_genre ON thi_arbre_genre.id = attr.idgenre
+        LEFT JOIN thi_arbre_espece ON thi_arbre_espece.id = attr.idespece
         WHERE thi_arbre.idvalidation IN (1,5,6,7,8,9,10,11)
         ORDER BY thi_arbre.idthing
         ON CONFLICT (external_id) DO UPDATE

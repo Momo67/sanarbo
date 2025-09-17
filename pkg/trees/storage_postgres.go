@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
@@ -464,18 +465,25 @@ func (P PGX) GetStreets() ([]*Dico, error) {
 	return res, nil
 }
 
-func (P PGX) GetGroupByName(name string) ([]*Group, error) {
+func (P PGX) GetGroupByName(name string) (*Group, error) {
 	P.log.Debug("entering GetGroupByName(%s)", name)
 
-	var res []*Group
-	err := pgxscan.Select(context.Background(), P.con, &res, groupByName, name)
+	res := &Group{}
+	err := pgxscan.Get(context.Background(), P.con, res, groupByName, name)
+
 	if err != nil {
-		P.log.Error("GetGroupByName(%s) pgxscan.Select unexpectedly failed, error : %v", name, err)
-		return nil, err	
-	}	
-	if res == nil {
-		P.log.Info("GetGroupByName(%s) returned no results ", name)
-		return nil, errors.New(noRecords)
+		// Check specifically for sql.ErrNoRows
+		if err == pgx.ErrNoRows {
+			P.log.Info("GetGroupByName(%s) returned no results", name)
+			// Return a specific error indicating no record was found
+			return nil, errors.New(noRecords) // 'noRecords' should be a defined string constant
+		}
+		// For any other error, log it as an error and return it
+		P.log.Error("GetGroupByName(%s) pgxscan.Get failed unexpectedly, error: %v", name, err)
+		return nil, err
 	}
+
+	// If no error, a group was successfully found and populated into 'res'
+	P.log.Debug("GetGroupByName(%s) found group ID: %d", name, res.Id)
 	return res, nil
 }

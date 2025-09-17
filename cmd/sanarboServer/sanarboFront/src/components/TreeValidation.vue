@@ -78,7 +78,11 @@
       <Column field="external_id" />
       <Column field="name" class="align-left" />
       <Column field="last_modification_user" class="align-left" />
-      <Column field="last_modification_time" class="align-left" />
+      <Column field="last_modification_time" class="align-left">
+        <template #body="slotProps">
+          {{ formatDate(slotProps.data.last_modification_time, FormatDate.SHORT) }}
+        </template>
+      </Column>
       <Column :exportable="false" style="min-width:8rem">
         <template #body="slotProps">
           <Button v-tooltip="'Voir'" icon="pi pi-eye" class="p-button-rounded  mr-2" @click="viewTree(slotProps.data.id)" />
@@ -336,14 +340,27 @@ function checkNetworkError(err) {
   }
 }
 
-const formatDate = (dateString) => {
-  return new Date(dateString).toLocaleDateString("fr-FR", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit"
-  });
+const FormatDate = {
+  SHORT: 'short',
+  LONG: 'long'
+}
+
+const formatDate = (dateString, mode = FormatDate.LONG) => {
+  if (mode === FormatDate.SHORT) {
+    return new Date(dateString).toLocaleDateString("fr-CH", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  } else if (mode === FormatDate.LONG) {
+    return new Date(dateString).toLocaleDateString("fr-CH", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    });
+  }
 }
 
 onMounted(async () => {

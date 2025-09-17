@@ -84,8 +84,9 @@ type Tree struct {
 
 // TreeAttLight defines model for TreeAttLight.
 type TreeAttLight struct {
-	Idvalidation int32 `json:"idvalidation"`
-	Ispublic     bool  `json:"ispublic"`
+	Essence      string `json:"essence"`
+	Idvalidation int32  `json:"idvalidation"`
+	Ispublic     bool   `json:"ispublic"`
 }
 
 // TreeAttributes defines model for TreeAttributes.
@@ -145,7 +146,7 @@ type ValidationList struct {
 	Geom                 string       `json:"geom"`
 	Id                   int32        `json:"id"`
 	IsValidated          *bool        `json:"is_validated,omitempty"`
-	LastModificationTime string       `json:"last_modification_time"`
+	LastModificationTime time.Time    `json:"last_modification_time"`
 	LastModificationUser string       `json:"last_modification_user"`
 	Name                 string       `json:"name"`
 	TreeAttLight         TreeAttLight `json:"tree_att_light"`

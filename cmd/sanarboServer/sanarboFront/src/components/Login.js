@@ -194,7 +194,7 @@ export const doesUserBelongToGroup = async (groupName, baseServerUrl = BACKEND_U
   try {
     const res = await axios.get(`${baseServerUrl}/${apiRestrictedUrl}/groups/${groupName}`);
     log.l(`${method} axios.get Success ! response :`, res);
-    const groupId = res.data[0].id;
+    const groupId = res.data.id;
     let response = false;
     if (doesCurrentSessionExist()) {  // attention qu'une session existe en local veut pas dire que le jwt token est encore valide !
       if ((sessionStorage.getItem(`${APP}_goapi_groups`) != null) && (sessionStorage.getItem(`${APP}_goapi_groups`) !== 'null')) {

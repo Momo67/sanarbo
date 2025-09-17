@@ -258,7 +258,7 @@ const editGroup = (currentGroup) => {
   const method = 'editGroup';
   log.t(`##-->${moduleName}::${method}`, currentGroup);
   dataCurrentGroup.value = { ...currentGroup };
-  group.getGroup(currentGroup.id, (retval, statusMessage) => {
+  group.getGroup(currentGroup.name, (retval, statusMessage) => {
     if (statusMessage === 'SUCCESS') {
       log.l('# in editGroup callback for group.getGroup call val', retval);
       dataCurrentGroup.value = { ...retval };

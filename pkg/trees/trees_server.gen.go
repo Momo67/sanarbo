@@ -147,6 +147,8 @@ func (w *ServerInterfaceWrapper) GetGroupByName(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
+	ctx.Set(JWTAuthScopes, []string{})
+
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetGroupByName(ctx, name)
 	return err

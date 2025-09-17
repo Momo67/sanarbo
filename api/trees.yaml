@@ -12,7 +12,9 @@ info:
     url: https://www.apache.org/licenses/LICENSE-2.0.html
   version: 0.0.1
 servers:
+# - url: http://localhost:9999/goapi/v1
 - url: https://api.goeland.io/sanarbo
+  description: Local server
 paths:
   /trees:
     get:
@@ -504,6 +506,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+      security:
+        - JWTAuth: []
 components:
   schemas:
     Tree:
@@ -633,7 +637,7 @@ components:
           type: boolean
         last_modification_time:
           type: string
-          format: string
+          format: date-time
         last_modification_user:
           type: string
           format: string
@@ -765,6 +769,7 @@ components:
       required:
         - idvalidation
         - ispublic
+        - essence
       type: object
       properties:
         idvalidation:
@@ -772,6 +777,8 @@ components:
           format: int32
         ispublic:
           type: boolean
+        essence:
+          type: string
     TreeDico:
       required:
         - id

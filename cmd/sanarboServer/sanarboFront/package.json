@@ -5,6 +5,7 @@
   "scripts": {
     "serve": "vite preview",
     "build": "vite build --mode production",
+    "build_dev": "vite build --mode development",
     "dev": "vite",
     "preview": "vite preview",
     "test:unit": "vitest --environment jsdom",

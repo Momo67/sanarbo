@@ -265,7 +265,7 @@ const arbreStyle = (feature, resolution) => {
   const pointStyle = new CircleStyle({
     radius: 20,
     fill: new Fill({
-      color: 'rgba(0, 0, 0, 0)' // Rouge avec 30% d'opacité
+      color: 'rgba(0, 0, 0, 0)' 
     }),
   });
   style.push(new Style({ image: pointStyle }));
@@ -302,6 +302,27 @@ const textLayer = new VectorLayer({
   visible: true
 });
 layers.value.push(textLayer);
+
+const arbreEssenceStyle = (feature, resolution) => {
+  return new Style({
+    text: new TextStyle({
+      text: String(feature.get('essence')),
+      font: '8px Arial',
+      offsetY: 25 / (resolution + 1),
+      fill: new Fill({ color: 'rgb(255, 255, 255)' }),
+      scale: 1 / (resolution + 0.5)
+    })
+  });
+}
+const essenceLayer = new VectorLayer({
+  id: 'arbre_essence_layer',
+  source: featureSource,
+  style: arbreEssenceStyle,
+  maxResolution: 0.05,
+  visible: true
+});
+layers.value.push(essenceLayer);
+
 
 const displayed_features = ref([1, 5, 6, 7, 8, 9, 10, 11]);
 
@@ -422,6 +443,18 @@ const chooseLayer = (selected) => {
               })
             });
           });
+          essenceLayer.setStyle(function(feature, resolution) {
+            return new Style({
+              text: new TextStyle({
+                text: String(feature.get('essence')),
+                font: '8px Arial',
+                offsetY: 25 / (resolution + 1),
+                fill: fill ? new Fill({ color: fill.color ? fill.color : null }) : null,
+                stroke: stroke ? new Stroke({color: stroke.color ? stroke.color : null, width: stroke.width ? stroke.width : null}) : null,
+                scale: 1 / (resolution + 0.5)
+              })
+            });
+          });
         }
       } else {
         layer.setVisible(false);
@@ -485,6 +518,7 @@ const getFeatures = async () => {
     feature.set('id', d.id);
     feature.set('idthing', d.external_id);
     feature.set('is_validated', d.is_validated);
+    feature.set('essence', d.tree_att_light.essence ? d.tree_att_light.essence : '');
     feature.set('idvalidation', d.tree_att_light.idvalidation);
     feature.set('ispublic', d.tree_att_light.ispublic);
 

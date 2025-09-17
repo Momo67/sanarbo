@@ -59,7 +59,7 @@ type Storage interface {
 
 	GetStreets() ([]*Dico, error)
 
-	GetGroupByName(string) ([]*Group, error)
+	GetGroupByName(string) (*Group, error)
 }
 
 func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {
