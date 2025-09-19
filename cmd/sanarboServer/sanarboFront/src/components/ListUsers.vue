@@ -449,6 +449,7 @@ const deleteUser = () => {
 onMounted(() => {
   const method = 'onMounted';
   log.t(`##-->${moduleName}::${method}`);
+  loadGroupsList();
 });
 
 </script>
