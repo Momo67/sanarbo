@@ -91,7 +91,7 @@
                   :icon="slotProps.data.is_validated ? 'pi pi-check' : 'pi pi-question'"
                   class="p-button-rounded mr-2" 
                   :class="slotProps.data.is_validated ? 'p-button-success' : 'p-button-danger'"
-                  @click="toggleValidation(slotProps.index, slotProps.data)" />
+                  @click="toggleValidation(slotProps.data)" />
 
         </template>
       </Column>
@@ -112,6 +112,9 @@
     <template #header>
       <div class="dialog-header">
         <h3>Détails de l'arbre (ID: {{ dataTree.external_id }})</h3>
+        <!--
+        <Button label="Zoomer" icon="pi pi-bullseye" class="p-button-text" @click="zoom = false" />
+        -->
       </div>
     </template>
     <div class="dialog-content">
@@ -123,7 +126,7 @@
       
       <h4>📌 Attributs de l'arbre</h4>
       <ul>
-        <li><strong>Circonférence:</strong> {{ dataTree.tree_attributes.circonference }} mm</li>
+        <li><strong>Circonférence:</strong> {{ dataTree.tree_attributes.circonference }} cm</li>
         <li><strong>Entourage:</strong> {{ dataTree.tree_attributes.entouragerem }}</li>
         <li><strong>État sanitaire:</strong> {{ dataTree.tree_attributes.etatsanitairerem }}</li>
         <li><strong>Public:</strong> {{ dataTree.tree_attributes.ispublic ? 'Oui' : 'Non' }}</li>
@@ -132,6 +135,7 @@
     
     <!-- Bouton pour fermer -->
     <template #footer>
+      <Button label="Zoomer" icon="pi pi-bullseye" class="p-button-text" @click="zoomTree(dataTree.geom)" />
       <Button label="Fermer" icon="pi pi-times" class="p-button-text" @click="treeDialog = false" />
     </template>
   </Dialog>  
@@ -289,12 +293,17 @@ const viewTree = (id) => {
   })
 }
 
-const toggleValidation = (index, data) => {
-  const method = 'setValidation';
+const zoomTree = (geom) => {
+  const method = 'zoomTree';
   log.t(`## IN ${method}`);
-  log.l(`# IN setValidation -> index, idTree : ${data}, ${data.external_id}`);
-  console.log('###index:', index);
-  dataTrees.value[index].is_validated = !data.is_validated;
+  this.$refs.map.setPosition(geom);
+}
+
+const toggleValidation = (data) => {
+  const method = 'toggleValidation';
+  log.t(`## IN ${method}`);
+  log.l(`# IN ${method} -> idTree : ${data.external_id}`);
+  dataTrees.value.find(tree => tree.external_id === data.external_id).is_validated = !data.is_validated;
 }
 
 const save = () => {

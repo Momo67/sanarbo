@@ -49,7 +49,7 @@ const (
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
 		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
 			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
 		WHERE ($1::TEXT IS NOT NULL AND ss.nom_sect = $1::TEXT AND $2::INTEGER IS NULL) 
@@ -59,7 +59,7 @@ const (
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
 		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
 			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
 		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NOT NULL AND ss.idgo_empl = $2::INTEGER) 
@@ -69,7 +69,7 @@ const (
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
 		INNER JOIN geodata_gestion_com.spadom_surfaces sect 
 			ON ST_Contains(ST_Force2D(sect.the_geom), t.geom) 
 		INNER JOIN geodata_gestion_com.spadom_surfaces empl 
@@ -81,7 +81,7 @@ const (
 	(
 		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
 		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user AND u.is_admin = false
+		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
 		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NULL) 
 			AND t.is_validated = FALSE
 	)
@@ -93,40 +93,38 @@ const (
 	WHERE external_id = $1;`
 
 	treesValidatedToUpdate = `
-	SELECT xmlelement(name "Arbres",
+	SELECT xmlelement(name "Arbres", 
 		xmlagg(
 			xmlelement(name "ThiArbre",
 				xmlforest(
-					t.idthing AS "IdObjet",
-					t.name AS "Nom",
-					t.description AS "Commentaire",
-					t.idtypething AS "IdTypeThing",
+					tm.external_id AS "IdObjet",
+					tm.name AS "Nom",
+					tm.description AS "Commentaire",
+					74 AS "IdTypeThing",
 					'arbre' AS "TypeThing",
-					t.idmodificator AS "IdModificator",
-					CASE WHEN t.isvalidated THEN 1 ELSE 0 END AS "IsValidated",
-					t.datevalidation AS "DateValidation",
-					a.idcirconference AS "IdCirconference",
-					a.circonference AS "Circonference",
-					a.identourage AS "IdEntourage",
-					a.idchkentourage AS "IdChkEntourage",
-					a.entouragerem AS "EntourageRem",
-					a.idrevsurface AS "IdRevSurface",
-					a.idchkrevsurface AS "IdChkRevSurface",
-					a.revsurfacerem AS "RevSurfaceRem",
-					a.idetatsanitairepied AS "IdEtatSanitairePied",
-					a.idetatsanitairetronc AS "IdEtatSanitaireTronc",
-					a.idetatsanitairecouronne AS "IdEtatSanitaireCouronne",
-					a.idtobechecked AS "IdToBeChecked",
-					a.idvalidation AS "IdValidation",
-					a.idnote AS "IdNote",
-					a.etatsanitairerem AS "EtatSanitaireRem"
+					tm.last_modification_user AS "IdModificator",
+					CASE WHEN tm.is_validated THEN 1 ELSE 0 END AS "IsValidated",
+					NOW() AS "DateValidation",
+					tm.tree_attributes->>'circonference' AS "Circonference",
+					tm.tree_attributes->>'identourage' AS "IdEntourage",
+					tm.tree_attributes->>'idchkentourage' AS "IdChkEntourage",
+					tm.tree_attributes->>'entouragerem' AS "EntourageRem",
+					tm.tree_attributes->>'idrevsurface' AS "IdRevSurface",
+					tm.tree_attributes->>'idchkrevsurface' AS "IdChkRevSurface",
+					tm.tree_attributes->>'revsurfacerem' AS "RevSurfaceRem",
+					tm.tree_attributes->>'idetatsanitairepied' AS "IdEtatSanitairePied",
+					tm.tree_attributes->>'idetatsanitairetronc' AS "IdEtatSanitaireTronc",
+					tm.tree_attributes->>'idetatsanitairecouronne' AS "IdEtatSanitaireCouronne",
+					tm.tree_attributes->>'idtobechecked' AS "IdToBeChecked",
+					tm.tree_attributes->>'idvalidation' AS "IdValidation",
+					tm.tree_attributes->>'idnote' AS "IdNote",
+					tm.tree_attributes->>'etatsanitairerem' AS "EtatSanitaireRem",
+				tm.tree_attributes->>'envracinairerem' AS "EnvRacinaireRem"
 				)
 			)
 	)
 	) AS xml_result
 	FROM tree_mobile tm
-	JOIN thing t ON t.idthing = tm.external_id
-	JOIN thi_arbre a ON t.idthing = a.idthing
 	WHERE tm.is_validated = TRUE AND tm.datevalidation IS NULL;`
 
 	treesIsActive = "SELECT isactive FROM tree_mobile WHERE id = $1;"
@@ -182,7 +180,7 @@ const (
                 NULL,
                 NULL,
                 NULL,
-                NULL,
+                thing.datevalidation,
                 thing.datecreated,
                 thing.idcreator,
                 COALESCE(thing.datelastmodif, '1970-01-01'),
@@ -192,10 +190,22 @@ const (
                                                 attr.idthing,
                                                 attr.idvalidation,
                                                 attr.ispublic,
-												CASE
-													WHEN attr.idgenre = 127 OR attr.idespece IS NULL THEN '?'
-													ELSE UPPER(SUBSTRING(thi_arbre_genre.genre, 1, 1)) || SUBSTRING(thi_arbre_espece.espece, 1, 1)
-												END AS essence,
+                                                attr.ispublic,
+                                                CASE
+                                                    WHEN attr.idgenre = 127 OR attr.idespece IS NULL THEN '?'
+                                                    ELSE UPPER(SUBSTRING(thi_arbre_genre.genre, 1, 1)) ||
+                                                        SUBSTRING(
+                                                            CASE
+                                                                WHEN SUBSTRING(thi_arbre_espece.espece, 1, 1) = '''' THEN thi_arbre_espece.espece
+                                                                ELSE thi_arbre_espece.espece
+                                                            END,
+                                                            CASE
+                                                                WHEN SUBSTRING(thi_arbre_espece.espece, 1, 1) = '''' THEN 2
+                                                                ELSE 1
+                                                            END,
+                                                            1
+                                                        )
+                                                END AS essence,
                                                 attr.idtobechecked,
                                                 attr.idnote,
                                                 attr.circonference,
@@ -222,7 +232,7 @@ const (
         SET name = EXCLUDED.name,
             description = EXCLUDED.description,
             datevalidation = EXCLUDED.datevalidation,
-            tree_attributes = jsonb_set(EXCLUDED.tree_attributes, '{idvalidation}', (EXCLUDED.tree_attributes->>'idvalidation')::jsonb);`
+            tree_attributes = jsonb_set(tree_mobile.tree_attributes, '{idvalidation}', (EXCLUDED.tree_attributes->>'idvalidation')::jsonb);`
 
 	thiArbreUpdate = `
 	UPDATE thi_arbre
