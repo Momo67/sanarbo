@@ -82,7 +82,7 @@ import TabPanels from 'primevue/tabpanels';
 import TabPanel from 'primevue/tabpanel';
 import Toast from 'primevue/toast';
 import Toolbar from 'primevue/toolbar';
-import { onMounted, ref, watch } from 'vue';
+import { onMounted, provide, ref, watch } from 'vue';
 import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
 import {
@@ -250,6 +250,12 @@ const loginFailure = (v) => {
 };
 
 const activeTab = ref(isUserAdmin.value ? '0' : '2');
+
+const setActiveTab = (tabIndex) => {
+  activeTab.value = tabIndex;
+};
+
+provide('setActiveTab', setActiveTab);
 
 watch(isUserAdmin, (newVal) => {
   activeTab.value = newVal ? '0' : '2';

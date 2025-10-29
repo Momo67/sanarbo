@@ -135,14 +135,15 @@
     
     <!-- Bouton pour fermer -->
     <template #footer>
-      <Button label="Zoomer" icon="pi pi-bullseye" class="p-button-text" @click="zoomTree(dataTree.geom)" />
+      <Button label="Zoomer" icon="pi pi-bullseye" class="p-button-text" @click="zoomTree(dataTree.external_id)" />
       <Button label="Fermer" icon="pi pi-times" class="p-button-text" @click="treeDialog = false" />
     </template>
   </Dialog>  
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { useMapStore } from '@/stores/mapStore.js';
+import { ref, watch, onMounted, inject } from 'vue';
 import { FilterMatchMode } from '@primevue/core/api'
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -171,6 +172,8 @@ const timeToDisplayError = 7000;
 const timeToDisplaySucces = 4000;
 const toast = useToast();
 const dt = ref();
+
+const mapStore = useMapStore();
 
 const log = getLog(moduleName, 4, 2);
 const dataTrees = ref(null);
@@ -293,10 +296,20 @@ const viewTree = (id) => {
   })
 }
 
-const zoomTree = (geom) => {
+const setActiveTab = inject('setActiveTab');
+
+const zoomTree = (idthing) => {
   const method = 'zoomTree';
   log.t(`## IN ${method}`);
-  this.$refs.map.setPosition(geom);
+  if (idthing) {
+    mapStore.setZoomTarget(idthing, 12);
+    setActiveTab('2');
+    treeDialog.value = false;
+  } else {
+    toast.add({
+      severity: 'warn', summary: 'Warn', detail: '⚠⚠ Géométrie invalide pour zoomer !', life: timeToDisplayError,
+    });
+  }
 }
 
 const toggleValidation = (data) => {

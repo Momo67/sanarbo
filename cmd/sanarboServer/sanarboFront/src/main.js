@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia';
 import PrimeVue from 'primevue/config';
 import ToastService from 'primevue/toastservice';
 import App from './App.vue';
@@ -10,8 +11,11 @@ import { loadFonts } from './plugins/webfontloader'
 
 loadFonts()
 
+const pinia = createPinia();
+
 createApp(App)
   .use(vuetify)
+  .use(pinia)
   .use(PrimeVue, {
     // Default theme configuration
     theme: {

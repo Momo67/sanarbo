@@ -85,7 +85,9 @@
 </template>
 
 <script setup>
-import { onMounted, ref, reactive } from "vue";
+import { watch, onMounted, ref, reactive } from "vue";
+import { storeToRefs } from "pinia";
+import { useMapStore } from '@/stores/mapStore';
 import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
 import { WKT } from "ol/format.js";
@@ -119,6 +121,9 @@ const headers = {'Authorization': token}
 const options = {
   headers: headers
 }
+
+const mapStore = useMapStore();
+const { zoomTarget } = storeToRefs(mapStore);
 
 const errorFetch = ref(false);
 const errorFetchMessage = ref('');
@@ -492,7 +497,6 @@ let map = null;
 const setPosition = (position) => {
   let coords = position.coords;
   let zoom = position.zoom;
-  console.log('zoom:', zoom);
   if ((parseInt(coords.length) == 2) && (parseInt(coords[0]) > 2000000) && (parseInt(coords[0]) < 2900000) && (parseInt(coords[1]) > 1000000) && (parseInt(coords[1]) < 1300000)) {
     map.getView().animate({
       center: coords,
@@ -530,6 +534,44 @@ const getFeatures = async () => {
 
   filterFeatures(selected, showOnlyValidated, showOnlyPublic);
 }
+
+const zoomTreeById = (idTree, zoom) => {
+  const features = featureSource.getFeatures();
+  const length = features.length;
+  let tree = null;
+
+  for (let count = 0; count < length; count++) {
+    if (features[count].get('idthing') === parseInt(idTree)) {
+      tree = features[count];
+      break;
+    }
+  }
+
+  if (tree) { 
+    const geometry = tree.getGeometry(); 
+    
+    if (geometry) {
+          const coords = geometry.getCoordinates();
+          const geom = { coords: coords, zoom: zoom };
+          setPosition(geom);
+    } else {
+        console.warn(`Feature ID ${idTree} trouvée, mais sans géométrie.`);
+    }
+  } else {
+      console.warn(`Feature ID ${idTree} non trouvée dans la source.`);
+  }
+}
+
+watch(
+  zoomTarget, 
+  (newTarget) => {
+    if (newTarget && newTarget.idthing && newTarget.zoom) {
+      zoomTreeById(newTarget.idthing, newTarget.zoom);
+      //mapStore.clearZoomTarget();
+    }
+  },
+  { deep: true }
+);
 
 onMounted(async () => {
   getFeatures();
