@@ -218,7 +218,7 @@ const defaultUser = {
   is_active: true,
 };
 const groupsList = ref([]);
-const dataCurrentUser = ref(defaultUser);
+const dataCurrentUser = ref({});
 const dataUsers = ref([defaultUser]);
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -285,7 +285,7 @@ const checkNetworkError = (err) => {
 const openNew = () => {
   const method = 'openNew';
   log.t(`##-->${moduleName}::${method}`);
-  dataCurrentUser.value = defaultUser;
+  dataCurrentUser.value = { ...defaultUser };
   submitted.value = false;
   isNewUser.value = true;
   userDialog.value = true;
@@ -310,7 +310,10 @@ const loadGroupsList = (fnOnsuccess = null) => {
         groupsList.value = listOfGroups;
         log.l(`# IN getListGroups -> dataGroups.value.length : ${groupsList.value.length}`);
         loadingGroupsList.value = false;
-        fnOnsuccess();
+        if (typeof fnOnsuccess === 'function') {
+          fnOnsuccess();
+        }
+          
         return;
       }
       log.e(`# GOT ERROR calling group.getList : ${statusMessage}, \n error:`, retval);
