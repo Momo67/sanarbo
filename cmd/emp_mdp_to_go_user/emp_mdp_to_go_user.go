@@ -155,7 +155,7 @@ func main() {
 		insertUser(db, stmt, u)
 	}
 
-	fmt.Println("🎉 Import terminé avec hachage cost=4.")
+	fmt.Println("🎉 Import terminé avec hachage cost=10.")
 }
 
 func insertUser(db *sql.DB, stmt string, u User) {
@@ -165,7 +165,7 @@ func insertUser(db *sql.DB, stmt string, u User) {
 		return
 	}
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.PasswordPlain), 4)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.PasswordPlain), 10)
 	if err != nil {
 		log.Println("Erreur Bcrypt pour", u.Username, ":", err)
 		return
