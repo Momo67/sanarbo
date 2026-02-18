@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "serve": "vite preview",
-    "build": "vite build --mode production",
+    "build": "vite build",
+    "build_prod": "vite build --mode production",
     "build_dev": "vite build --mode development",
     "dev": "vite",
     "preview": "vite preview",

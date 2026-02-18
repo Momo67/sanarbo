@@ -25,6 +25,7 @@ import (
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
 	"github.com/lao-tseu-is-alive/sanarbo/pkg/trees"
 	"github.com/lao-tseu-is-alive/sanarbo/pkg/version"
+	"github.com/microcosm-cc/bluemonday"
 )
 
 const (
@@ -219,9 +220,23 @@ func GetBackendUrlFromEnvOrPanic(defaultBackendUrl string) string {
 	return fmt.Sprintf("%s", backendUrl)
 }
 
+// GetInfoMsgFromEnv returns the info message from the env variable INFO_MSG : string containing the info message
+func GetInfoMsgFromEnv() string {
+	infoMsg := ""
+	val, exist := os.LookupEnv("INFO_MSG")
+	if exist {
+		// sanitize html content
+		policy := bluemonday.UGCPolicy()
+		val = policy.Sanitize(val)
+		infoMsg = val
+	}
+	return infoMsg
+}
+
 func GetInfoHandlerOrPanic() echo.HandlerFunc {
 	myBackendUrl := GetBackendUrlFromEnvOrPanic("/")
 	myAuthenticationUrl := GetAuthenticationUrlFromEnvOrPanic("/login")
+	infoMsg := GetInfoMsgFromEnv()
 	return func(ctx echo.Context) error {
 		return ctx.JSON(http.StatusOK, echo.Map{
 			"app":                APP,
@@ -230,6 +245,7 @@ func GetInfoHandlerOrPanic() echo.HandlerFunc {
 			"backend_url":        myBackendUrl,
 			"authentication_url": myAuthenticationUrl,
 			"restricted_url":     defaultSecuredApi,
+			"info_msg":           infoMsg,
 		})
 	}
 }

@@ -5,7 +5,17 @@
         <span class="pl-2 text-white">{{ `${APP_TITLE} v.${VERSION}` }}</span>
       </template>
       <template #center>
-        <h2></h2>
+        <transition enter-active-class="fadein" leave-active-class="fadeout">
+          <div v-show="infoMsgVisible" style="display: flex; align-items: center; width: 100%;">
+            <div v-html="infoMsg" style="flex-grow: 1;"></div>
+              <button v-ripple 
+                      class="p-message-close p-link" 
+                      type="button" 
+                      @click="infoMsgVisible = false"
+                      style="margin-left: 20px;"> <i class="p-message-close-icon pi pi-times" />
+              </button>
+          </div>
+        </transition>
       </template>
       <template #end>
         <template v-if="isUserAuthenticated">
@@ -106,6 +116,8 @@ const isUserAdmin = ref(false);
 const isObjectValidator = ref(false);
 const isNetworkOk = ref(true);
 const feedback = ref(null);
+const infoMsg = ref('');
+const infoMsgVisible = ref(false);
 
 const feedbackMsg = ref(`${APP_TITLE}, v.${VERSION}`);
 const feedbackType = ref('info');
@@ -264,14 +276,20 @@ watch(isUserAdmin, (newVal) => {
 watch(isUserAuthenticated, async (newVal) => {
   if (newVal) {
     isObjectValidator.value = await getIsObjectValidator();
+    infoMsgVisible.value = true;
   } else {
     isObjectValidator.value = false;
+    infoMsgVisible.value = false;
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
   log.t('mounted()');
   log.w(`${APP} - ${VERSION}, du ${BUILD_DATE}`);
+
+  const response = await fetch(`${BACKEND_URL}/info`);
+  const data = await response.json();
+  infoMsg.value = data.info_msg || '';
 
   window.addEventListener('online', () => {
     log.w('ONLINE AGAIN :)');
