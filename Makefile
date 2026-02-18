@@ -60,7 +60,7 @@ build: check-env clean test openapi-codegen
 .PHONY: test
 test:
 	@echo "  >  Running all tests code..."
-	go test -race ./... -coverprofile coverage.out
+	CGO_ENABLED=1 go test -race ./... -coverprofile coverage.out
 
 
 .PHONY: clean
