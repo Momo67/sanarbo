@@ -8,12 +8,12 @@
         <transition enter-active-class="fadein" leave-active-class="fadeout">
           <div v-show="infoMsgVisible" style="display: flex; align-items: center; width: 100%;">
             <div v-html="infoMsg" style="flex-grow: 1;"></div>
-              <button v-ripple 
-                      class="p-message-close p-link" 
-                      type="button" 
-                      @click="infoMsgVisible = false"
-                      style="margin-left: 20px;"> <i class="p-message-close-icon pi pi-times" />
-              </button>
+            <button v-ripple 
+                    class="p-message-close p-link" 
+                    type="button" 
+                    @click="infoMsgVisible = false"
+                    style="margin-left: 20px;"> <i class="p-message-close-icon pi pi-times" />
+            </button>
           </div>
         </transition>
       </template>
@@ -276,7 +276,7 @@ watch(isUserAdmin, (newVal) => {
 watch(isUserAuthenticated, async (newVal) => {
   if (newVal) {
     isObjectValidator.value = await getIsObjectValidator();
-    infoMsgVisible.value = true;
+    infoMsgVisible.value = (infoMsg.value !== '') ? true : false;
   } else {
     isObjectValidator.value = false;
     infoMsgVisible.value = false;

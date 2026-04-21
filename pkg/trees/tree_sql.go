@@ -4,6 +4,7 @@ const (
 	treesList = `
 	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation', 'ispublic', tree_attributes::json->'ispublic', 'essence', tree_attributes::json->'essence') as tree_att_light
 	FROM tree_mobile
+	WHERE is_active = true
 	LIMIT $1 OFFSET $2;`
 
 	treesGet = `
@@ -11,10 +12,10 @@ const (
 			create_time, creator, last_modification_time, last_modification_user, ST_AsText(geom) as geom, tree_attributes
 	FROM tree_mobile
 	WHERE id = $1;`
-	
+
 	treesGetMaxId = "SELECT MAX(id) FROM tree_mobile;"
 
-	treesExist = "SELECT COUNT(*) FROM tree_mobile WHERE id = $1;" 
+	treesExist = "SELECT COUNT(*) FROM tree_mobile WHERE id = $1;"
 
 	treesCount = "SELECT COUNT(*) FROM tree_mobile;"
 
@@ -23,7 +24,7 @@ const (
 	(name, description, external_id, is_active, comment, create_time, creator, geom, tree_attributes) 
 	VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, $6, ST_GeomFromText($7, 2056), $8)
 	RETURNING id;`
-	
+
 	treesUpdate = `
 	UPDATE tree_mobile
 	SET name					= $1,
@@ -166,7 +167,7 @@ const (
 	treesDicoGetRevSurface = "SELECT id, rev_surface as value FROM thi_arbre_rev_surface WHERE is_active = TRUE ORDER BY sort_order;"
 
 	treesDicoGetEtatSanitaire = "SELECT id, etat as value FROM thi_arbre_etat_sanitaire WHERE is_active = TRUE ORDER BY sort_order;"
-	
+
 	treesDicoGetEtatSanitaireRem = "SELECT id, remarque as value FROM thi_arbre_etat_sanitaire_remarque WHERE is_active = TRUE ORDER BY sort_order;"
 
 	treesInsertFromGoeland = `INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, datevalidation, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes)

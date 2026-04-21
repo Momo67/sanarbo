@@ -249,6 +249,7 @@ watch(secteurName, async () => {
       secteurs: secteurs,
       emplacements: {data: [defaultEmplacement]},
     };
+    idEmplacement.value = defaultEmplacement.id;
   }
 });
 
@@ -256,7 +257,7 @@ const getList = () => {
   const method = 'getList';
   log.t(`##-->${moduleName}::${method}()`);
   const secteur = ((secteurName.value != null) && secteurName.value != defaultSecteur.value) ? secteurName.value : '';
-  const epmplacement = (idEmplacement.value != null) ? idEmplacement.value : -1;
+  const epmplacement = ((idEmplacement.value != null) && idEmplacement.value != defaultEmplacement.id) ? idEmplacement.value : -1;
   tree.treesToValidate(secteur, epmplacement, (retval, statusMessage) => {
     if (statusMessage === 'SUCCESS') {
       dataTrees.value = retval;
