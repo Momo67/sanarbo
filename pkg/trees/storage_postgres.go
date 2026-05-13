@@ -384,13 +384,13 @@ func (P PGX) GetEmplacements() ([]*Dico, error) {
 	return res, nil
 }
 
-func (P PGX) GetGestionComEmplacementsSecteur(secteur string) ([]*Dico, error) {
-	P.log.Debug("entering GetGestionComEmplacementsSecteur(%s)", secteur)
+func (P PGX) GetGestionComEmplacementsSecteurId(idSecteur int32) ([]*Dico, error) {
+	P.log.Debug("entering GetGestionComEmplacementsSecteurId(%d)", idSecteur)
 	var res []*Dico
 
-	err := pgxscan.Select(context.Background(), P.con, &res, emplacementsListBySecteur, secteur)
+	err := pgxscan.Select(context.Background(), P.con, &res, emplacementsListBySecteur, idSecteur)
 	if err != nil {
-		P.log.Error("GetGestionComEmplacementsSecteur(%s) pgxscan.Select unexpectedly failed, error : %v", secteur, err)
+		P.log.Error("GetGestionComEmplacementsSecteur(%d) pgxscan.Select unexpectedly failed, error : %v", idSecteur, err)
 		return nil, err
 	}
 	if res == nil {

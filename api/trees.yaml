@@ -340,19 +340,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-  /gestion_com/emplacements/{secteur}:
+  /gestion_com/emplacements/{secteurId}:
     get:
       summary: Get dico values
       description: get dico values for a given secteur
       parameters:
-      - name: secteur
+      - name: secteurId
         in: path
-        description: name of the secteur in which the emplacement is
+        description: id of the secteur in which the emplacement is
         required: true
         style: simple
         explode: false
         schema:
-          type: string
+          type: integer
+          format: int32
       responses:
         '200':
           description: get dico succesful response

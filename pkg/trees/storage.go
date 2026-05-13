@@ -51,7 +51,7 @@ type Storage interface {
 
 	GetGestionComEmplacementsCentroidEmplacementId(int32) (*EmplacementCentroid, error)
 
-	GetGestionComEmplacementsSecteur(string) ([]*Dico, error)
+	GetGestionComEmplacementsSecteurId(int32) ([]*Dico, error)
 
 	GetBuildingCenter(int32) (*Center, error)
 

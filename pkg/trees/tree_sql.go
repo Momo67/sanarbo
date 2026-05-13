@@ -47,46 +47,42 @@ const (
 	treesSearchByName = "SELECT id, name, description, is_active, create_time, creator, external_id FROM tree_mobile WHERE name LIKE $1;"
 
 	treesToValidate = `
-	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
-		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
-		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
-			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
-		WHERE ($1::TEXT IS NOT NULL AND ss.nom_sect = $1::TEXT AND $2::INTEGER IS NULL) 
-			AND t.is_validated = FALSE
+	SELECT 
+		t.id, 
+		t.name, 
+		t.description, 
+		t.external_id, 
+		t.is_validated, 
+		t.last_modification_time, 
+		COALESCE(u.name, '') AS last_modification_user, 
+		ST_AsText(t.geom) as geom, 
+		json_build_object(
+			'idvalidation', t.tree_attributes::json->'idvalidation', 
+			'ispublic', t.tree_attributes::json->'ispublic'
+		) as tree_att_light
+	FROM tree_mobile t
+	LEFT JOIN go_user u ON u.external_id = t.last_modification_user
+	LEFT JOIN lien_thing_thing arbre ON arbre.idthing1 = t.external_id
+	LEFT JOIN lien_thing_thing sect ON sect.idthing1 = arbre.idthing2
+	LEFT JOIN lien_thing_thing lien_empl ON lien_empl.idthing1 = t.external_id
+	LEFT JOIN thing thing_empl ON thing_empl.idthing = lien_empl.idthing2 AND thing_empl.idtypething = 95
+	LEFT JOIN lien_thing_thing sect_empl ON sect_empl.idthing1 = thing_empl.idthing
+	WHERE t.is_validated = FALSE
+	AND (
+		($1::INTEGER IS NULL AND $2::INTEGER IS NULL)
+		OR 
+		($1::INTEGER IS NOT NULL AND $2::INTEGER IS NULL AND sect.idthing2 = $1::INTEGER)
+		OR 
+		($1::INTEGER IS NOT NULL AND $2::INTEGER IS NOT NULL 
+		AND sect_empl.idthing2 = $1::INTEGER 
+		AND lien_empl.idthing2 = $2::INTEGER)
+		OR
+		($1::INTEGER IS NULL AND $2::INTEGER IS NOT NULL AND lien_empl.idthing2 = $2::INTEGER)
 	)
-	UNION ALL
-	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
-		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
-		INNER JOIN geodata_gestion_com.spadom_surfaces ss 
-			ON ST_Contains(ST_Force2D(ss.the_geom), t.geom) 
-		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NOT NULL AND ss.idgo_empl = $2::INTEGER) 
-			AND t.is_validated = FALSE
-	)
-	UNION ALL
-	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
-		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
-		INNER JOIN geodata_gestion_com.spadom_surfaces sect 
-			ON ST_Contains(ST_Force2D(sect.the_geom), t.geom) 
-		INNER JOIN geodata_gestion_com.spadom_surfaces empl 
-			ON ST_Contains(ST_Force2D(empl.the_geom), t.geom) 
-		WHERE ($1::TEXT IS NOT NULL AND sect.nom_sect = $1::TEXT AND $2::INTEGER IS NOT NULL AND empl.idgo_empl = $2::INTEGER)
-			AND t.is_validated = FALSE
-	)
-	UNION ALL
-	(
-		SELECT t.id, t.name, t.description, t.external_id, t.is_validated, t.last_modification_time, COALESCE(u.name, '') AS last_modification_user, ST_AsText(t.geom) as geom, json_build_object('idvalidation', t.tree_attributes::json->'idvalidation', 'ispublic', t.tree_attributes::json->'ispublic') as tree_att_light
-		FROM tree_mobile t
-		LEFT OUTER JOIN go_user u ON u.external_id = t.last_modification_user
-		WHERE ($1::TEXT IS NULL AND $2::INTEGER IS NULL) 
-			AND t.is_validated = FALSE
-	)
-	ORDER BY external_id;`
+	GROUP BY 
+		t.id, t.name, t.description, t.external_id, t.is_validated, 
+		t.last_modification_time, u.name, t.geom, t.tree_attributes
+	ORDER BY t.external_id;`
 
 	validateTrees = `
 	UPDATE tree_mobile
@@ -268,22 +264,24 @@ const (
 	FROM tree_mobile tm
 	WHERE thing.idtypething = 74 AND thing.idthing = tm.external_id AND tm.is_validated = TRUE;`
 
-	secteursList = `WITH secteurs AS (
-		SELECT DISTINCT UPPER(nom_sect) AS nom
-		FROM geodata_gestion_com.spadom_surfaces
-		WHERE nom_sect IS NOT NULL AND nom_sect <> ''
-		ORDER BY nom
-	)
-	SELECT row_number() over () AS id, nom as value
-	FROM secteurs;`
+	secteursList = `
+	SELECT idthing as id, substring(name, 30, length(name)-29) as value
+	FROM thing
+	WHERE idtypething = 47 AND name LIKE '%Secteur d''entretien SPADOM%'
+	ORDER BY value;`
 
-	emplacementsList = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value, idgo_sect
-        FROM geodata_gestion_com.spadom_surfaces WHERE nomgo_empl IS NOT NULL
-        ORDER BY value;`
+	emplacementsList = `
+	SELECT thing.idthing as id, substring(thing.name, 22, length(thing.name)-21) as value
+	FROM thing
+	INNER JOIN lien_thing_thing ON lien_thing_thing.idthing1 = thing.idthing
+	WHERE thing.idtypething = 95
+	ORDER BY value;`
 
-	emplacementsListBySecteur = `SELECT DISTINCT idgo_empl AS id, SUBSTRING(nomgo_empl, LENGTH('Emplacement SPADOM - ') + 1) AS value
-	FROM geodata_gestion_com.spadom_surfaces
-	WHERE UPPER(nom_sect) = $1 AND nomgo_empl IS NOT NULL
+	emplacementsListBySecteur = `
+	SELECT thing.idthing as id, substring(thing.name, 22, length(thing.name)-21) as value
+	FROM thing
+	INNER JOIN lien_thing_thing ON lien_thing_thing.idthing1 = thing.idthing
+	WHERE thing.idtypething = 95 AND lien_thing_thing.idthing2 = $1
 	ORDER BY value;`
 
 	emplacementCentroid = `SELECT ST_ASText(ST_Centroid(ST_Collect(surface.the_geom))) AS geometry, ST_Area(ST_Collect(surface.the_geom)) AS surface

@@ -7,10 +7,10 @@
         <FloatLabel>
           <Select
             id="secteurs"
-            v-model="secteurName"
+            v-model="idSecteur"
             :options="gestion_com.secteurs.data"
             option-label="value"
-            option-value="value"
+            option-value="id"
             placeholder="Choisissez un secteur"
           />
           <label for="secteurs">Secteur</label>
@@ -72,7 +72,20 @@
           <Column field="name" header="Nom" :sortable="true" />
           <Column field="last_modification_user" header="Modifié par" :sortable="true" />
           <Column field="last_modification_time" header="Date de modification" :sortable="true" />
-          <Column header="Actions" />
+          <Column>
+            <template #header>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span>Actions</span>
+                <Button 
+                  v-tooltip="allIsValidated ? 'Tout dévalider' : 'Tout valider'"
+                  :icon="allIsValidated ? 'pi pi-check' : 'pi pi-question'"
+                  class="p-button-rounded" 
+                  :class="allIsValidated ? 'p-button-success' : 'p-button-danger'"
+                  @click="toggleAllValidation()" 
+                />
+              </div>
+            </template>
+          </Column>
         </Row>
       </ColumnGroup>
       <Column field="external_id" />
@@ -143,7 +156,7 @@
 
 <script setup>
 import { useMapStore } from '@/stores/mapStore.js';
-import { ref, watch, onMounted, inject } from 'vue';
+import { ref, watch, onMounted, inject, computed } from 'vue';
 import { FilterMatchMode } from '@primevue/core/api'
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
@@ -178,7 +191,7 @@ const mapStore = useMapStore();
 const log = getLog(moduleName, 4, 2);
 const dataTrees = ref(null);
 
-const secteurName = ref('');
+const idSecteur = ref();
 const idEmplacement = ref();
 
 let secteurs = {data: []};
@@ -187,6 +200,30 @@ const gestion_com = ref({
   secteurs: secteurs,
   emplacements: emplacements,
 });
+
+const allIsValidated = computed(() => {
+  // Renvoie "true" uniquement si la liste existe, n'est pas vide, 
+  // ET que TOUS les arbres ont is_validated à true.
+  return dataTrees.value && 
+         dataTrees.value.length > 0 && 
+         dataTrees.value.every(tree => tree.is_validated === true);
+});
+
+const toggleAllValidation = () => {
+  const method = 'toggleAllValidation';
+  log.t(`## IN ${method}`);
+  
+  // Sécurité : on ne fait rien si la liste est vide
+  if (!dataTrees.value || dataTrees.value.length === 0) return;
+
+  // On détermine le nouvel état cible (l'inverse de l'état global actuel)
+  const targetValidationState = !allIsValidated.value;
+
+  // On boucle sur tous les arbres pour leur appliquer ce nouvel état
+  dataTrees.value.forEach(tree => {
+    tree.is_validated = targetValidationState;
+  });
+}
 
 const treeDialog = ref(false);
 const dataTree = ref(null);
@@ -232,13 +269,13 @@ const getSecteurs = async () => {
 
 const defaultEmplacement = {id: -1, value: 'Aucun'};
 
-watch(secteurName, async () => {
-  const method = 'watch(secteurName)';
+watch(idSecteur, async () => {
+  const method = 'watch(idSecteur)';
   log.t(`##-->${moduleName}::${method}()`);
-  if ((secteurName.value != defaultSecteur.value) && (secteurName.value != null)) {
+  if ((idSecteur.value != defaultSecteur.id) && (idSecteur.value != null)) {
     idEmplacement.value = null;
     
-    emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
+    emplacements = await useFetch(urlGestionCom + '/emplacements' + (idSecteur.value != '' ? ('/' + idSecteur.value) : ''), options);
     gestion_com.value = {
       secteurs: secteurs,
       emplacements: emplacements
@@ -256,7 +293,7 @@ watch(secteurName, async () => {
 const getList = () => {
   const method = 'getList';
   log.t(`##-->${moduleName}::${method}()`);
-  const secteur = ((secteurName.value != null) && secteurName.value != defaultSecteur.value) ? secteurName.value : '';
+  const secteur = ((idSecteur.value != null) && idSecteur.value != defaultSecteur.id) ? idSecteur.value : '';
   const epmplacement = ((idEmplacement.value != null) && idEmplacement.value != defaultEmplacement.id) ? idEmplacement.value : -1;
   tree.treesToValidate(secteur, epmplacement, (retval, statusMessage) => {
     if (statusMessage === 'SUCCESS') {
@@ -270,7 +307,7 @@ const getList = () => {
     } else {
       log.e(`# ERROR in getList tree.treesToValidate callback: ${statusMessage} \n error:`, retval);
       toast.add({
-        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to retrieve list of trees to validate for secteur: ${secteurName.value} and emplacement: ${idEmplacement.value} from DB ! error: ${statusMessage}`, life: timeToDisplayError,
+        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to retrieve list of trees to validate for secteur: ${idSecteur.value} and emplacement: ${idEmplacement.value} from DB ! error: ${statusMessage}`, life: timeToDisplayError,
       });
       checkNetworkError(retval);
       log.e(`# GOT ERROR calling tree.treesToValidate : ${statusMessage}, \n error:`, retval);

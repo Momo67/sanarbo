@@ -263,12 +263,12 @@ func (s Service) GetGestionComSecteurs(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, dico)
 }
 
-func (s Service) GetGestionComEmplacementsSecteur(ctx echo.Context, secteur string) error {
-	s.Log.Debug("entering GetGestionComEmplacementsSecteur")
+func (s Service) GetGestionComEmplacementsSecteurId(ctx echo.Context, idSecteur int32) error {
+	s.Log.Debug("entering GetGestionComEmplacementsSecteurId")
 
-	dico, err := s.Store.GetGestionComEmplacementsSecteur(secteur)
+	dico, err := s.Store.GetGestionComEmplacementsSecteurId(idSecteur)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements(%s) dico :%v", secteur, err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving emplacements(%d) dico :%v", idSecteur, err))
 	}
 	return ctx.JSON(http.StatusOK, dico)
 }

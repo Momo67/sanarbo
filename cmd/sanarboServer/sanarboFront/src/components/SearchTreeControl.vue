@@ -33,10 +33,10 @@
                   <v-row class="py-1">
                     <v-col cols="4" md="4">
                       <v-select
-                        v-model="secteurName"
+                        v-model="idSecteur"
                         :items="gestion_com.secteurs.data"
                         item-title="value"
-                        item-value="value"
+                        item-value="id"
                         label="Secteur"
                       >
                       </v-select>
@@ -159,7 +159,7 @@ const submitBtnDisabled = computed({
 
 const idThing = ref();
 
-const secteurName = ref('');
+const idSecteur = ref(null);
 
 const idEmplacement = ref();
 
@@ -274,7 +274,7 @@ const searchBuildingCenter = async (idAddress) => {
 const resetFields = () => {
   showSearchTrees.value = false;
   idThing.value = null;
-  secteurName.value = null;
+  idSecteur.value = null;
   idEmplacement.value = null;
   idStreet.value = null;
   idAddress.value = null;
@@ -333,11 +333,11 @@ const options = {
   headers: headers
 }
 
-watch(secteurName, async () => {
-  if ((secteurName.value != '') && (secteurName.value != null)) {
+watch(idSecteur, async () => {
+  if ((idSecteur.value != null) && (idSecteur.value != '')) {
     idEmplacement.value = null;
 
-    emplacements = await useFetch(urlGestionCom + '/emplacements' + (secteurName.value != '' ? ('/' + secteurName.value) : ''), options);
+    emplacements = await useFetch(urlGestionCom + '/emplacements' + (idSecteur.value != '' ? ('/' + idSecteur.value) : ''), options);
     gestion_com.value = {
       secteurs: secteurs,
       emplacements: emplacements

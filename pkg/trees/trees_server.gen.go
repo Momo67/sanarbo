@@ -23,8 +23,8 @@ type ServerInterface interface {
 	// (GET /gestion_com/emplacements/centroid/{emplacementId})
 	GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context, emplacementId int32) error
 	// Get dico values
-	// (GET /gestion_com/emplacements/{secteur})
-	GetGestionComEmplacementsSecteur(ctx echo.Context, secteur string) error
+	// (GET /gestion_com/emplacements/{secteurId})
+	GetGestionComEmplacementsSecteurId(ctx echo.Context, secteurId int32) error
 	// Get dico values
 	// (GET /gestion_com/secteurs)
 	GetGestionComSecteurs(ctx echo.Context) error
@@ -111,19 +111,19 @@ func (w *ServerInterfaceWrapper) GetGestionComEmplacementsCentroidEmplacementId(
 	return err
 }
 
-// GetGestionComEmplacementsSecteur converts echo context to params.
-func (w *ServerInterfaceWrapper) GetGestionComEmplacementsSecteur(ctx echo.Context) error {
+// GetGestionComEmplacementsSecteurId converts echo context to params.
+func (w *ServerInterfaceWrapper) GetGestionComEmplacementsSecteurId(ctx echo.Context) error {
 	var err error
-	// ------------- Path parameter "secteur" -------------
-	var secteur string
+	// ------------- Path parameter "secteurId" -------------
+	var secteurId int32
 
-	err = runtime.BindStyledParameterWithOptions("simple", "secteur", ctx.Param("secteur"), &secteur, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	err = runtime.BindStyledParameterWithOptions("simple", "secteurId", ctx.Param("secteurId"), &secteurId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter secteur: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter secteurId: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetGestionComEmplacementsSecteur(ctx, secteur)
+	err = w.Handler.GetGestionComEmplacementsSecteurId(ctx, secteurId)
 	return err
 }
 
@@ -356,7 +356,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/dico/:table", wrapper.GetDicoTable)
 	router.GET(baseURL+"/gestion_com/emplacements", wrapper.GetEmplacements)
 	router.GET(baseURL+"/gestion_com/emplacements/centroid/:emplacementId", wrapper.GetGestionComEmplacementsCentroidEmplacementId)
-	router.GET(baseURL+"/gestion_com/emplacements/:secteur", wrapper.GetGestionComEmplacementsSecteur)
+	router.GET(baseURL+"/gestion_com/emplacements/:secteurId", wrapper.GetGestionComEmplacementsSecteurId)
 	router.GET(baseURL+"/gestion_com/secteurs", wrapper.GetGestionComSecteurs)
 	router.GET(baseURL+"/groups/:name", wrapper.GetGroupByName)
 	router.GET(baseURL+"/thing/buildings/center/:addressId", wrapper.GetBuildingCenter)
