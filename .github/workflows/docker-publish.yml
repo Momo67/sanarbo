@@ -74,7 +74,10 @@ jobs:
           ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
           ADMIN_ID: ${{ secrets.ADMIN_ID }}
           APP_DSN: postgres://127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable&user=postgres&password=postgres
-        run: go test -race ./... -covermode=atomic -coverprofile=coverage.out
+        run: |
+          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.18.1/migrate.linux-amd64.tar.gz | tar xvz
+          ./migrate -path db/migrations -database "postgres://postgres:$DB_PASSWORD@localhost:5432/sanarbo?sslmode=disable" up
+          go test -race ./... -covermode=atomic -coverprofile=coverage.out
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
