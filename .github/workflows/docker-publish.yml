@@ -62,8 +62,9 @@ jobs:
       - name: Run Migrations
         env:
           DB_PASSWORD: postgres
+          DB_NAME: postgres
         run: |
-          migrate -path cmd/sanarboServer/db/migrations -database "postgres://postgres:$DB_PASSWORD@localhost:5432/db?sslmode=disable" up
+          migrate -path cmd/sanarboServer/db/migrations -database "postgres://postgres:$DB_PASSWORD@localhost:5432/$DB_NAME?sslmode=disable" up
 
       - name: Test and coverage
         env:
