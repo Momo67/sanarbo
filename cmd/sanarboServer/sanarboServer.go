@@ -250,6 +250,20 @@ func GetInfoHandlerOrPanic() echo.HandlerFunc {
 	}
 }
 
+// redactDsnPassword returns the dsn with the password replaced by xxxxx, so it can be logged safely.
+// url.Parse is not used because the password in the dsn is not url-escaped and may contain / ? # or @
+func redactDsnPassword(dsn string) string {
+	start := strings.Index(dsn, "://")
+	at := strings.LastIndex(dsn, "@")
+	if start < 0 || at < start {
+		return "[dsn not shown]"
+	}
+	user, _, hasPassword := strings.Cut(dsn[start+3:at], ":")
+	if !hasPassword {
+		return dsn
+	}
+	return dsn[:start+3] + user + ":xxxxx" + dsn[at:]
+}
 
 func main() {
 	l, err := golog.NewLogger("zap", golog.DebugLevel, APP)
@@ -289,7 +303,7 @@ func main() {
 	}
 	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(dbDsn, "postgres", "pgx5", 1))
 	if err != nil {
-		l.Fatal("💥💥 error doing migrate.NewWithSourceInstance(iofs, dbURL:%s)  error: %v\n", dbDsn, err)
+		l.Fatal("💥💥 error doing migrate.NewWithSourceInstance(iofs, dbURL:%s)  error: %v\n", redactDsnPassword(dbDsn), err)
 	}
 
 	err = m.Up()

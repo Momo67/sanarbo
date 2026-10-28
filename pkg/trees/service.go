@@ -1,6 +1,7 @@
 package trees
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -56,13 +57,12 @@ func (s Service) Create(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
 
-	newTree := &Tree{
-		Id:      0,
-		Creator: int32(currentUserId),
-	}
+	newTree := new(Tree)
 	if err := ctx.Bind(newTree); err != nil {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Tree has invalid format [%v]", err))
 	}
+	// set after Bind, otherwise a creator sent in the request body would override the authenticated user
+	newTree.Creator = int32(currentUserId)
 	if len(newTree.Name) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "Tree name cannot be empty")
 	}
@@ -123,12 +123,10 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	s.Log.Debug("entering Update(%d)\n", objectId)
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
-	/*
-		currentUserId := claims.User.UserId
-		if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectEditor(int32(currentUserId))) {
-			return ctx.JSON(http.StatusUnauthorized, noObjectEditorPrivilege)
-		}
-	*/
+	currentUserId := int32(claims.User.UserId)
+	if !(s.Store.IsObjectAdmin(currentUserId) || s.Store.IsObjectEditor(currentUserId)) {
+		return ctx.JSON(http.StatusForbidden, noObjectEditorPrivilege)
+	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
 		s.Log.Error(msg)
@@ -230,12 +228,24 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 	if len(validationList) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "SaveValidation list cannot be empty")
 	}
+	// check the whole list before saving anything, so an invalid entry never leaves a partially saved validation
+	var externalIds []int32
 	for _, tree := range validationList {
 		if tree.ExternalId < 1 {
 			return ctx.JSON(http.StatusBadRequest, "SaveValidation tree externalId cannot be empty")
 		}
 		if tree.IsValidated {
-			s.Store.ValidateTree(tree.ExternalId, tree.IsValidated, int32(externalUserId))
+			externalIds = append(externalIds, tree.ExternalId)
+		}
+	}
+	if len(externalIds) > 0 {
+		if err := s.Store.ValidateTrees(externalIds, int32(externalUserId)); err != nil {
+			msg := fmt.Sprintf("SaveValidation got an error, no tree was validated : %v", err)
+			s.Log.Error(msg)
+			if errors.Is(err, ErrNoRecordFound) {
+				return ctx.JSON(http.StatusNotFound, msg)
+			}
+			return ctx.JSON(http.StatusInternalServerError, msg)
 		}
 	}
 
