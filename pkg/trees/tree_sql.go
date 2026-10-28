@@ -229,6 +229,7 @@ const (
         SET name = EXCLUDED.name,
             description = EXCLUDED.description,
             datevalidation = EXCLUDED.datevalidation,
+			geom = EXCLUDED.geom,
             tree_attributes = jsonb_set(tree_mobile.tree_attributes, '{idvalidation}', (EXCLUDED.tree_attributes->>'idvalidation')::jsonb);`
 
 	thiArbreUpdate = `
