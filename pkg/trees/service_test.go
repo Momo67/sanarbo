@@ -1,6 +1,8 @@
 package trees
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -23,13 +25,18 @@ func (f fakeJwtChecker) GetJwtCustomClaimsFromContext(c echo.Context) *goHttpEch
 	return &goHttpEcho.JwtCustomClaims{User: f.user}
 }
 
-// fakeStorage implements only the Storage methods used by Service.Update and Service.Create, other methods will panic if called.
+// fakeStorage implements only the Storage methods used by the tested handlers, other methods will panic if called.
 type fakeStorage struct {
 	Storage
 	isAdmin     bool
 	isEditor    bool
 	updateCalls int
 	created     *Tree
+	// ValidateTrees returns validateErr and records its arguments
+	validateErr        error
+	validateCalls      int
+	validatedIds       []int32
+	validatedValidator int32
 }
 
 func (f *fakeStorage) IsObjectAdmin(id int32) bool  { return f.isAdmin }
@@ -43,6 +50,13 @@ func (f *fakeStorage) Update(id int32, object Tree) (*Tree, error) {
 func (f *fakeStorage) Create(object Tree) (*Tree, error) {
 	f.created = &object
 	return &object, nil
+}
+func (f *fakeStorage) IsObjectValidator(id int32) bool { return false }
+func (f *fakeStorage) ValidateTrees(externalIds []int32, idValidator int32) error {
+	f.validateCalls++
+	f.validatedIds = externalIds
+	f.validatedValidator = idValidator
+	return f.validateErr
 }
 
 func TestServiceUpdatePermissions(t *testing.T) {
@@ -114,5 +128,90 @@ func TestServiceCreateIgnoresCreatorFromBody(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rec.Code)
 	if assert.NotNil(t, store.created, "Store.Create should have been called") {
 		assert.Equal(t, int32(authenticatedUserId), store.created.Creator, "creator must come from the JWT, not from the request body")
+	}
+}
+
+func TestServiceSaveValidation(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+	const validatorExternalId = 1007
+
+	tests := []struct {
+		name              string
+		body              string
+		validateErr       error
+		wantStatusCode    int
+		wantValidateCalls int
+		wantValidatedIds  []int32
+	}{
+		{
+			name:              "only trees marked as validated are saved, in a single call",
+			body:              `[{"external_id": 101, "is_validated": true}, {"external_id": 102, "is_validated": false}, {"external_id": 103, "is_validated": true}]`,
+			wantStatusCode:    http.StatusOK,
+			wantValidateCalls: 1,
+			wantValidatedIds:  []int32{101, 103},
+		},
+		{
+			name:              "an invalid entry anywhere in the list rejects the whole list before saving",
+			body:              `[{"external_id": 101, "is_validated": true}, {"external_id": 0, "is_validated": true}]`,
+			wantStatusCode:    http.StatusBadRequest,
+			wantValidateCalls: 0,
+		},
+		{
+			name:              "empty list is rejected",
+			body:              `[]`,
+			wantStatusCode:    http.StatusBadRequest,
+			wantValidateCalls: 0,
+		},
+		{
+			name:              "nothing marked as validated does not call the store",
+			body:              `[{"external_id": 101, "is_validated": false}]`,
+			wantStatusCode:    http.StatusOK,
+			wantValidateCalls: 0,
+		},
+		{
+			name:              "unknown tree returns 404",
+			body:              `[{"external_id": 999999, "is_validated": true}]`,
+			validateErr:       fmt.Errorf("%w : tree with external_id 999999", ErrNoRecordFound),
+			wantStatusCode:    http.StatusNotFound,
+			wantValidateCalls: 1,
+			wantValidatedIds:  []int32{999999},
+		},
+		{
+			name:              "database error returns 500 instead of a false success",
+			body:              `[{"external_id": 101, "is_validated": true}]`,
+			validateErr:       errors.New("connection lost"),
+			wantStatusCode:    http.StatusInternalServerError,
+			wantValidateCalls: 1,
+			wantValidatedIds:  []int32{101},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStorage{isAdmin: true, validateErr: tt.validateErr}
+			s := Service{
+				Log:   l,
+				Store: store,
+				Server: &goHttpEcho.Server{
+					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: validatorExternalId}},
+				},
+			}
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/goapi/v1/validation", strings.NewReader(tt.body))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+
+			err := s.SaveValidation(e.NewContext(req, rec))
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantStatusCode, rec.Code)
+			assert.Equal(t, tt.wantValidateCalls, store.validateCalls, "Store.ValidateTrees calls")
+			if tt.wantValidateCalls > 0 {
+				assert.Equal(t, tt.wantValidatedIds, store.validatedIds)
+				assert.Equal(t, int32(validatorExternalId), store.validatedValidator, "validator must come from the JWT")
+			}
+		})
 	}
 }

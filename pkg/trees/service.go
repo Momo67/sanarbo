@@ -1,6 +1,7 @@
 package trees
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -227,12 +228,24 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 	if len(validationList) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "SaveValidation list cannot be empty")
 	}
+	// check the whole list before saving anything, so an invalid entry never leaves a partially saved validation
+	var externalIds []int32
 	for _, tree := range validationList {
 		if tree.ExternalId < 1 {
 			return ctx.JSON(http.StatusBadRequest, "SaveValidation tree externalId cannot be empty")
 		}
 		if tree.IsValidated {
-			s.Store.ValidateTree(tree.ExternalId, tree.IsValidated, int32(externalUserId))
+			externalIds = append(externalIds, tree.ExternalId)
+		}
+	}
+	if len(externalIds) > 0 {
+		if err := s.Store.ValidateTrees(externalIds, int32(externalUserId)); err != nil {
+			msg := fmt.Sprintf("SaveValidation got an error, no tree was validated : %v", err)
+			s.Log.Error(msg)
+			if errors.Is(err, ErrNoRecordFound) {
+				return ctx.JSON(http.StatusNotFound, msg)
+			}
+			return ctx.JSON(http.StatusInternalServerError, msg)
 		}
 	}
 

@@ -32,6 +32,9 @@ type Storage interface {
 	TreesToValidate(secteur string, idEmplacement int32) ([]*ValidationList, error)
 
 	ValidateTree(id int32, isValidated bool, idValidator int32) error
+	// ValidateTrees validates all the trees with the given external ids in a single transaction,
+	// if one of them does not exist (ErrNoRecordFound) or fails, none of them is validated
+	ValidateTrees(externalIds []int32, idValidator int32) error
 	// IsTreeActive returns true if the object with the specified id has the is_active attribute set to true
 	IsTreeActive(id int32) bool
 

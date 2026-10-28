@@ -1,6 +1,7 @@
 package trees
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 	"testing"
@@ -71,6 +72,37 @@ func TestSearchTreesByName(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestValidateTreesIsAllOrNothing checks that ValidateTrees runs in a transaction :
+// when one external id does not exist, the other trees of the list must not be validated.
+// It does not modify any data unless ValidateTrees is broken.
+func TestValidateTreesIsAllOrNothing(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+
+	toValidate, err := w.storage.TreesToValidate("", -1)
+	assertNoError(t, err)
+	if len(toValidate) == 0 {
+		t.Skip("no tree waiting for validation in db, cannot test the rollback")
+	}
+	existingId := toValidate[0].ExternalId
+	const unknownId = -1
+
+	err = w.storage.ValidateTrees([]int32{existingId, unknownId}, 0)
+
+	if !errors.Is(err, ErrNoRecordFound) {
+		t.Fatalf("ValidateTrees with an unknown id should return ErrNoRecordFound, got: %v", err)
+	}
+	stillToValidate, err := w.storage.TreesToValidate("", -1)
+	assertNoError(t, err)
+	for _, tree := range stillToValidate {
+		if tree.ExternalId == existingId {
+			return
+		}
+	}
+	t.Errorf("tree with external_id %d was validated although the transaction failed", existingId)
 }
 
 func (w *WorkingEnv) Init() error {

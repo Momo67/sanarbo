@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -214,6 +215,31 @@ func (P PGX) ValidateTree(id int32, isValidated bool, idValidator int32) error {
 		return GetErrorF("error : ValidateTree query failed", err)
 	}
 
+	return nil
+}
+
+func (P PGX) ValidateTrees(externalIds []int32, idValidator int32) error {
+	P.log.Debug("entering ValidateTrees(%v, %d)", externalIds, idValidator)
+	ctx := context.Background()
+	tx, err := P.con.Begin(ctx)
+	if err != nil {
+		return GetErrorF("error : ValidateTrees could not start transaction", err)
+	}
+	// Rollback is a no-op once the transaction is committed
+	defer tx.Rollback(ctx)
+
+	for _, id := range externalIds {
+		res, err := tx.Exec(ctx, validateTrees, id, true, idValidator)
+		if err != nil {
+			return GetErrorF(fmt.Sprintf("error : ValidateTrees query failed for external_id %d", id), err)
+		}
+		if res.RowsAffected() < 1 {
+			return fmt.Errorf("%w : tree with external_id %d", ErrNoRecordFound, id)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return GetErrorF("error : ValidateTrees commit failed", err)
+	}
 	return nil
 }
 
