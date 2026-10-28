@@ -222,3 +222,45 @@ func TestMainExec(t *testing.T) {
 		})
 	}
 }
+
+func TestRedactDsnPassword(t *testing.T) {
+	tests := []struct {
+		name     string
+		password string
+		dsn      string
+		want     string
+	}{
+		{
+			name:     "simple password",
+			password: "secret",
+			dsn:      "postgres://sanarbo:secret@127.0.0.1:5432/sanarbo?sslmode=prefer",
+			want:     "postgres://sanarbo:xxxxx@127.0.0.1:5432/sanarbo?sslmode=prefer",
+		},
+		{
+			name:     "password with url special characters is not url-escaped by config",
+			password: "p/a?s#s@w:rd",
+			dsn:      "postgres://sanarbo:p/a?s#s@w:rd@db.local:5432/sanarbo?sslmode=require",
+			want:     "postgres://sanarbo:xxxxx@db.local:5432/sanarbo?sslmode=require",
+		},
+		{
+			name: "dsn without password is unchanged",
+			dsn:  "postgres://sanarbo@127.0.0.1:5432/sanarbo",
+			want: "postgres://sanarbo@127.0.0.1:5432/sanarbo",
+		},
+		{
+			name:     "unexpected format is not shown at all",
+			password: "secret",
+			dsn:      "host=127.0.0.1 user=sanarbo password=secret",
+			want:     "[dsn not shown]",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := redactDsnPassword(tt.dsn)
+			assert.Equal(t, tt.want, got)
+			if tt.password != "" {
+				assert.NotContains(t, got, tt.password, "password must not appear in redacted dsn")
+			}
+		})
+	}
+}
