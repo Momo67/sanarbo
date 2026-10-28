@@ -23,12 +23,13 @@ func (f fakeJwtChecker) GetJwtCustomClaimsFromContext(c echo.Context) *goHttpEch
 	return &goHttpEcho.JwtCustomClaims{User: f.user}
 }
 
-// fakeStorage implements only the Storage methods used by Service.Update, other methods will panic if called.
+// fakeStorage implements only the Storage methods used by Service.Update and Service.Create, other methods will panic if called.
 type fakeStorage struct {
 	Storage
 	isAdmin     bool
 	isEditor    bool
 	updateCalls int
+	created     *Tree
 }
 
 func (f *fakeStorage) IsObjectAdmin(id int32) bool  { return f.isAdmin }
@@ -37,6 +38,10 @@ func (f *fakeStorage) Exist(id int32) bool          { return true }
 func (f *fakeStorage) Update(id int32, object Tree) (*Tree, error) {
 	f.updateCalls++
 	object.Id = id
+	return &object, nil
+}
+func (f *fakeStorage) Create(object Tree) (*Tree, error) {
+	f.created = &object
 	return &object, nil
 }
 
@@ -79,5 +84,35 @@ func TestServiceUpdatePermissions(t *testing.T) {
 			assert.Equal(t, tt.wantStatusCode, rec.Code)
 			assert.Equal(t, tt.wantUpdateCalls, store.updateCalls, "Store.Update calls")
 		})
+	}
+}
+
+func TestServiceCreateIgnoresCreatorFromBody(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+	const authenticatedUserId = 7
+	treeWithSpoofedCreator := `{"creator": 999, "name": "Platane 42", "geom": "POINT(2538000 1152000)", "tree_attributes": {"circonference": 120}}`
+
+	store := &fakeStorage{isAdmin: true}
+	s := Service{
+		Log:   l,
+		Store: store,
+		Server: &goHttpEcho.Server{
+			JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: authenticatedUserId, ExternalId: 1007}},
+		},
+	}
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/goapi/v1/trees", strings.NewReader(treeWithSpoofedCreator))
+	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	rec := httptest.NewRecorder()
+
+	err = s.Create(e.NewContext(req, rec))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusCreated, rec.Code)
+	if assert.NotNil(t, store.created, "Store.Create should have been called") {
+		assert.Equal(t, int32(authenticatedUserId), store.created.Creator, "creator must come from the JWT, not from the request body")
 	}
 }

@@ -56,13 +56,12 @@ func (s Service) Create(ctx echo.Context) error {
 		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
 
-	newTree := &Tree{
-		Id:      0,
-		Creator: int32(currentUserId),
-	}
+	newTree := new(Tree)
 	if err := ctx.Bind(newTree); err != nil {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Tree has invalid format [%v]", err))
 	}
+	// set after Bind, otherwise a creator sent in the request body would override the authenticated user
+	newTree.Creator = int32(currentUserId)
 	if len(newTree.Name) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "Tree name cannot be empty")
 	}
