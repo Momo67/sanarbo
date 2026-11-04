@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
@@ -193,31 +193,40 @@ func checkHealthy(info string) bool {
 // GetAuthenticationUrlFromEnvOrPanic returns the authentication url to be used for JWT the content of the env variable:
 // GO_USER_SVC_URL : string containing the authentication url to use for JWT authentication
 func GetAuthenticationUrlFromEnvOrPanic(defaultAuthenticationUrl string) string {
-	authenticationUrl := defaultAuthenticationUrl
-	val, exist := os.LookupEnv("GO_USER_SVC_URL")
-	if exist {
-		authenticationUrl = val
-	}
-	if utf8.RuneCountInString(authenticationUrl) < 10 {
-		panic(fmt.Sprintf("💥💥 ERROR: CONFIG ENV GO_USER_SVC_URL should contain at least 10 characters (got %d).",
-			utf8.RuneCountInString(val)))
-	}
-	return fmt.Sprintf("%s", authenticationUrl)
+	return getUrlFromEnvOrPanic("GO_USER_SVC_URL", defaultAuthenticationUrl)
 }
 
 // GetBackendUrlFromEnvOrPanic returns the backend url to be used for JWT the content of the env variable:
 // GO_BACKEND_URL : string containing the backend url to use for API calls
 func GetBackendUrlFromEnvOrPanic(defaultBackendUrl string) string {
-	backendUrl := defaultBackendUrl
-	val, exist := os.LookupEnv("GO_BACKEND_URL")
-	if exist {
-		backendUrl = val
+	return getUrlFromEnvOrPanic("GO_BACKEND_URL", defaultBackendUrl)
+}
+
+// getUrlFromEnvOrPanic returns the content of the env variable envName, or defaultUrl when it is unset or empty
+// (the Dockerfile defines the env variables even when no value is given).
+// It panics if the url is neither an absolute http(s) url nor a path starting with /
+func getUrlFromEnvOrPanic(envName, defaultUrl string) string {
+	urlValue := defaultUrl
+	if val := strings.TrimSpace(os.Getenv(envName)); val != "" {
+		urlValue = val
 	}
-	if utf8.RuneCountInString(backendUrl) < 10 {
-		panic(fmt.Sprintf("💥💥 ERROR: CONFIG ENV GO_BACKEND_URL should contain at least 10 characters (got %d).",
-			utf8.RuneCountInString(val)))
+	if !isHttpUrlOrPath(urlValue) {
+		panic(fmt.Sprintf("💥💥 ERROR: CONFIG ENV %s should be an absolute http(s) url or a path starting with / (got %q).",
+			envName, urlValue))
 	}
-	return fmt.Sprintf("%s", backendUrl)
+	return urlValue
+}
+
+func isHttpUrlOrPath(value string) bool {
+	if strings.HasPrefix(value, "/") {
+		// "//host" would be a protocol-relative url, not a path
+		return !strings.HasPrefix(value, "//")
+	}
+	u, err := url.Parse(value)
+	if err != nil {
+		return false
+	}
+	return (u.Scheme == "http" || u.Scheme == "https") && u.Host != ""
 }
 
 // GetInfoMsgFromEnv returns the info message from the env variable INFO_MSG : string containing the info message
