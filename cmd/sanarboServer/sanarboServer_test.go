@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -264,3 +265,58 @@ func TestRedactDsnPassword(t *testing.T) {
 		})
 	}
 }
+
+func TestGetUrlFromEnvOrPanic(t *testing.T) {
+	const envName = "SANARBO_TEST_URL"
+	tests := []struct {
+		name      string
+		envValue  *string
+		def       string
+		want      string
+		wantPanic bool
+	}{
+		{name: "unset env uses relative path default", envValue: nil, def: "/login", want: "/login"},
+		{name: "unset env uses root path default", envValue: nil, def: "/", want: "/"},
+		{name: "empty env uses default (Dockerfile defines empty variables)", envValue: strPtr(""), def: "/login", want: "/login"},
+		{name: "blank env uses default", envValue: strPtr("  "), def: "/", want: "/"},
+		{name: "absolute http url", envValue: strPtr("http://ingress.local/user-group"), def: "/login", want: "http://ingress.local/user-group"},
+		{name: "absolute https url", envValue: strPtr("https://sanarbo.lausanne.ch"), def: "/", want: "https://sanarbo.lausanne.ch"},
+		{name: "path", envValue: strPtr("/user-group/login"), def: "/", want: "/user-group/login"},
+		{name: "url without scheme", envValue: strPtr("ingress.local/user-group"), def: "/", wantPanic: true},
+		{name: "host and port without scheme", envValue: strPtr("localhost:9999"), def: "/", wantPanic: true},
+		{name: "unsupported scheme", envValue: strPtr("ftp://ingress.local"), def: "/", wantPanic: true},
+		{name: "scheme without host", envValue: strPtr("http://"), def: "/", wantPanic: true},
+		{name: "protocol-relative url", envValue: strPtr("//ingress.local"), def: "/", wantPanic: true},
+		{name: "invalid default", envValue: nil, def: "login", wantPanic: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// t.Setenv restores the previous value at the end of the test
+			t.Setenv(envName, "")
+			if tt.envValue == nil {
+				os.Unsetenv(envName)
+			} else {
+				os.Setenv(envName, *tt.envValue)
+			}
+			if tt.wantPanic {
+				assert.Panics(t, func() { getUrlFromEnvOrPanic(envName, tt.def) })
+				return
+			}
+			assert.Equal(t, tt.want, getUrlFromEnvOrPanic(envName, tt.def))
+		})
+	}
+}
+
+// TestGetInfoUrlsDefaults checks the defaults used by GetInfoHandlerOrPanic no longer panic when the env variables are not set
+func TestGetInfoUrlsDefaults(t *testing.T) {
+	t.Setenv("GO_USER_SVC_URL", "")
+	t.Setenv("GO_BACKEND_URL", "")
+	os.Unsetenv("GO_USER_SVC_URL")
+	os.Unsetenv("GO_BACKEND_URL")
+
+	assert.Equal(t, "/login", GetAuthenticationUrlFromEnvOrPanic("/login"))
+	assert.Equal(t, "/", GetBackendUrlFromEnvOrPanic("/"))
+	assert.NotPanics(t, func() { GetInfoHandlerOrPanic() })
+}
+
+func strPtr(s string) *string { return &s }

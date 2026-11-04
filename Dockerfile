@@ -33,19 +33,16 @@ FROM scratch
 USER 1221:1221
 WORKDIR /goapp
 
-ENV PORT="${PORT}"
-ENV DB_DRIVER="${DB_DRIVER}"
-ENV DB_HOST="${DB_HOST}"
-ENV DB_PORT="${DB_PORT}"
-ENV DB_NAME="${DB_NAME}"
-ENV DB_USER="${DB_USER}"
-ENV DB_SSL_MODE="${DB_SSL_MODE}"
-ENV JWT_DURATION_MINUTES="${JWT_DURATION_MINUTES}"
-ENV GO_USER_SVC_URL="${GO_USER_SVC_URL}"
+# Configuration is given at runtime (docker run --env-file, k8s env), see .env_sample :
+#   PORT, DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DB_SSL_MODE,
+#   JWT_SECRET, JWT_ISSUER_ID, JWT_CONTEXT_KEY, JWT_DURATION_MINUTES, ADMIN_USER, ADMIN_PASSWORD,
+#   GO_USER_SVC_URL, GO_BACKEND_URL, INFO_MSG
+# Do not declare them here with ENV VAR="${VAR}" : without a build ARG it defines them as empty strings,
+# and an empty variable overrides the default value in the app (empty PORT, DB_PORT or DB_HOST make it panic).
 
 # Copy the Pre-built binary file from the previous stage
 COPY --from=builder /app/sanarboServer .
-# Expose port  to the outside world, goCloudK8sObject will use the env PORT as listening port or 8080 as default
+# Expose port  to the outside world, the server will use the env PORT as listening port or 9999 as default
 EXPOSE 9999
 
 # Command to run the executable
