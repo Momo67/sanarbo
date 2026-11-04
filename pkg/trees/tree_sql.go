@@ -168,8 +168,8 @@ const (
 
 	treesInsertFromGoeland = `INSERT INTO tree_mobile (name, description, external_id, is_active, inactivation_time, inactivation_reason, comment, is_validated, id_validator, datevalidation, create_time, creator, last_modification_time, last_modification_user, geom, tree_attributes)
         SELECT
-                REPLACE(thing.name, '''', ''''''),
-                COALESCE(REPLACE(thing.description, '''', ''''''), NULL),
+                thing.name,
+                thing.description,
                 thing.idthing,
                 't',
                 NULL,
@@ -186,7 +186,6 @@ const (
                 (SELECT row_to_json(f) FROM (SELECT
                                                 attr.idthing,
                                                 attr.idvalidation,
-                                                attr.ispublic,
                                                 attr.ispublic,
                                                 CASE
                                                     WHEN attr.idgenre = 127 OR attr.idespece IS NULL THEN '?'
