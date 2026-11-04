@@ -31,6 +31,8 @@ BUILD := $(shell date -u '+%Y-%m-%d_%I:%M:%S%p')
 PACKAGES := $(shell go list ./... | grep -v /vendor/)
 LDFLAGS := -ldflags "-X ${APP_REPOSITORY}/pkg/version.REVISION=${APP_REVISION} -X ${APP_REPOSITORY}/pkg/version.BuildStamp=${BUILD}"
 #$(info $$LDFLAGS = $(LDFLAGS) )
+# version used to generate pkg/trees/*.gen.go, another version would silently rewrite them
+OAPI_CODEGEN_VERSION := v2.3.0
 PID_FILE := "./$(APP).pid"
 APP_DSN := $(DB_DRIVER)://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?sslmode=$(DB_SSL_MODE)
 ifeq ($(ENV_EXISTS),"TRUE")
@@ -86,7 +88,8 @@ endif
 # check some dependencies
 .PHONY: dependencies-openapi
 dependencies-openapi:
-	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "oapi-codegen is not installed, please run: go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest\n"; exit 1; }
+	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "oapi-codegen is not installed, please run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)\n"; exit 1; }
+	@oapi-codegen --version | grep -qx '$(OAPI_CODEGEN_VERSION)' || { printf >&2 "oapi-codegen $(OAPI_CODEGEN_VERSION) is required (found %s), please run: go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$(OAPI_CODEGEN_VERSION)\n" "$$(oapi-codegen --version | tail -1)"; exit 1; }
 
 .PHONY: dependencies-xo
 dependencies-xo:
