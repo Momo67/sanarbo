@@ -93,7 +93,7 @@ dependencies-openapi:
 
 .PHONY: dependencies-xo
 dependencies-xo:
-	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "xo is not installed, please run: go install github.com/xo/xo@latest\n"; exit 1; }
+	@command -v xo >/dev/null 2>&1 || { printf >&2 "xo is not installed, please run: go install github.com/xo/xo@latest\n"; exit 1; }
 
 
 .PHONY: check-env
