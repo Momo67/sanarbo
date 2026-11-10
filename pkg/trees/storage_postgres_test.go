@@ -105,6 +105,20 @@ func TestValidateTreesIsAllOrNothing(t *testing.T) {
 	t.Errorf("tree with external_id %d was validated although the transaction failed", existingId)
 }
 
+// TestGetUnknownTreeReturnsErrNoRecordFound checks that an id missing in db is reported as ErrNoRecordFound
+// (so the handler can answer 404) and not as a generic db error.
+func TestGetUnknownTreeReturnsErrNoRecordFound(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+
+	tree, err := w.storage.Get(-1)
+
+	if !errors.Is(err, ErrNoRecordFound) {
+		t.Fatalf("Get(-1) should return ErrNoRecordFound, got tree: %v, err: %v", tree, err)
+	}
+}
+
 func (w *WorkingEnv) Init() error {
 	if w.logLevel == 0 {
 		w.logLevel = golog.DebugLevel

@@ -114,6 +114,9 @@ func (s Service) Get(ctx echo.Context, objectId int32) error {
 
 	tree, err := s.Store.Get(objectId)
 	if err != nil {
+		if errors.Is(err, ErrNoRecordFound) {
+			return ctx.JSON(http.StatusNotFound, fmt.Sprintf("Get(%d) tree does not exist", objectId))
+		}
 		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving tree :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, tree)

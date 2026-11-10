@@ -49,12 +49,12 @@ func (P PGX) Get(id int32) (*Tree, error) {
 
 	err := pgxscan.Get(context.Background(), P.con, res, treesGet, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			P.log.Info("Get(%d) returned no results ", id)
+			return nil, ErrNoRecordFound
+		}
 		P.log.Error("Get(%d) pgxscan.Get unexpectedly failed, error : %v", id, err)
 		return nil, err
-	}
-	if res == (&Tree{}) {
-		P.log.Info("Get(%d) returned no results ", id)
-		return nil, errors.New(noRecords)
 	}
 	return res, nil
 }
