@@ -13,6 +13,13 @@ import (
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
+// names of the go_group giving the privileges on the trees
+const (
+	objectAdminGroup     = "object_admin"
+	objectEditorGroup    = "object_editor"
+	objectValidatorGroup = "object_validator"
+)
+
 // limits of SearchTreesByName and List, also documented in api/trees.yaml
 const (
 	searchMinLength    = 2

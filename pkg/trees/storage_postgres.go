@@ -263,53 +263,37 @@ func (P PGX) IsUserAdmin(id int32) bool {
 	return isUserAdmin
 }
 
-func (P PGX) IsObjectAdmin(id int32) bool {
-	P.log.Debug("entering IsObjectAdmin(%d)", id)
+// isUserInActiveGroup returns true if the user is not locked and belongs to the active group with this name.
+// Groups are looked up by name because their ids can differ from one database to another.
+func (P PGX) isUserInActiveGroup(id int32, groupName string) bool {
 	var isLocked bool
-	var isObjectAdmin bool
-	err := P.con.QueryRow(context.Background(), "SELECT is_locked, (2 = ANY(groups_id)) AS is_object_admin FROM go_user WHERE id = $1", id).Scan(&isLocked, &isObjectAdmin)
+	var inGroup bool
+	err := P.con.QueryRow(context.Background(), userInActiveGroup, id, groupName).Scan(&isLocked, &inGroup)
 	if err != nil {
-		P.log.Error("IsObjectAdmin(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
+		P.log.Error("isUserInActiveGroup(%d, %s) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, groupName, err)
 		return false
 	}
 	if isLocked {
-		P.log.Error("IsObjectAdmin(%d) user is locked", id)
+		P.log.Error("isUserInActiveGroup(%d, %s) user is locked", id, groupName)
 		return false
 	}
-	return isObjectAdmin
+	return inGroup
+}
+
+func (P PGX) IsObjectAdmin(id int32) bool {
+	P.log.Debug("entering IsObjectAdmin(%d)", id)
+	return P.isUserInActiveGroup(id, objectAdminGroup)
 }
 
 func (P PGX) IsObjectEditor(id int32) bool {
 	P.log.Debug("entering IsObjectEditor(%d)", id)
-	var isLocked bool
-	var isObjectEditor bool
-	err := P.con.QueryRow(context.Background(), "SELECT is_locked, (3 = ANY(groups_id)) AS is_object_editor FROM go_user WHERE id = $1", id).Scan(&isLocked, &isObjectEditor)
-	if err != nil {
-		P.log.Error("IsObjectEditor(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
-		return false
-	}
-	if isLocked {
-		P.log.Error("IsObjectEditor(%d) user is locked", id)
-		return false
-	}
-	return isObjectEditor
+	return P.isUserInActiveGroup(id, objectEditorGroup)
 }
 
 // IsObjectValidator implements Storage.
 func (P PGX) IsObjectValidator(id int32) bool {
 	P.log.Debug("entering IsObjectValidator(%d)", id)
-	var isLocked bool
-	var isObjectValidator bool
-	err := P.con.QueryRow(context.Background(), "SELECT is_locked, (6 = ANY(groups_id)) AS is_object_validator FROM go_user WHERE id = $1", id).Scan(&isLocked, &isObjectValidator)
-	if err != nil {
-		P.log.Error("IsObjectValidator(%d) could not be retrieved from DB. failed QueryRow.Scan err: %v", id, err)
-		return false
-	}
-	if isLocked {
-		P.log.Error("IsObjectValidator(%d) user is locked", id)
-		return false
-	}
-	return isObjectValidator
+	return P.isUserInActiveGroup(id, objectValidatorGroup)
 }
 
 func CompareTree(t1, t2 *TreeList, attr string) bool {
