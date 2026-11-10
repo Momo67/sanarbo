@@ -44,6 +44,9 @@ const (
 	charsetUTF8                = "charset=UTF-8"
 	MIMEHtml                   = "text/html"
 	MIMEHtmlCharsetUTF8        = MIMEHtml + "; " + charsetUTF8
+
+	// debug level would log the JWT token of every request (go-cloud-k8s-common-libs jwt middleware)
+	defaultLogLevel = golog.InfoLevel
 )
 
 // content holds our static web server content.
@@ -274,12 +277,42 @@ func redactDsnPassword(dsn string) string {
 	return dsn[:start+3] + user + ":xxxxx" + dsn[at:]
 }
 
+var logLevels = map[string]golog.Level{
+	"trace": golog.TraceLevel,
+	"debug": golog.DebugLevel,
+	"info":  golog.InfoLevel,
+	"warn":  golog.WarnLevel,
+	"error": golog.ErrorLevel,
+	"fatal": golog.FatalLevel,
+}
+
+// getLogLevelFromEnv returns the log level given in the env variable LOG_LEVEL (trace, debug, info, warn, error, fatal),
+// or defaultLevel when it is unset or empty
+func getLogLevelFromEnv(defaultLevel golog.Level) (golog.Level, error) {
+	val := strings.ToLower(strings.TrimSpace(os.Getenv("LOG_LEVEL")))
+	if val == "" {
+		return defaultLevel, nil
+	}
+	level, ok := logLevels[val]
+	if !ok {
+		return defaultLevel, fmt.Errorf("CONFIG ENV LOG_LEVEL should be one of trace, debug, info, warn, error, fatal (got %q)", val)
+	}
+	return level, nil
+}
+
 func main() {
-	l, err := golog.NewLogger("zap", golog.DebugLevel, APP)
+	logLevel, err := getLogLevelFromEnv(defaultLogLevel)
+	if err != nil {
+		log.Fatalf("💥💥 error getting log level: %v\n", err)
+	}
+	l, err := golog.NewLogger("zap", logLevel, APP)
 	if err != nil {
 		log.Fatalf("💥💥 error log.NewLogger error: %v'\n", err)
 	}
 	l.Info("🚀🚀 Starting App:'%s', ver:%s, from: %s", APP, version.VERSION, version.REPOSITORY)
+	if logLevel <= golog.DebugLevel {
+		l.Warn("LOG_LEVEL is debug or trace: the logs contain the JWT tokens of the requests, do not use it in production")
+	}
 
 	dbDsn := config.GetPgDbDsnUrlFromEnvOrPanic(defaultDBIp, defaultDBPort, tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
 	db, err := database.GetInstance("pgx", dbDsn, runtime.NumCPU(), l)

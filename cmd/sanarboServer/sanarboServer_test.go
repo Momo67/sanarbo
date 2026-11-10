@@ -320,3 +320,41 @@ func TestGetInfoUrlsDefaults(t *testing.T) {
 }
 
 func strPtr(s string) *string { return &s }
+
+func TestGetLogLevelFromEnv(t *testing.T) {
+	tests := []struct {
+		name     string
+		envValue *string
+		want     golog.Level
+		wantErr  bool
+	}{
+		{name: "unset uses default info", envValue: nil, want: golog.InfoLevel},
+		{name: "empty uses default info", envValue: strPtr(""), want: golog.InfoLevel},
+		{name: "trace", envValue: strPtr("trace"), want: golog.TraceLevel},
+		{name: "debug", envValue: strPtr("debug"), want: golog.DebugLevel},
+		{name: "info", envValue: strPtr("info"), want: golog.InfoLevel},
+		{name: "warn", envValue: strPtr("warn"), want: golog.WarnLevel},
+		{name: "error", envValue: strPtr("error"), want: golog.ErrorLevel},
+		{name: "fatal", envValue: strPtr("fatal"), want: golog.FatalLevel},
+		{name: "case and spaces are ignored", envValue: strPtr("  WARN "), want: golog.WarnLevel},
+		{name: "unknown level is an error", envValue: strPtr("verbose"), wantErr: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// t.Setenv restores the previous value at the end of the test
+			t.Setenv("LOG_LEVEL", "")
+			if tt.envValue == nil {
+				os.Unsetenv("LOG_LEVEL")
+			} else {
+				os.Setenv("LOG_LEVEL", *tt.envValue)
+			}
+			got, err := getLogLevelFromEnv(defaultLogLevel)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

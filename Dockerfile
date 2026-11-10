@@ -36,7 +36,7 @@ WORKDIR /goapp
 # Configuration is given at runtime (docker run --env-file, k8s env), see .env_sample :
 #   PORT, DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DB_SSL_MODE,
 #   JWT_SECRET, JWT_ISSUER_ID, JWT_CONTEXT_KEY, JWT_DURATION_MINUTES, ADMIN_USER, ADMIN_PASSWORD,
-#   GO_USER_SVC_URL, GO_BACKEND_URL, INFO_MSG
+#   GO_USER_SVC_URL, GO_BACKEND_URL, INFO_MSG, LOG_LEVEL
 # Do not declare them here with ENV VAR="${VAR}" : without a build ARG it defines them as empty strings,
 # and an empty variable overrides the default value in the app (empty PORT, DB_PORT or DB_HOST make it panic).
 
