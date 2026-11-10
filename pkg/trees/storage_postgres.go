@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/jackc/pgx/v5"
@@ -121,17 +120,11 @@ func (P PGX) Create(object Tree) (*Tree, error) {
 func (P PGX) Update(id int32, object Tree) (*Tree, error) {
 	P.log.Debug("entering Update(%q,%q,%#v)", object.Name, object.Geom, object.TreeAttributes)
 
-	now := time.Now()
-	object.LastModificationTime = &now
-	if !object.IsActive {
-		object.InactivationTime = &now
-	} else {
-		object.InactivationTime = nil
-	}
 	P.log.Info("Just before Update(%+v)", object)
 
+	// last_modification_time and inactivation_time are set by the query, not by the client
 	res, err := P.con.Exec(context.Background(), treesUpdate,
-		object.Name, &object.Description, &object.ExternalId, object.IsActive, &object.InactivationTime, &object.InactivationReason,
+		object.Name, &object.Description, &object.ExternalId, object.IsActive, &object.InactivationReason,
 		&object.Comment, &object.IsValidated, &object.IdValidator, &object.LastModificationUser, object.Geom, &object.TreeAttributes, id)
 	if err != nil {
 		return nil, GetErrorF("error : Update() query failed", err)

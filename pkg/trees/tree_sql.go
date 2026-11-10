@@ -31,16 +31,21 @@ const (
 		description				= $2,
 		external_id				= $3,
 		is_active				= $4,
-		inactivation_time		= $5,
-		inactivation_reason		= $6,
-		comment					= $7,
-		is_validated			= $8,
-		id_validator			= $9,
+		-- keep the date of an already inactive tree, set it only when the tree becomes inactive
+		inactivation_time		= CASE
+									WHEN $4 THEN NULL
+									WHEN NOT is_active AND inactivation_time IS NOT NULL THEN inactivation_time
+									ELSE CURRENT_TIMESTAMP
+								  END,
+		inactivation_reason		= $5,
+		comment					= $6,
+		is_validated			= $7,
+		id_validator			= $8,
 		last_modification_time 	= CURRENT_TIMESTAMP,
-		last_modification_user	= $10,
-		geom					= ST_GeomFromText($11, 2056),
-		tree_attributes			= $12
-	WHERE id = $13;`
+		last_modification_user	= $9,
+		geom					= ST_GeomFromText($10, 2056),
+		tree_attributes			= $11
+	WHERE id = $12;`
 
 	treesDelete = "DELETE FROM tree_mobile WHERE id = $1;"
 

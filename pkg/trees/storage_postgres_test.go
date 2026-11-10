@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"runtime"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
@@ -206,6 +208,54 @@ func TestTreesToValidateBySecteur(t *testing.T) {
 	assertNoError(t, err)
 	if len(bySecteur) > len(all) {
 		t.Errorf("TreesToValidate(secteur %d) returned %d trees, more than without filter (%d)", secteurs[0].Id, len(bySecteur), len(all))
+	}
+}
+
+// TestUpdateKeepsInactivationTime creates its own tree, so it is skipped when the db user cannot insert in tree_mobile
+// (the local sanarbo role has no right on seq_tree_mobile_id), it runs in the CI database.
+func TestUpdateKeepsInactivationTime(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+
+	circonference := int32(42)
+	created, err := w.storage.Create(Tree{
+		Name:           "Test inactivation time",
+		IsActive:       true,
+		Creator:        1,
+		Geom:           "POINT(2538000 1152000)",
+		TreeAttributes: TreeAttributes{Circonference: &circonference},
+	})
+	if err != nil && strings.Contains(err.Error(), "permission denied") {
+		t.Skipf("the db user cannot create a tree in this database: %v", err)
+	}
+	assertNoError(t, err)
+	defer func() { assertNoError(t, w.storage.Delete(created.Id)) }()
+
+	update := func(isActive bool) *Tree {
+		t.Helper()
+		tree := *created
+		tree.IsActive = isActive
+		// sent by the client, must be ignored
+		clientTime := time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		tree.InactivationTime = &clientTime
+		updated, err := w.storage.Update(created.Id, tree)
+		assertNoError(t, err)
+		return updated
+	}
+
+	firstInactivation := update(false).InactivationTime
+	if firstInactivation == nil || firstInactivation.Year() == 2000 {
+		t.Fatalf("inactivation_time should be set by the server when the tree becomes inactive, got %v", firstInactivation)
+	}
+	if again := update(false).InactivationTime; again == nil || !again.Equal(*firstInactivation) {
+		t.Errorf("updating an inactive tree should keep inactivation_time %v, got %v", firstInactivation, again)
+	}
+	if reactivated := update(true).InactivationTime; reactivated != nil {
+		t.Errorf("an active tree should have no inactivation_time, got %v", reactivated)
+	}
+	if inactivatedAgain := update(false).InactivationTime; inactivatedAgain == nil || inactivatedAgain.Before(*firstInactivation) {
+		t.Errorf("inactivating the tree again should set a new inactivation_time after %v, got %v", firstInactivation, inactivatedAgain)
 	}
 }
 
