@@ -1,6 +1,7 @@
 package trees
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"runtime"
@@ -81,6 +82,7 @@ func TestValidateTreesIsAllOrNothing(t *testing.T) {
 	w := WorkingEnv{}
 	assertWorkingEnvOK(t, w.Init())
 	defer w.dbConn.Close()
+	skipIfTablesMissing(t, w, "thing", "lien_thing_thing")
 
 	toValidate, err := w.storage.TreesToValidate("", -1)
 	assertNoError(t, err)
@@ -103,6 +105,60 @@ func TestValidateTreesIsAllOrNothing(t *testing.T) {
 		}
 	}
 	t.Errorf("tree with external_id %d was validated although the transaction failed", existingId)
+}
+
+// TestGetUnknownTreeReturnsErrNoRecordFound checks that an id missing in db is reported as ErrNoRecordFound
+// (so the handler can answer 404) and not as a generic db error.
+func TestGetUnknownTreeReturnsErrNoRecordFound(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+
+	tree, err := w.storage.Get(-1)
+
+	if !errors.Is(err, ErrNoRecordFound) {
+		t.Fatalf("Get(-1) should return ErrNoRecordFound, got tree: %v, err: %v", tree, err)
+	}
+}
+
+func TestGetBuildingCenterAndCentroidNotFound(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+	skipIfTablesMissing(t, w, "thi_street_building_address", "geodata_gestion_com.spadom_surfaces")
+	pool, err := w.dbConn.GetPGConn()
+	assertNoError(t, err)
+
+	t.Run("unknown address returns ErrNoRecordFound", func(t *testing.T) {
+		center, err := w.storage.GetBuildingCenter(-1)
+		if !errors.Is(err, ErrNoRecordFound) {
+			t.Fatalf("GetBuildingCenter(-1) should return ErrNoRecordFound, got center: %v, err: %v", center, err)
+		}
+	})
+	t.Run("existing address returns its center", func(t *testing.T) {
+		var idAddress int32
+		assertNoError(t, pool.QueryRow(context.Background(), "SELECT idaddress FROM thi_street_building_address LIMIT 1").Scan(&idAddress))
+		center, err := w.storage.GetBuildingCenter(idAddress)
+		assertNoError(t, err)
+		if center.Geometry == "" {
+			t.Errorf("GetBuildingCenter(%d) returned an empty geometry", idAddress)
+		}
+	})
+	t.Run("emplacement without surface returns ErrNoRecordFound", func(t *testing.T) {
+		centroid, err := w.storage.GetGestionComEmplacementsCentroidEmplacementId(-1)
+		if !errors.Is(err, ErrNoRecordFound) {
+			t.Fatalf("GetGestionComEmplacementsCentroidEmplacementId(-1) should return ErrNoRecordFound, got centroid: %v, err: %v", centroid, err)
+		}
+	})
+	t.Run("existing emplacement returns its centroid", func(t *testing.T) {
+		var idEmplacement int32
+		assertNoError(t, pool.QueryRow(context.Background(), "SELECT idgo_empl FROM geodata_gestion_com.spadom_surfaces WHERE idgo_empl IS NOT NULL LIMIT 1").Scan(&idEmplacement))
+		centroid, err := w.storage.GetGestionComEmplacementsCentroidEmplacementId(idEmplacement)
+		assertNoError(t, err)
+		if centroid.Geometry == "" || centroid.Surface <= 0 {
+			t.Errorf("GetGestionComEmplacementsCentroidEmplacementId(%d) returned %+v", idEmplacement, centroid)
+		}
+	})
 }
 
 func (w *WorkingEnv) Init() error {
@@ -156,6 +212,26 @@ func (w *WorkingEnv) GetStorage() error {
 		w.storage = treesStorage
 	}
 	return nil
+}
+
+// skipIfTablesMissing skips the test when one of the tables does not exist, like the Goeland tables
+// (thing, lien_thing_thing...) which are not created by the migrations, e.g. in the CI database.
+func skipIfTablesMissing(t testing.TB, w WorkingEnv, tables ...string) {
+	t.Helper()
+	pool, err := w.dbConn.GetPGConn()
+	if err != nil {
+		t.Fatalf("cannot get db pool: %v", err)
+	}
+	for _, table := range tables {
+		var exists bool
+		err := pool.QueryRow(context.Background(), "SELECT to_regclass($1) IS NOT NULL", table).Scan(&exists)
+		if err != nil {
+			t.Fatalf("cannot check if table %s exists: %v", table, err)
+		}
+		if !exists {
+			t.Skipf("table %s does not exist in this database (not created by the migrations)", table)
+		}
+	}
 }
 
 func assertWorkingEnvOK(t testing.TB, got error) {

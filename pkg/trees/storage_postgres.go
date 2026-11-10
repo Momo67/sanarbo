@@ -49,12 +49,12 @@ func (P PGX) Get(id int32) (*Tree, error) {
 
 	err := pgxscan.Get(context.Background(), P.con, res, treesGet, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			P.log.Info("Get(%d) returned no results ", id)
+			return nil, ErrNoRecordFound
+		}
 		P.log.Error("Get(%d) pgxscan.Get unexpectedly failed, error : %v", id, err)
 		return nil, err
-	}
-	if res == (&Tree{}) {
-		P.log.Info("Get(%d) returned no results ", id)
-		return nil, errors.New(noRecords)
 	}
 	return res, nil
 }
@@ -433,12 +433,12 @@ func (P PGX) GetGestionComEmplacementsCentroidEmplacementId(idemplacement int32)
 	res := &EmplacementCentroid{}
 	err := pgxscan.Get(context.Background(), P.con, res, emplacementCentroid, idemplacement)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			P.log.Info("GetGestionComEmplacementsCentroidEmplacementId(%d) returned no results ", idemplacement)
+			return nil, ErrNoRecordFound
+		}
 		P.log.Error("GetGestionComEmplacementsCentroidEmplacementId(%d) pgxscan.Get unexpectedly failed, error : %v", idemplacement, err)
 		return nil, err
-	}
-	if res == (&EmplacementCentroid{}) {
-		P.log.Info("GetGestionComEmplacementsCentroidEmplacementId(%d) returned no results ", idemplacement)
-		return nil, errors.New(noRecords)
 	}
 	return res, nil
 }
@@ -449,12 +449,12 @@ func (P PGX) GetBuildingCenter(idaddress int32) (*Center, error) {
 	res := &Center{}
 	err := pgxscan.Get(context.Background(), P.con, res, buildingCenter, idaddress)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			P.log.Info("GetBuildingCenter(%d) returned no results ", idaddress)
+			return nil, ErrNoRecordFound
+		}
 		P.log.Error("GetBuildingCenter(%d) pgxscan.Get unexpectedly failed, error : %v", idaddress, err)
 		return nil, err
-	}
-	if res == (&Center{}) {
-		P.log.Info("GetBuildingCenter(%d) returned no results ", idaddress)
-		return nil, errors.New(noRecords)
 	}
 	return res, nil
 }

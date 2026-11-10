@@ -114,6 +114,9 @@ func (s Service) Get(ctx echo.Context, objectId int32) error {
 
 	tree, err := s.Store.Get(objectId)
 	if err != nil {
+		if errors.Is(err, ErrNoRecordFound) {
+			return ctx.JSON(http.StatusNotFound, fmt.Sprintf("Get(%d) tree does not exist", objectId))
+		}
 		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving tree :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, tree)
@@ -298,6 +301,9 @@ func (s Service) GetGestionComEmplacementsCentroidEmplacementId(ctx echo.Context
 
 	centroid, err := s.Store.GetGestionComEmplacementsCentroidEmplacementId(idEmplacement)
 	if err != nil {
+		if errors.Is(err, ErrNoRecordFound) {
+			return ctx.JSON(http.StatusNotFound, fmt.Sprintf("emplacement(%d) has no surface", idEmplacement))
+		}
 		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving centroid(%d) dico :%v", idEmplacement, err))
 	}
 	return ctx.JSON(http.StatusOK, centroid)
@@ -308,6 +314,9 @@ func (s Service) GetBuildingCenter(ctx echo.Context, addressId int32) error {
 
 	center, err := s.Store.GetBuildingCenter(addressId)
 	if err != nil {
+		if errors.Is(err, ErrNoRecordFound) {
+			return ctx.JSON(http.StatusNotFound, fmt.Sprintf("address(%d) does not exist", addressId))
+		}
 		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("problem retrieving center(%d) :%v", addressId, err))
 	}
 	return ctx.JSON(http.StatusOK, center)
