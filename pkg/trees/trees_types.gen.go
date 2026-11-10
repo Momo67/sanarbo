@@ -158,7 +158,7 @@ type GetDicoTableParamsTable string
 
 // ListParams defines parameters for List.
 type ListParams struct {
-	// Limit maximum number of results to return
+	// Limit maximum number of results to return (default 100, a value above 100000 is reduced to 100000)
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
 
 	// Offset number of rows to skip before beginning to return rows
