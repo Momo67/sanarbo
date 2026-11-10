@@ -2,6 +2,7 @@ package trees
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"runtime"
@@ -55,10 +56,10 @@ func TestSearchTreesByName(t *testing.T) {
 			wantErr: nil,
 		},
 		{
-			name:    "should return an error if no tree found",
+			name:    "should return an empty list if no tree found",
 			args:    args{t: "666"},
-			wantRes: nil,
-			wantErr: ErrNoRecordFound,
+			wantRes: []*TreeList{},
+			wantErr: nil,
 		},
 	}
 	for _, tt := range tests {
@@ -69,6 +70,10 @@ func TestSearchTreesByName(t *testing.T) {
 				assertError(t, gotErr, tt.wantErr)
 			} else {
 				assertNoError(t, gotErr)
+				if len(tt.wantRes) == 0 {
+					assertEmptyJsonList(t, gotRes)
+					return
+				}
 				assertName(t, *gotRes[0], tt.wantRes[0].Name)
 			}
 		})
@@ -161,6 +166,32 @@ func TestGetBuildingCenterAndCentroidNotFound(t *testing.T) {
 	})
 }
 
+// TestListsWithoutResultAreEmpty checks that a query without result returns an empty list and no error,
+// so the handlers answer 200 with [] (and not 500, nor null which the frontend cannot use).
+func TestListsWithoutResultAreEmpty(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+
+	t.Run("List with an offset past the last tree", func(t *testing.T) {
+		res, err := w.storage.List(1000000000, 10)
+		assertNoError(t, err)
+		assertEmptyJsonList(t, res)
+	})
+	t.Run("GetBuildingsNumbers of an unknown street", func(t *testing.T) {
+		skipIfTablesMissing(t, w, "thi_street_building_address")
+		res, err := w.storage.GetBuildingsNumbers(-1)
+		assertNoError(t, err)
+		assertEmptyJsonList(t, res)
+	})
+	t.Run("GetGestionComEmplacementsSecteurId of an unknown secteur", func(t *testing.T) {
+		skipIfTablesMissing(t, w, "thing", "lien_thing_thing")
+		res, err := w.storage.GetGestionComEmplacementsSecteurId(-1)
+		assertNoError(t, err)
+		assertEmptyJsonList(t, res)
+	})
+}
+
 func (w *WorkingEnv) Init() error {
 	if w.logLevel == 0 {
 		w.logLevel = golog.DebugLevel
@@ -231,6 +262,18 @@ func skipIfTablesMissing(t testing.TB, w WorkingEnv, tables ...string) {
 		if !exists {
 			t.Skipf("table %s does not exist in this database (not created by the migrations)", table)
 		}
+	}
+}
+
+// assertEmptyJsonList checks that list is empty and is encoded as [] in json, not null
+func assertEmptyJsonList(t testing.TB, list any) {
+	t.Helper()
+	got, err := json.Marshal(list)
+	if err != nil {
+		t.Fatalf("cannot marshal list: %v", err)
+	}
+	if string(got) != "[]" {
+		t.Errorf("got %s, want an empty json list []", got)
 	}
 }
 
