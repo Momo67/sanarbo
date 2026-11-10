@@ -356,7 +356,15 @@ func main() {
 		}
 	}
 
-	myVersionReader := goHttpEcho.NewSimpleVersionReader(APP, version.VERSION, version.REPOSITORY)
+	myVersionReader := goHttpEcho.NewSimpleVersionReader(
+		APP,
+		version.VERSION,
+		version.REPOSITORY,
+		version.REVISION,
+		version.BuildStamp,
+		GetAuthenticationUrlFromEnvOrPanic("/login"),
+		defaultSecuredApi+"/status",
+	)
 	// Create a new JWT checker
 	myJwt := goHttpEcho.NewJwtChecker(
 		config.GetJwtSecretFromEnvOrPanic(),
