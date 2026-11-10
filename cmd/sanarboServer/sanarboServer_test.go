@@ -388,3 +388,33 @@ func TestRestrictedReturns200(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code, "a GET returning the claims creates nothing, it must not answer 201")
 	assert.Contains(t, rec.Body.String(), `"login":"test"`)
 }
+
+func TestKeepEchoDefaults(t *testing.T) {
+	e := echo.New()
+	keepEchoDefaults(e)
+	g := e.Group("/goapi/v1", func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			return echo.NewHTTPError(http.StatusUnauthorized, "JwtMiddleware: Authorization header missing").
+				SetInternal(fmt.Errorf("internal detail"))
+		}
+	})
+	g.GET("/trees", func(c echo.Context) error { return c.NoContent(http.StatusOK) })
+
+	t.Run("CORS preflight from another origin is answered before the JWT check", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodOptions, "/goapi/v1/trees", nil)
+		req.Header.Set(echo.HeaderOrigin, "http://localhost:5173")
+		req.Header.Set(echo.HeaderAccessControlRequestMethod, http.MethodGet)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusNoContent, rec.Code)
+		assert.Equal(t, "*", rec.Header().Get(echo.HeaderAccessControlAllowOrigin))
+	})
+
+	t.Run("HTTP errors keep the {message} format read by the frontend", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/goapi/v1/trees", nil))
+		assert.Equal(t, http.StatusUnauthorized, rec.Code)
+		assert.JSONEq(t, `{"message":"JwtMiddleware: Authorization header missing"}`, rec.Body.String())
+		assert.NotContains(t, rec.Body.String(), "internal detail")
+	})
+}

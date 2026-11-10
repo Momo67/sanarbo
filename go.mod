@@ -7,7 +7,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/jackc/pgx/v5 v5.12.0
 	github.com/labstack/echo/v4 v4.16.3
-	github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs v0.3.9
+	github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs v0.3.24
 	github.com/lao-tseu-is-alive/go-cloud-k8s-user-group v0.3.4
 	github.com/oapi-codegen/runtime v1.8.0
 	github.com/stretchr/testify v1.12.1
