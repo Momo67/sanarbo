@@ -313,6 +313,13 @@ const (
 	FROM thi_street_building_address sba
 	WHERE sba.idaddress = $1`
 
+	// $1 is the go_user id, $2 the name of the go_group
+	userInActiveGroup = `
+	SELECT u.is_locked,
+		EXISTS (SELECT 1 FROM go_group g WHERE g.name = $2 AND g.is_active AND g.id = ANY(u.groups_id)) AS in_group
+	FROM go_user u
+	WHERE u.id = $1;`
+
 	groupByName = `SELECT id, name, create_time, creator, last_modification_time, last_modification_user, is_active, inactivation_time, inactivation_reason, comment	
 	FROM go_group
 	WHERE name = $1;`

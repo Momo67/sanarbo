@@ -182,7 +182,7 @@ func (s Service) restricted(ctx echo.Context) error {
 	//if !s.Store.IsUserActive(currentUserId) {
 	//	return echo.NewHTTPError(http.StatusUnauthorized, "current calling user is not active anymore")
 	//}
-	return ctx.JSON(http.StatusCreated, claims)
+	return ctx.JSON(http.StatusOK, claims)
 }
 
 func checkHealthy(info string) bool {

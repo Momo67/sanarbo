@@ -259,6 +259,50 @@ func TestUpdateKeepsInactivationTime(t *testing.T) {
 	}
 }
 
+func TestUserPrivilegesByGroupName(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+	pool, err := w.dbConn.GetPGConn()
+	assertNoError(t, err)
+
+	findUser := func(t *testing.T, groupName string, member bool) int32 {
+		t.Helper()
+		var id int32
+		err := pool.QueryRow(context.Background(), `
+			SELECT u.id FROM go_user u
+			WHERE NOT u.is_locked AND $2 = EXISTS (
+				SELECT 1 FROM go_group g WHERE g.name = $1 AND g.is_active AND g.id = ANY(u.groups_id))
+			ORDER BY u.id LIMIT 1`, groupName, member).Scan(&id)
+		if err != nil {
+			t.Skipf("no unlocked user with member=%v of group %s in this database", member, groupName)
+		}
+		return id
+	}
+	privileges := map[string]func(int32) bool{
+		objectAdminGroup:     w.storage.IsObjectAdmin,
+		objectEditorGroup:    w.storage.IsObjectEditor,
+		objectValidatorGroup: w.storage.IsObjectValidator,
+	}
+	for groupName, hasPrivilege := range privileges {
+		t.Run(groupName+" member", func(t *testing.T) {
+			if id := findUser(t, groupName, true); !hasPrivilege(id) {
+				t.Errorf("user %d is in group %s but has not the privilege", id, groupName)
+			}
+		})
+		t.Run(groupName+" not member", func(t *testing.T) {
+			if id := findUser(t, groupName, false); hasPrivilege(id) {
+				t.Errorf("user %d is not in group %s but has the privilege", id, groupName)
+			}
+		})
+		t.Run(groupName+" unknown user", func(t *testing.T) {
+			if hasPrivilege(-1) {
+				t.Errorf("unknown user has the privilege of group %s", groupName)
+			}
+		})
+	}
+}
+
 func (w *WorkingEnv) Init() error {
 	if w.logLevel == 0 {
 		w.logLevel = golog.DebugLevel

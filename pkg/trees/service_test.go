@@ -430,7 +430,7 @@ func TestServiceValidationList(t *testing.T) {
 		{name: "non numeric secteur is rejected", isValidator: true, query: "secteur=OUEST", wantStatusCode: http.StatusBadRequest, wantBody: "integer"},
 		{name: "secteur too big for int32 is rejected", isValidator: true, query: "secteur=99999999999", wantStatusCode: http.StatusBadRequest, wantBody: "integer"},
 		{name: "database error returns 500", isValidator: true, query: "secteur=123", storeErr: errors.New("connection lost"), wantStatusCode: http.StatusInternalServerError, wantSecteur: 123, wantEmplacement: -1},
-		{name: "user without validator privilege gets the validator message", isValidator: false, query: "", wantStatusCode: http.StatusUnauthorized, wantBody: noObjectValidatorPrivilege},
+		{name: "user without validator privilege gets the validator message", isValidator: false, query: "", wantStatusCode: http.StatusForbidden, wantBody: noObjectValidatorPrivilege},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -449,7 +449,7 @@ func TestServiceValidationList(t *testing.T) {
 			if tt.wantBody != "" {
 				assert.Contains(t, rec.Body.String(), tt.wantBody)
 			}
-			if tt.wantStatusCode == http.StatusBadRequest || tt.wantStatusCode == http.StatusUnauthorized {
+			if tt.wantStatusCode == http.StatusBadRequest || tt.wantStatusCode == http.StatusForbidden {
 				assert.Empty(t, store.treesToValidateArgs, "Store.TreesToValidate must not be called")
 				return
 			}
@@ -500,6 +500,54 @@ func TestServiceListLimitAndOffset(t *testing.T) {
 				return
 			}
 			assert.Equal(t, [][2]int{{tt.wantOffset, tt.wantLimit}}, store.listArgs)
+		})
+	}
+}
+
+// TestServicePrivilegeRefusalsAre403 checks a missing privilege answers 403: the frontend logs the user out on 401,
+// which must only mean an invalid session
+func TestServicePrivilegeRefusalsAre403(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+	validation := `[{"external_id": 101, "is_validated": true}]`
+	tree := `{"id": 42, "name": "Platane 42", "geom": "POINT(2538000 1152000)", "tree_attributes": {"circonference": 120}}`
+
+	tests := []struct {
+		method   string
+		path     string
+		body     string
+		wantBody string
+	}{
+		{method: http.MethodPost, path: "/trees", body: tree, wantBody: noAdminPrivilege},
+		{method: http.MethodPut, path: "/trees/42", body: tree, wantBody: noObjectEditorPrivilege},
+		{method: http.MethodDelete, path: "/trees/42", wantBody: noObjectAdminPrivilege},
+		{method: http.MethodGet, path: "/validation", wantBody: noObjectValidatorPrivilege},
+		{method: http.MethodPost, path: "/validation", body: validation, wantBody: noObjectValidatorPrivilege},
+	}
+	for _, tt := range tests {
+		t.Run(tt.method+" "+tt.path, func(t *testing.T) {
+			// no privilege at all
+			store := &fakeStorage{}
+			e := echo.New()
+			RegisterHandlers(e, &Service{
+				Log:    l,
+				Store:  store,
+				Server: &goHttpEcho.Server{JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: 1007}}},
+			})
+			req := httptest.NewRequest(tt.method, tt.path, strings.NewReader(tt.body))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+
+			e.ServeHTTP(rec, req)
+
+			assert.Equal(t, http.StatusForbidden, rec.Code, rec.Body.String())
+			assert.Contains(t, rec.Body.String(), tt.wantBody)
+			assert.Nil(t, store.created)
+			assert.Zero(t, store.updateCalls)
+			assert.Zero(t, store.validateCalls)
+			assert.Empty(t, store.treesToValidateArgs)
 		})
 	}
 }
