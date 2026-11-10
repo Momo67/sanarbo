@@ -1,6 +1,7 @@
 package trees
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"runtime"
@@ -81,6 +82,7 @@ func TestValidateTreesIsAllOrNothing(t *testing.T) {
 	w := WorkingEnv{}
 	assertWorkingEnvOK(t, w.Init())
 	defer w.dbConn.Close()
+	skipIfTablesMissing(t, w, "thing", "lien_thing_thing")
 
 	toValidate, err := w.storage.TreesToValidate("", -1)
 	assertNoError(t, err)
@@ -170,6 +172,26 @@ func (w *WorkingEnv) GetStorage() error {
 		w.storage = treesStorage
 	}
 	return nil
+}
+
+// skipIfTablesMissing skips the test when one of the tables does not exist, like the Goeland tables
+// (thing, lien_thing_thing...) which are not created by the migrations, e.g. in the CI database.
+func skipIfTablesMissing(t testing.TB, w WorkingEnv, tables ...string) {
+	t.Helper()
+	pool, err := w.dbConn.GetPGConn()
+	if err != nil {
+		t.Fatalf("cannot get db pool: %v", err)
+	}
+	for _, table := range tables {
+		var exists bool
+		err := pool.QueryRow(context.Background(), "SELECT to_regclass($1) IS NOT NULL", table).Scan(&exists)
+		if err != nil {
+			t.Fatalf("cannot check if table %s exists: %v", table, err)
+		}
+		if !exists {
+			t.Skipf("table %s does not exist in this database (not created by the migrations)", table)
+		}
+	}
 }
 
 func assertWorkingEnvOK(t testing.TB, got error) {
