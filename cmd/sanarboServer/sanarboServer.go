@@ -16,6 +16,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
@@ -245,6 +246,15 @@ func GetInfoMsgFromEnv() string {
 	return infoMsg
 }
 
+// keepEchoDefaults restores two behaviours that go-cloud-k8s-common-libs dropped after v0.3.9:
+//   - CORS: the Vite dev server calls the API from another origin (http://localhost:9999)
+//   - errors as {"message": ...}: the frontend reads response.data.message. Echo's default
+//     handler gives that format and does not expose internal errors.
+func keepEchoDefaults(e *echo.Echo) {
+	e.Use(middleware.CORS())
+	e.HTTPErrorHandler = e.DefaultHTTPErrorHandler
+}
+
 func GetInfoHandlerOrPanic() echo.HandlerFunc {
 	myBackendUrl := GetBackendUrlFromEnvOrPanic("/")
 	myAuthenticationUrl := GetAuthenticationUrlFromEnvOrPanic("/login")
@@ -411,6 +421,7 @@ func main() {
 	}
 
 	e := server.GetEcho()
+	keepEchoDefaults(e)
 	e.POST("/login", userService.LoginUser)
 	e.GET("/readiness", server.GetReadinessHandler(func(info string) bool {
 		ver, err := db.GetVersion()
