@@ -165,6 +165,15 @@ type ListParams struct {
 	Offset *int32 `form:"offset,omitempty" json:"offset,omitempty"`
 }
 
+// SearchTreesByNameParams defines parameters for SearchTreesByName.
+type SearchTreesByNameParams struct {
+	// Name text to search in the tree names (% and _ are not wildcards)
+	Name string `form:"name" json:"name"`
+
+	// Limit maximum number of results to return (default 100, max 1000)
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // ValidationListParams defines parameters for ValidationList.
 type ValidationListParams struct {
 	// Secteur sector where trees must be located

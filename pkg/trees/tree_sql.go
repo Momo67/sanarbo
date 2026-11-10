@@ -44,7 +44,13 @@ const (
 
 	treesDelete = "DELETE FROM tree_mobile WHERE id = $1;"
 
-	treesSearchByName = "SELECT id, name, description, is_active, create_time, creator, external_id FROM tree_mobile WHERE name LIKE $1;"
+	// $1 must have its LIKE special characters escaped with a backslash, see escapeLike
+	treesSearchByName = `
+	SELECT id, name, description, is_active, create_time, creator, external_id, is_validated, ST_AsText(geom) as geom, json_build_object('idvalidation', tree_attributes::json->'idvalidation', 'ispublic', tree_attributes::json->'ispublic', 'essence', tree_attributes::json->'essence') as tree_att_light
+	FROM tree_mobile
+	WHERE is_active = true AND name ILIKE '%' || $1 || '%'
+	ORDER BY name, id
+	LIMIT $2;`
 
 	treesToValidate = `
 	SELECT 

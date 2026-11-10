@@ -87,6 +87,53 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - JWTAuth: []
+  /trees/search:
+    get:
+      summary: SearchTreesByName returns the active trees whose name contains a text
+      description: Case insensitive search of the given text in the tree names, sorted by name
+      operationId: SearchTreesByName
+      parameters:
+      - name: name
+        in: query
+        description: text to search in the tree names (% and _ are not wildcards)
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          minLength: 2
+      - name: limit
+        in: query
+        description: maximum number of results to return (default 100, max 1000)
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000
+      responses:
+        "200":
+          description: list of trees whose name contains the text, empty if none
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TreeList'
+        "400":
+          description: the text to search or the limit is invalid
+        "401":
+          description: Access token is missing or invalid
+        default:
+          description: unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - JWTAuth: []
   /trees/{treeId}:
     get:
       summary: Get will retrieve in backend all information about a specific treeId

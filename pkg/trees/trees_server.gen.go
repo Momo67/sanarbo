@@ -46,6 +46,9 @@ type ServerInterface interface {
 	// Create will create a new tree
 	// (POST /trees)
 	Create(ctx echo.Context) error
+	// SearchTreesByName returns the active trees whose name contains a text
+	// (GET /trees/search)
+	SearchTreesByName(ctx echo.Context, params SearchTreesByNameParams) error
 	// Delete allows to delete a specific treeId
 	// (DELETE /trees/{treeId})
 	Delete(ctx echo.Context, treeId int32) error
@@ -233,6 +236,33 @@ func (w *ServerInterfaceWrapper) Create(ctx echo.Context) error {
 	return err
 }
 
+// SearchTreesByName converts echo context to params.
+func (w *ServerInterfaceWrapper) SearchTreesByName(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(JWTAuthScopes, []string{})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params SearchTreesByNameParams
+	// ------------- Required query parameter "name" -------------
+
+	err = runtime.BindQueryParameter("form", true, true, "name", ctx.QueryParams(), &params.Name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.SearchTreesByName(ctx, params)
+	return err
+}
+
 // Delete converts echo context to params.
 func (w *ServerInterfaceWrapper) Delete(ctx echo.Context) error {
 	var err error
@@ -364,6 +394,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/thing/streets", wrapper.GetStreets)
 	router.GET(baseURL+"/trees", wrapper.List)
 	router.POST(baseURL+"/trees", wrapper.Create)
+	router.GET(baseURL+"/trees/search", wrapper.SearchTreesByName)
 	router.DELETE(baseURL+"/trees/:treeId", wrapper.Delete)
 	router.GET(baseURL+"/trees/:treeId", wrapper.Get)
 	router.PUT(baseURL+"/trees/:treeId", wrapper.Update)
