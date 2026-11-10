@@ -74,7 +74,7 @@ func (s Service) Create(ctx echo.Context) error {
 	currentUserId := claims.User.UserId
 	s.Log.Info("in UserCreate : currentUserId: %d", currentUserId)
 	if !s.Store.IsObjectAdmin(int32(currentUserId)) {
-		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
+		return ctx.JSON(http.StatusForbidden, noAdminPrivilege)
 	}
 	// creator holds the Goeland user id (go_user.external_id), like last_modification_user and id_validator,
 	// so the trees created here can be sent back to Goeland
@@ -118,7 +118,7 @@ func (s Service) Delete(ctx echo.Context, objectId int32) error {
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
 	if !s.Store.IsObjectAdmin(int32(currentUserId)) {
-		return ctx.JSON(http.StatusUnauthorized, noObjectAdminPrivilege)
+		return ctx.JSON(http.StatusForbidden, noObjectAdminPrivilege)
 	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Delete(%d) cannot delete this id, it does not exist !", objectId)
@@ -226,7 +226,7 @@ func (s *Service) ValidationList(ctx echo.Context, params ValidationListParams) 
 	currentUserId := claims.User.UserId
 	s.Log.Info("in ValidationList : currentUserId: %d", currentUserId)
 	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
-		return ctx.JSON(http.StatusUnauthorized, noObjectValidatorPrivilege)
+		return ctx.JSON(http.StatusForbidden, noObjectValidatorPrivilege)
 	}
 
 	// secteur is a string in the API because the frontend sends secteur= when no secteur is selected
@@ -259,7 +259,7 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 	externalUserId := claims.User.ExternalId
 	s.Log.Info("in SaveValidation : external UserId: %d", externalUserId)
 	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
-		return ctx.JSON(http.StatusUnauthorized, noObjectValidatorPrivilege)
+		return ctx.JSON(http.StatusForbidden, noObjectValidatorPrivilege)
 	}
 
 	var validationList []TreesToValidate
