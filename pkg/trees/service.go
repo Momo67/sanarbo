@@ -13,11 +13,13 @@ import (
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
-// limits of SearchTreesByName, also documented in api/trees.yaml
+// limits of SearchTreesByName and List, also documented in api/trees.yaml
 const (
 	searchMinLength    = 2
 	searchDefaultLimit = 100
 	searchMaxLimit     = 1000
+	listDefaultLimit   = 100
+	listMaxLimit       = 100000
 )
 
 const (
@@ -40,15 +42,23 @@ func (s Service) List(ctx echo.Context, params ListParams) error {
 
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
-	s.Log.Info("in UserCreate : currentUserId: %d", currentUserId)
+	s.Log.Info("in List : currentUserId: %d", currentUserId)
 
-	var limit int = 100
+	limit := listDefaultLimit
 	if params.Limit != nil {
 		limit = int(*params.Limit)
+		if limit < 1 {
+			return ctx.JSON(http.StatusBadRequest, "List limit must be at least 1")
+		}
+		// the map loads all the trees with limit=1000000, so a bigger limit is reduced instead of rejected
+		limit = min(limit, listMaxLimit)
 	}
-	var offset int = 0
+	offset := 0
 	if params.Offset != nil {
 		offset = int(*params.Offset)
+		if offset < 0 {
+			return ctx.JSON(http.StatusBadRequest, "List offset cannot be negative")
+		}
 	}
 	list, err := s.Store.List(offset, limit)
 	if err != nil {

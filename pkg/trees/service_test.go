@@ -48,6 +48,9 @@ type fakeStorage struct {
 	isValidator         bool
 	treesToValidateErr  error
 	treesToValidateArgs [][2]int32
+	// List returns listErr and records its arguments
+	listErr  error
+	listArgs [][2]int
 }
 
 func (f *fakeStorage) IsObjectAdmin(id int32) bool  { return f.isAdmin }
@@ -94,6 +97,13 @@ func (f *fakeStorage) SearchTreesByName(text string, limit int) ([]*TreeList, er
 	f.searchLimit = limit
 	if f.searchErr != nil {
 		return nil, f.searchErr
+	}
+	return []*TreeList{}, nil
+}
+func (f *fakeStorage) List(offset, limit int) ([]*TreeList, error) {
+	f.listArgs = append(f.listArgs, [2]int{offset, limit})
+	if f.listErr != nil {
+		return nil, f.listErr
 	}
 	return []*TreeList{}, nil
 }
@@ -444,6 +454,52 @@ func TestServiceValidationList(t *testing.T) {
 				return
 			}
 			assert.Equal(t, [][2]int32{{tt.wantSecteur, tt.wantEmplacement}}, store.treesToValidateArgs)
+		})
+	}
+}
+
+func TestServiceListLimitAndOffset(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		query          string
+		storeErr       error
+		wantStatusCode int
+		wantOffset     int
+		wantLimit      int
+	}{
+		{name: "defaults", query: "", wantStatusCode: http.StatusOK, wantOffset: 0, wantLimit: 100},
+		{name: "the map asks for all the trees, the limit is reduced to the maximum", query: "offset=0&limit=1000000", wantStatusCode: http.StatusOK, wantOffset: 0, wantLimit: 100000},
+		{name: "limit and offset are passed", query: "offset=10&limit=50", wantStatusCode: http.StatusOK, wantOffset: 10, wantLimit: 50},
+		{name: "maximum limit is accepted", query: "limit=100000", wantStatusCode: http.StatusOK, wantOffset: 0, wantLimit: 100000},
+		{name: "limit 0 is rejected", query: "limit=0", wantStatusCode: http.StatusBadRequest},
+		{name: "negative limit is rejected", query: "limit=-5", wantStatusCode: http.StatusBadRequest},
+		{name: "negative offset is rejected", query: "offset=-1", wantStatusCode: http.StatusBadRequest},
+		{name: "database error returns 500", query: "", storeErr: errors.New("connection lost"), wantStatusCode: http.StatusInternalServerError, wantOffset: 0, wantLimit: 100},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStorage{listErr: tt.storeErr}
+			e := echo.New()
+			RegisterHandlers(e, &Service{
+				Log:    l,
+				Store:  store,
+				Server: &goHttpEcho.Server{JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: 1007}}},
+			})
+			rec := httptest.NewRecorder()
+
+			e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/trees?"+tt.query, nil))
+
+			assert.Equal(t, tt.wantStatusCode, rec.Code, rec.Body.String())
+			if tt.wantStatusCode == http.StatusBadRequest {
+				assert.Empty(t, store.listArgs, "Store.List must not be called")
+				return
+			}
+			assert.Equal(t, [][2]int{{tt.wantOffset, tt.wantLimit}}, store.listArgs)
 		})
 	}
 }
