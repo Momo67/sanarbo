@@ -146,33 +146,50 @@ func TestServiceUpdatePermissions(t *testing.T) {
 	}
 }
 
-func TestServiceCreateIgnoresCreatorFromBody(t *testing.T) {
+func TestServiceCreateCreator(t *testing.T) {
 	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
 	if err != nil {
 		t.Fatalf("cannot create logger: %v", err)
 	}
-	const authenticatedUserId = 7
+	// creator is sent in the body to check it is ignored
 	treeWithSpoofedCreator := `{"creator": 999, "name": "Platane 42", "geom": "POINT(2538000 1152000)", "tree_attributes": {"circonference": 120}}`
 
-	store := &fakeStorage{isAdmin: true}
-	s := Service{
-		Log:   l,
-		Store: store,
-		Server: &goHttpEcho.Server{
-			JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: authenticatedUserId, ExternalId: 1007}},
-		},
+	tests := []struct {
+		name           string
+		externalId     int
+		wantStatusCode int
+		wantCreator    int32
+	}{
+		{name: "creator is the Goeland id of the authenticated user, not the one in the body", externalId: 1007, wantStatusCode: http.StatusCreated, wantCreator: 1007},
+		{name: "user without Goeland id cannot create a tree", externalId: 0, wantStatusCode: http.StatusForbidden},
 	}
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/goapi/v1/trees", strings.NewReader(treeWithSpoofedCreator))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStorage{isAdmin: true}
+			s := Service{
+				Log:   l,
+				Store: store,
+				Server: &goHttpEcho.Server{
+					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: tt.externalId}},
+				},
+			}
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/goapi/v1/trees", strings.NewReader(treeWithSpoofedCreator))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
 
-	err = s.Create(e.NewContext(req, rec))
+			err := s.Create(e.NewContext(req, rec))
 
-	assert.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rec.Code)
-	if assert.NotNil(t, store.created, "Store.Create should have been called") {
-		assert.Equal(t, int32(authenticatedUserId), store.created.Creator, "creator must come from the JWT, not from the request body")
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantStatusCode, rec.Code, rec.Body.String())
+			if tt.wantStatusCode != http.StatusCreated {
+				assert.Nil(t, store.created, "Store.Create must not be called")
+				return
+			}
+			if assert.NotNil(t, store.created, "Store.Create should have been called") {
+				assert.Equal(t, tt.wantCreator, store.created.Creator)
+			}
+		})
 	}
 }
 

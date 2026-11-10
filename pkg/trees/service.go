@@ -25,6 +25,7 @@ const (
 	noObjectAdminPrivilege  = "current user has no admin privilege on this object"
 	noObjectEditorPrivilege = "current user has no editor privilege on this object"
 	noObjectValidatorPrivilege = "current user has no validator privilege on this object"
+	noGoelandUserId            = "current user has no Goeland user id (external_id), cannot create a tree"
 )
 
 type Service struct {
@@ -65,13 +66,19 @@ func (s Service) Create(ctx echo.Context) error {
 	if !s.Store.IsObjectAdmin(int32(currentUserId)) {
 		return ctx.JSON(http.StatusUnauthorized, noAdminPrivilege)
 	}
+	// creator holds the Goeland user id (go_user.external_id), like last_modification_user and id_validator,
+	// so the trees created here can be sent back to Goeland
+	creatorExternalId := claims.User.ExternalId
+	if creatorExternalId < 1 {
+		return ctx.JSON(http.StatusForbidden, noGoelandUserId)
+	}
 
 	newTree := new(Tree)
 	if err := ctx.Bind(newTree); err != nil {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Tree has invalid format [%v]", err))
 	}
 	// set after Bind, otherwise a creator sent in the request body would override the authenticated user
-	newTree.Creator = int32(currentUserId)
+	newTree.Creator = int32(creatorExternalId)
 	if len(newTree.Name) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "Tree name cannot be empty")
 	}
