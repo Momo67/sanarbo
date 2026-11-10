@@ -26,8 +26,8 @@ type Storage interface {
 	Update(id int32, object Tree) (*Tree, error)
 	// Delete removes the objects with given ID from the storage.
 	Delete(id int32) error
-	// SearchTreesByName list of existing objects where the name contains the given search pattern, an empty list if none
-	SearchTreesByName(pattern string) ([]*TreeList, error)
+	// SearchTreesByName returns at most limit active objects whose name contains text (case insensitive), an empty list if none
+	SearchTreesByName(text string, limit int) ([]*TreeList, error)
 	// TreesToValidate returns a list of trees to be validated given sector and emplacement
 	TreesToValidate(secteur string, idEmplacement int32) ([]*ValidationList, error)
 

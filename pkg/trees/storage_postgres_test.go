@@ -29,55 +29,50 @@ type WorkingEnv struct {
 }
 
 func TestSearchTreesByName(t *testing.T) {
-	type args struct {
-		t string
-	}
+	// this tree is inserted by the migration 000002 and also exists in the Goeland data
+	const culotteSuisse = "Pyrus communis 'Culotte suisse' - secteur OUEST - Valency plantage (45904)"
 
 	w := WorkingEnv{}
 	assertWorkingEnvOK(t, w.Init())
 	defer w.dbConn.Close()
 
 	tests := []struct {
-		name    string
-		args    args
-		wantRes []*TreeList
-		wantErr error
+		name         string
+		text         string
+		limit        int
+		wantContains string
+		wantEmpty    bool
 	}{
-		{
-			name:    "it should return an object with name attribute matching pattern containing *",
-			args:    args{t: "*Culotte suisse*"},
-			wantRes: []*TreeList{{Name: "Pyrus communis 'Culotte suisse' - secteur OUEST - Valency plantage (45904)"}},
-			wantErr: nil,
-		},
-		{
-			name:    "it should return an object with name attribute matching pattern containing %",
-			args:    args{t: "%%Culotte suisse%%"},
-			wantRes: []*TreeList{{Name: "Pyrus communis 'Culotte suisse' - secteur OUEST - Valency plantage (45904)"}},
-			wantErr: nil,
-		},
-		{
-			name:    "should return an empty list if no tree found",
-			args:    args{t: "666"},
-			wantRes: []*TreeList{},
-			wantErr: nil,
-		},
+		{name: "search is case insensitive", text: "culotte SUISSE' - secteur ouest", limit: 100, wantContains: culotteSuisse},
+		{name: "search finds a text in the middle of the name", text: "ulotte suis", limit: 100, wantContains: culotteSuisse},
+		{name: "% is not a wildcard", text: "Culotte%suisse", limit: 100, wantEmpty: true},
+		{name: "_ is not a wildcard", text: "_ulotte suisse", limit: 100, wantEmpty: true},
+		{name: "no tree found returns an empty list", text: "666 no tree has this name", limit: 100, wantEmpty: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRes, gotErr := w.storage.SearchTreesByName(tt.args.t)
+			gotRes, gotErr := w.storage.SearchTreesByName(tt.text, tt.limit)
 
-			if tt.wantErr != nil {
-				assertError(t, gotErr, tt.wantErr)
-			} else {
-				assertNoError(t, gotErr)
-				if len(tt.wantRes) == 0 {
-					assertEmptyJsonList(t, gotRes)
+			assertNoError(t, gotErr)
+			if tt.wantEmpty {
+				assertEmptyJsonList(t, gotRes)
+				return
+			}
+			for _, tree := range gotRes {
+				if tree.Name == tt.wantContains {
 					return
 				}
-				assertName(t, *gotRes[0], tt.wantRes[0].Name)
 			}
+			t.Errorf("SearchTreesByName(%q) returned %d trees, none named %q", tt.text, len(gotRes), tt.wantContains)
 		})
 	}
+	t.Run("limit is applied", func(t *testing.T) {
+		gotRes, gotErr := w.storage.SearchTreesByName("Pyrus", 1)
+		assertNoError(t, gotErr)
+		if len(gotRes) != 1 {
+			t.Errorf("SearchTreesByName(\"Pyrus\", 1) returned %d trees, want 1", len(gotRes))
+		}
+	})
 }
 
 // TestValidateTreesIsAllOrNothing checks that ValidateTrees runs in a transaction :

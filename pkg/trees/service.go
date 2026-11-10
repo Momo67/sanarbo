@@ -5,10 +5,18 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/labstack/echo/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
+)
+
+// limits of SearchTreesByName, also documented in api/trees.yaml
+const (
+	searchMinLength    = 2
+	searchDefaultLimit = 100
+	searchMaxLimit     = 1000
 )
 
 const (
@@ -172,20 +180,25 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, maxTreeId)
 }
 
-func (s Service) SearchTreesByName(ctx echo.Context, pattern string) error {
-	s.Log.Debug("entering SearchTreesByName() pattern:%v\n", pattern)
+func (s Service) SearchTreesByName(ctx echo.Context, params SearchTreesByNameParams) error {
+	s.Log.Debug("entering SearchTreesByName() params:%v\n", params)
 
-	var search string = ""
-	search = strings.TrimSpace(pattern)
-	if search == "" || search == "*" {
-		search = "%"
+	search := strings.TrimSpace(params.Name)
+	if utf8.RuneCountInString(search) < searchMinLength {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("SearchTreesByName name must contain at least %d characters", searchMinLength))
 	}
-	list, err := s.Store.SearchTreesByName(search)
+	limit := searchDefaultLimit
+	if params.Limit != nil {
+		limit = int(*params.Limit)
+		if limit < 1 || limit > searchMaxLimit {
+			return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("SearchTreesByName limit must be between 1 and %d", searchMaxLimit))
+		}
+	}
+	list, err := s.Store.SearchTreesByName(search, limit)
 	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.SearchTreesByName :%v", err))
 	}
 	return ctx.JSON(http.StatusOK, list)
-
 }
 
 func (s *Service) ValidationList(ctx echo.Context, params ValidationListParams) error {

@@ -160,14 +160,11 @@ func (P PGX) Delete(id int32) error {
 	return nil
 }
 
-func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
-	P.log.Debug("entering SearchTreesByName(%s)", pattern)
+func (P PGX) SearchTreesByName(text string, limit int) ([]*TreeList, error) {
+	P.log.Debug("entering SearchTreesByName(%s, %d)", text, limit)
 	var res []*TreeList
-	var search string = ""
 
-	search = strings.TrimSpace(pattern)
-	search = strings.ReplaceAll(search, "*", "%")
-	err := pgxscan.Select(context.Background(), P.con, &res, treesSearchByName, search)
+	err := pgxscan.Select(context.Background(), P.con, &res, treesSearchByName, escapeLike(text), limit)
 	if err != nil {
 		return nil, GetErrorF("error : SearchTreesByName query failed", err)
 	}
@@ -177,6 +174,12 @@ func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
 	}
 
 	return res, nil
+}
+
+// escapeLike escapes the LIKE special characters (backslash is the default LIKE escape character in PostgreSQL),
+// so that % and _ in a searched text are matched literally instead of being wildcards
+func escapeLike(text string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(text)
 }
 
 // TreesToValidate implements Storage.

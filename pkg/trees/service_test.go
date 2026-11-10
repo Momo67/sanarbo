@@ -39,6 +39,11 @@ type fakeStorage struct {
 	validatedValidator int32
 	// Get, GetBuildingCenter and GetGestionComEmplacementsCentroidEmplacementId return getErr when set
 	getErr error
+	// SearchTreesByName returns searchErr and records its arguments
+	searchErr   error
+	searchCalls int
+	searchText  string
+	searchLimit int
 }
 
 func (f *fakeStorage) IsObjectAdmin(id int32) bool  { return f.isAdmin }
@@ -71,6 +76,15 @@ func (f *fakeStorage) GetGestionComEmplacementsCentroidEmplacementId(id int32) (
 		return nil, f.getErr
 	}
 	return &EmplacementCentroid{Geometry: "POINT(2538000 1152000)", Surface: 120}, nil
+}
+func (f *fakeStorage) SearchTreesByName(text string, limit int) ([]*TreeList, error) {
+	f.searchCalls++
+	f.searchText = text
+	f.searchLimit = limit
+	if f.searchErr != nil {
+		return nil, f.searchErr
+	}
+	return []*TreeList{}, nil
 }
 func (f *fakeStorage) Get(id int32) (*Tree, error) {
 	if f.getErr != nil {
@@ -302,5 +316,55 @@ func TestServiceCenterAndCentroidNotFound(t *testing.T) {
 				assert.Equal(t, tt.wantStatusCode, rec.Code)
 			})
 		}
+	}
+}
+
+func TestServiceSearchTreesByName(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+
+	tests := []struct {
+		name           string
+		query          string
+		searchErr      error
+		wantStatusCode int
+		wantText       string
+		wantLimit      int
+	}{
+		{name: "default limit is 100", query: "name=Platane", wantStatusCode: http.StatusOK, wantText: "Platane", wantLimit: 100},
+		{name: "text is trimmed and limit is passed", query: "name=%20%20Culotte%20suisse%20&limit=5", wantStatusCode: http.StatusOK, wantText: "Culotte suisse", wantLimit: 5},
+		{name: "two accented characters are enough", query: "name=%C3%A9%C3%A9", wantStatusCode: http.StatusOK, wantText: "éé", wantLimit: 100},
+		{name: "missing name is rejected", query: "", wantStatusCode: http.StatusBadRequest},
+		{name: "one character is rejected", query: "name=P", wantStatusCode: http.StatusBadRequest},
+		{name: "blank name is rejected", query: "name=%20%20%20", wantStatusCode: http.StatusBadRequest},
+		{name: "limit 0 is rejected", query: "name=Platane&limit=0", wantStatusCode: http.StatusBadRequest},
+		{name: "limit above 1000 is rejected", query: "name=Platane&limit=1001", wantStatusCode: http.StatusBadRequest},
+		{name: "database error returns 500", query: "name=Platane", searchErr: errors.New("connection lost"), wantStatusCode: http.StatusInternalServerError, wantText: "Platane", wantLimit: 100},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStorage{searchErr: tt.searchErr}
+			// go through the generated router, to check /trees/search is not routed to /trees/{treeId}
+			e := echo.New()
+			RegisterHandlers(e, &Service{Log: l, Store: store})
+			req := httptest.NewRequest(http.MethodGet, "/trees/search?"+tt.query, nil)
+			rec := httptest.NewRecorder()
+
+			e.ServeHTTP(rec, req)
+
+			assert.Equal(t, tt.wantStatusCode, rec.Code, rec.Body.String())
+			if tt.wantText == "" {
+				assert.Equal(t, 0, store.searchCalls, "Store.SearchTreesByName must not be called")
+				return
+			}
+			assert.Equal(t, 1, store.searchCalls)
+			assert.Equal(t, tt.wantText, store.searchText)
+			assert.Equal(t, tt.wantLimit, store.searchLimit)
+			if tt.wantStatusCode == http.StatusOK {
+				assert.JSONEq(t, "[]", rec.Body.String())
+			}
+		})
 	}
 }
