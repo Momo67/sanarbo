@@ -422,7 +422,7 @@ func main() {
 
 	e := server.GetEcho()
 	keepEchoDefaults(e)
-	e.POST("/login", userService.LoginUser)
+	e.POST("/login", userService.LoginUser, rehashPasswordOnLogin(pgPasswordHashStore{db: db}, l, minBcryptCost))
 	e.GET("/readiness", server.GetReadinessHandler(func(info string) bool {
 		ver, err := db.GetVersion()
 		if err != nil {
