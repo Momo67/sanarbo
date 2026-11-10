@@ -44,6 +44,10 @@ type fakeStorage struct {
 	searchCalls int
 	searchText  string
 	searchLimit int
+	// TreesToValidate returns treesToValidateErr and records its arguments
+	isValidator         bool
+	treesToValidateErr  error
+	treesToValidateArgs [][2]int32
 }
 
 func (f *fakeStorage) IsObjectAdmin(id int32) bool  { return f.isAdmin }
@@ -58,7 +62,14 @@ func (f *fakeStorage) Create(object Tree) (*Tree, error) {
 	f.created = &object
 	return &object, nil
 }
-func (f *fakeStorage) IsObjectValidator(id int32) bool { return false }
+func (f *fakeStorage) IsObjectValidator(id int32) bool { return f.isValidator }
+func (f *fakeStorage) TreesToValidate(idSecteur int32, idEmplacement int32) ([]*ValidationList, error) {
+	f.treesToValidateArgs = append(f.treesToValidateArgs, [2]int32{idSecteur, idEmplacement})
+	if f.treesToValidateErr != nil {
+		return nil, f.treesToValidateErr
+	}
+	return []*ValidationList{}, nil
+}
 func (f *fakeStorage) ValidateTrees(externalIds []int32, idValidator int32) error {
 	f.validateCalls++
 	f.validatedIds = externalIds
@@ -365,6 +376,57 @@ func TestServiceSearchTreesByName(t *testing.T) {
 			if tt.wantStatusCode == http.StatusOK {
 				assert.JSONEq(t, "[]", rec.Body.String())
 			}
+		})
+	}
+}
+
+func TestServiceValidationList(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+
+	tests := []struct {
+		name            string
+		isValidator     bool
+		query           string
+		storeErr        error
+		wantStatusCode  int
+		wantBody        string
+		wantSecteur     int32
+		wantEmplacement int32
+	}{
+		{name: "frontend without filter sends an empty secteur", isValidator: true, query: "secteur=&emplacement=-1", wantStatusCode: http.StatusOK, wantSecteur: -1, wantEmplacement: -1},
+		{name: "no parameter means no filter", isValidator: true, query: "", wantStatusCode: http.StatusOK, wantSecteur: -1, wantEmplacement: -1},
+		{name: "secteur and emplacement ids", isValidator: true, query: "secteur=123&emplacement=456", wantStatusCode: http.StatusOK, wantSecteur: 123, wantEmplacement: 456},
+		{name: "blank secteur means no filter", isValidator: true, query: "secteur=%20%20", wantStatusCode: http.StatusOK, wantSecteur: -1, wantEmplacement: -1},
+		{name: "non numeric secteur is rejected", isValidator: true, query: "secteur=OUEST", wantStatusCode: http.StatusBadRequest, wantBody: "integer"},
+		{name: "secteur too big for int32 is rejected", isValidator: true, query: "secteur=99999999999", wantStatusCode: http.StatusBadRequest, wantBody: "integer"},
+		{name: "database error returns 500", isValidator: true, query: "secteur=123", storeErr: errors.New("connection lost"), wantStatusCode: http.StatusInternalServerError, wantSecteur: 123, wantEmplacement: -1},
+		{name: "user without validator privilege gets the validator message", isValidator: false, query: "", wantStatusCode: http.StatusUnauthorized, wantBody: noObjectValidatorPrivilege},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			store := &fakeStorage{isValidator: tt.isValidator, treesToValidateErr: tt.storeErr}
+			e := echo.New()
+			RegisterHandlers(e, &Service{
+				Log:    l,
+				Store:  store,
+				Server: &goHttpEcho.Server{JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: 1007}}},
+			})
+			rec := httptest.NewRecorder()
+
+			e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/validation?"+tt.query, nil))
+
+			assert.Equal(t, tt.wantStatusCode, rec.Code, rec.Body.String())
+			if tt.wantBody != "" {
+				assert.Contains(t, rec.Body.String(), tt.wantBody)
+			}
+			if tt.wantStatusCode == http.StatusBadRequest || tt.wantStatusCode == http.StatusUnauthorized {
+				assert.Empty(t, store.treesToValidateArgs, "Store.TreesToValidate must not be called")
+				return
+			}
+			assert.Equal(t, [][2]int32{{tt.wantSecteur, tt.wantEmplacement}}, store.treesToValidateArgs)
 		})
 	}
 }

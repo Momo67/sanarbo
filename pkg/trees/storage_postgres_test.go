@@ -84,7 +84,7 @@ func TestValidateTreesIsAllOrNothing(t *testing.T) {
 	defer w.dbConn.Close()
 	skipIfTablesMissing(t, w, "thing", "lien_thing_thing")
 
-	toValidate, err := w.storage.TreesToValidate("", -1)
+	toValidate, err := w.storage.TreesToValidate(-1, -1)
 	assertNoError(t, err)
 	if len(toValidate) == 0 {
 		t.Skip("no tree waiting for validation in db, cannot test the rollback")
@@ -97,7 +97,7 @@ func TestValidateTreesIsAllOrNothing(t *testing.T) {
 	if !errors.Is(err, ErrNoRecordFound) {
 		t.Fatalf("ValidateTrees with an unknown id should return ErrNoRecordFound, got: %v", err)
 	}
-	stillToValidate, err := w.storage.TreesToValidate("", -1)
+	stillToValidate, err := w.storage.TreesToValidate(-1, -1)
 	assertNoError(t, err)
 	for _, tree := range stillToValidate {
 		if tree.ExternalId == existingId {
@@ -185,6 +185,28 @@ func TestListsWithoutResultAreEmpty(t *testing.T) {
 		assertNoError(t, err)
 		assertEmptyJsonList(t, res)
 	})
+}
+
+func TestTreesToValidateBySecteur(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+	skipIfTablesMissing(t, w, "thing", "lien_thing_thing")
+
+	secteurs, err := w.storage.GetGestionComSecteurs()
+	assertNoError(t, err)
+	if len(secteurs) == 0 {
+		t.Skip("no secteur in db")
+	}
+	all, err := w.storage.TreesToValidate(-1, -1)
+	assertNoError(t, err)
+
+	bySecteur, err := w.storage.TreesToValidate(secteurs[0].Id, -1)
+
+	assertNoError(t, err)
+	if len(bySecteur) > len(all) {
+		t.Errorf("TreesToValidate(secteur %d) returned %d trees, more than without filter (%d)", secteurs[0].Id, len(bySecteur), len(all))
+	}
 }
 
 func (w *WorkingEnv) Init() error {

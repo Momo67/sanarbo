@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 
@@ -208,18 +209,25 @@ func (s *Service) ValidationList(ctx echo.Context, params ValidationListParams) 
 	currentUserId := claims.User.UserId
 	s.Log.Info("in ValidationList : currentUserId: %d", currentUserId)
 	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
-		return ctx.JSON(http.StatusUnauthorized, noObjectEditorPrivilege)
+		return ctx.JSON(http.StatusUnauthorized, noObjectValidatorPrivilege)
 	}
 
-	var sectName string = ""
+	// secteur is a string in the API because the frontend sends secteur= when no secteur is selected
+	var idSecteur int32 = -1
 	if params.Secteur != nil {
-		sectName = string(*params.Secteur)
+		if secteur := strings.TrimSpace(*params.Secteur); secteur != "" {
+			id, err := strconv.ParseInt(secteur, 10, 32)
+			if err != nil {
+				return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("ValidationList secteur must be an integer id (got %q)", secteur))
+			}
+			idSecteur = int32(id)
+		}
 	}
 	var idEmplacement int32 = -1
 	if params.Emplacement != nil {
 		idEmplacement = int32(*params.Emplacement)
 	}
-	list, err := s.Store.TreesToValidate(sectName, idEmplacement)
+	list, err := s.Store.TreesToValidate(idSecteur, idEmplacement)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.TreesToValidate :%v", err))
 	}
