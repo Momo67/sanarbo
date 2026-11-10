@@ -37,7 +37,7 @@ func (P PGX) List(offset, limit int) ([]*TreeList, error) {
 	}
 	if res == nil {
 		P.log.Info("List returned no results ")
-		return nil, errors.New(noRecords)
+		return []*TreeList{}, nil
 	}
 
 	return res, nil
@@ -173,7 +173,7 @@ func (P PGX) SearchTreesByName(pattern string) ([]*TreeList, error) {
 	}
 	if res == nil {
 		P.log.Info("SearchTreesByName returned no results ")
-		return nil, ErrNoRecordFound
+		return []*TreeList{}, nil
 	}
 
 	return res, nil
@@ -367,7 +367,7 @@ func (P PGX) GetDicoTable(table GetDicoTableParamsTable) ([]*TreeDico, error) {
 		}
 		if res == nil {
 			P.log.Info("GetDico returned no results ")
-			return nil, errors.New(noRecords)
+			return []*TreeDico{}, nil
 		}
 
 		return res, nil
@@ -387,7 +387,7 @@ func (P PGX) GetGestionComSecteurs() ([]*Dico, error) {
 	}
 	if res == nil {
 		P.log.Info("GetGestionComSecteurs returned no results ")
-		return nil, errors.New(noRecords)
+		return []*Dico{}, nil
 	}
 
 	return res, nil
@@ -404,7 +404,7 @@ func (P PGX) GetEmplacements() ([]*Dico, error) {
 	}
 	if res == nil {
 		P.log.Info("GetEmplacements returned no results ")
-		return nil, errors.New(noRecords)
+		return []*Dico{}, nil
 	}
 
 	return res, nil
@@ -421,7 +421,7 @@ func (P PGX) GetGestionComEmplacementsSecteurId(idSecteur int32) ([]*Dico, error
 	}
 	if res == nil {
 		P.log.Info("GetGestionComEmplacementsSecteur returned no results ")
-		return nil, errors.New(noRecords)
+		return []*Dico{}, nil
 	}
 
 	return res, nil
@@ -470,7 +470,7 @@ func (P PGX) GetBuildingsNumbers(idstreet int32) ([]*Dico, error) {
 	}
 	if res == nil {
 		P.log.Info("Select(%d) returned no results ", idstreet)
-		return nil, errors.New(noRecords)
+		return []*Dico{}, nil
 	}
 	return res, nil
 }
@@ -486,7 +486,7 @@ func (P PGX) GetStreets() ([]*Dico, error) {
 	}
 	if res == nil {
 		P.log.Info("Select returned no results ")
-		return nil, errors.New(noRecords)
+		return []*Dico{}, nil
 	}
 	return res, nil
 }
