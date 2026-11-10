@@ -28,8 +28,8 @@ type Storage interface {
 	Delete(id int32) error
 	// SearchTreesByName returns at most limit active objects whose name contains text (case insensitive), an empty list if none
 	SearchTreesByName(text string, limit int) ([]*TreeList, error)
-	// TreesToValidate returns a list of trees to be validated given sector and emplacement
-	TreesToValidate(secteur string, idEmplacement int32) ([]*ValidationList, error)
+	// TreesToValidate returns a list of trees to be validated given sector and emplacement ids, -1 meaning no filter
+	TreesToValidate(idSecteur int32, idEmplacement int32) ([]*ValidationList, error)
 
 	ValidateTree(id int32, isValidated bool, idValidator int32) error
 	// ValidateTrees validates all the trees with the given external ids in a single transaction,

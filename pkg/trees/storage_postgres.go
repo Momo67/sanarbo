@@ -183,23 +183,20 @@ func escapeLike(text string) string {
 }
 
 // TreesToValidate implements Storage.
-func (P PGX) TreesToValidate(sectName string, idEmplacement int32) ([]*ValidationList, error) {
-	P.log.Debug("entering TreesToValidate(%s, %d)", sectName, idEmplacement)
+func (P PGX) TreesToValidate(idSecteur int32, idEmplacement int32) ([]*ValidationList, error) {
+	P.log.Debug("entering TreesToValidate(%d, %d)", idSecteur, idEmplacement)
 	var res []*ValidationList
 
-	var secteur *string
-	if sectName == "" {
-		secteur = nil
-	} else {
-		secteur = &sectName
+	// -1 means no filter, sent as NULL to the query
+	var secteur *int32
+	if idSecteur != -1 {
+		secteur = &idSecteur
 	}
 	var emplacement *int32
-	if idEmplacement == -1 {
-		emplacement = nil
-	} else {
+	if idEmplacement != -1 {
 		emplacement = &idEmplacement
 	}
-	err := pgxscan.Select(context.Background(), P.con, &res, treesToValidate, &secteur, &emplacement)
+	err := pgxscan.Select(context.Background(), P.con, &res, treesToValidate, secteur, emplacement)
 	if err != nil {
 		return nil, GetErrorF("error : TreesToValidate query failed", err)
 	}
