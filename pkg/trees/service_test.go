@@ -37,7 +37,7 @@ type fakeStorage struct {
 	validateCalls      int
 	validatedIds       []int32
 	validatedValidator int32
-	// Get returns getErr when set, otherwise a tree with the requested id
+	// Get, GetBuildingCenter and GetGestionComEmplacementsCentroidEmplacementId return getErr when set
 	getErr error
 }
 
@@ -59,6 +59,18 @@ func (f *fakeStorage) ValidateTrees(externalIds []int32, idValidator int32) erro
 	f.validatedIds = externalIds
 	f.validatedValidator = idValidator
 	return f.validateErr
+}
+func (f *fakeStorage) GetBuildingCenter(id int32) (*Center, error) {
+	if f.getErr != nil {
+		return nil, f.getErr
+	}
+	return &Center{Geometry: "POINT(2538000 1152000)"}, nil
+}
+func (f *fakeStorage) GetGestionComEmplacementsCentroidEmplacementId(id int32) (*EmplacementCentroid, error) {
+	if f.getErr != nil {
+		return nil, f.getErr
+	}
+	return &EmplacementCentroid{Geometry: "POINT(2538000 1152000)", Surface: 120}, nil
 }
 func (f *fakeStorage) Get(id int32) (*Tree, error) {
 	if f.getErr != nil {
@@ -254,5 +266,41 @@ func TestServiceGet(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantStatusCode, rec.Code)
 		})
+	}
+}
+
+func TestServiceCenterAndCentroidNotFound(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+	handlers := map[string]func(s Service, ctx echo.Context) error{
+		"GetBuildingCenter": func(s Service, ctx echo.Context) error { return s.GetBuildingCenter(ctx, 42) },
+		"GetGestionComEmplacementsCentroidEmplacementId": func(s Service, ctx echo.Context) error {
+			return s.GetGestionComEmplacementsCentroidEmplacementId(ctx, 42)
+		},
+	}
+	tests := []struct {
+		name           string
+		getErr         error
+		wantStatusCode int
+	}{
+		{name: "found returns 200", wantStatusCode: http.StatusOK},
+		{name: "not found returns 404", getErr: ErrNoRecordFound, wantStatusCode: http.StatusNotFound},
+		{name: "database error returns 500", getErr: errors.New("connection lost"), wantStatusCode: http.StatusInternalServerError},
+	}
+	for handlerName, handler := range handlers {
+		for _, tt := range tests {
+			t.Run(handlerName+" "+tt.name, func(t *testing.T) {
+				s := Service{Log: l, Store: &fakeStorage{getErr: tt.getErr}}
+				e := echo.New()
+				rec := httptest.NewRecorder()
+
+				err := handler(s, e.NewContext(httptest.NewRequest(http.MethodGet, "/", nil), rec))
+
+				assert.NoError(t, err)
+				assert.Equal(t, tt.wantStatusCode, rec.Code)
+			})
+		}
 	}
 }

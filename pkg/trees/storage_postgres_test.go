@@ -121,6 +121,46 @@ func TestGetUnknownTreeReturnsErrNoRecordFound(t *testing.T) {
 	}
 }
 
+func TestGetBuildingCenterAndCentroidNotFound(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+	skipIfTablesMissing(t, w, "thi_street_building_address", "geodata_gestion_com.spadom_surfaces")
+	pool, err := w.dbConn.GetPGConn()
+	assertNoError(t, err)
+
+	t.Run("unknown address returns ErrNoRecordFound", func(t *testing.T) {
+		center, err := w.storage.GetBuildingCenter(-1)
+		if !errors.Is(err, ErrNoRecordFound) {
+			t.Fatalf("GetBuildingCenter(-1) should return ErrNoRecordFound, got center: %v, err: %v", center, err)
+		}
+	})
+	t.Run("existing address returns its center", func(t *testing.T) {
+		var idAddress int32
+		assertNoError(t, pool.QueryRow(context.Background(), "SELECT idaddress FROM thi_street_building_address LIMIT 1").Scan(&idAddress))
+		center, err := w.storage.GetBuildingCenter(idAddress)
+		assertNoError(t, err)
+		if center.Geometry == "" {
+			t.Errorf("GetBuildingCenter(%d) returned an empty geometry", idAddress)
+		}
+	})
+	t.Run("emplacement without surface returns ErrNoRecordFound", func(t *testing.T) {
+		centroid, err := w.storage.GetGestionComEmplacementsCentroidEmplacementId(-1)
+		if !errors.Is(err, ErrNoRecordFound) {
+			t.Fatalf("GetGestionComEmplacementsCentroidEmplacementId(-1) should return ErrNoRecordFound, got centroid: %v, err: %v", centroid, err)
+		}
+	})
+	t.Run("existing emplacement returns its centroid", func(t *testing.T) {
+		var idEmplacement int32
+		assertNoError(t, pool.QueryRow(context.Background(), "SELECT idgo_empl FROM geodata_gestion_com.spadom_surfaces WHERE idgo_empl IS NOT NULL LIMIT 1").Scan(&idEmplacement))
+		centroid, err := w.storage.GetGestionComEmplacementsCentroidEmplacementId(idEmplacement)
+		assertNoError(t, err)
+		if centroid.Geometry == "" || centroid.Surface <= 0 {
+			t.Errorf("GetGestionComEmplacementsCentroidEmplacementId(%d) returned %+v", idEmplacement, centroid)
+		}
+	})
+}
+
 func (w *WorkingEnv) Init() error {
 	if w.logLevel == 0 {
 		w.logLevel = golog.DebugLevel
