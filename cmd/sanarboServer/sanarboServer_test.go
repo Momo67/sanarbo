@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"sync"
@@ -357,4 +358,33 @@ func TestGetLogLevelFromEnv(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+// fakeJwtChecker returns fixed claims without parsing any token, other methods will panic if called.
+type fakeJwtChecker struct {
+	goHttpEcho.JwtChecker
+	user *goHttpEcho.UserInfo
+}
+
+func (f fakeJwtChecker) GetJwtCustomClaimsFromContext(c echo.Context) *goHttpEcho.JwtCustomClaims {
+	return &goHttpEcho.JwtCustomClaims{User: f.user}
+}
+
+func TestRestrictedReturns200(t *testing.T) {
+	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_main")
+	if err != nil {
+		t.Fatalf("cannot create logger: %v", err)
+	}
+	s := Service{
+		Logger: l,
+		server: &goHttpEcho.Server{JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, Login: "test"}}},
+	}
+	e := echo.New()
+	rec := httptest.NewRecorder()
+
+	err = s.restricted(e.NewContext(httptest.NewRequest(http.MethodGet, "/goapi/v1/secret", nil), rec))
+
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusOK, rec.Code, "a GET returning the claims creates nothing, it must not answer 201")
+	assert.Contains(t, rec.Body.String(), `"login":"test"`)
 }
