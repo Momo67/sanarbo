@@ -24,7 +24,6 @@ type PGX struct {
 	log golog.MyLogger
 }
 
-
 func (P PGX) List(offset, limit int) ([]*TreeList, error) {
 	P.log.Debug("entering List(%d, %d)", offset, limit)
 	var res []*TreeList

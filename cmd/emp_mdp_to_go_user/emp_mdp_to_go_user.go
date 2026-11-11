@@ -86,34 +86,34 @@ func main() {
 	}
 
 	/*
-	Requête utilisée pour générer le JSON sur sqlserver: :
-	
-		SELECT 
-			(E.Prenom + ' ' + E.Nom) AS name,
-			E.email AS email,
-			EM.Login AS username, 
-			LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', EM.Alias), 2)) AS password_hash, 
-			E.IdEmploye AS external_id,
-			NULL AS orgunit_id,
-			'{3}' AS groups_id,
-			NULL AS phone,
-			'f' AS is_locked,
-			'f' AS is_admin,
-			FORMAT(GETUTCDATE(), 'yyyy-MM-ddTHH:mm:ss.fff') + 'Z' AS create_time,
-			10958 AS creator,
-			NULL AS last_modification_time,
-			NULL AS last_modification_user,
-			't' AS is_active,
-			NULL AS inactivation_time,
-			NULL AS inactivation_reason,
-			NULL AS comment,
-			0 AS bad_password_count
-		FROM EmployeMdP EM
-		INNER JOIN EmployeMdPApplicationAcces MAA ON MAA.IdEmploye = EM.IdEmploye
-		INNER JOIN Employe E ON E.IdEmploye = EM.IdEmploye AND E.IsActive = 1
-		WHERE MAA.CodeApplication = 'arbre'
-		ORDER BY EM.IdEmploye
-		FOR JSON PATH, INCLUDE_NULL_VALUES;
+		Requête utilisée pour générer le JSON sur sqlserver: :
+
+			SELECT
+				(E.Prenom + ' ' + E.Nom) AS name,
+				E.email AS email,
+				EM.Login AS username,
+				LOWER(CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', EM.Alias), 2)) AS password_hash,
+				E.IdEmploye AS external_id,
+				NULL AS orgunit_id,
+				'{3}' AS groups_id,
+				NULL AS phone,
+				'f' AS is_locked,
+				'f' AS is_admin,
+				FORMAT(GETUTCDATE(), 'yyyy-MM-ddTHH:mm:ss.fff') + 'Z' AS create_time,
+				10958 AS creator,
+				NULL AS last_modification_time,
+				NULL AS last_modification_user,
+				't' AS is_active,
+				NULL AS inactivation_time,
+				NULL AS inactivation_reason,
+				NULL AS comment,
+				0 AS bad_password_count
+			FROM EmployeMdP EM
+			INNER JOIN EmployeMdPApplicationAcces MAA ON MAA.IdEmploye = EM.IdEmploye
+			INNER JOIN Employe E ON E.IdEmploye = EM.IdEmploye AND E.IsActive = 1
+			WHERE MAA.CodeApplication = 'arbre'
+			ORDER BY EM.IdEmploye
+			FOR JSON PATH, INCLUDE_NULL_VALUES;
 	*/
 
 	var users []User

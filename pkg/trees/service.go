@@ -30,9 +30,9 @@ const (
 )
 
 const (
-	noAdminPrivilege        = "current user has no admin privilege"
-	noObjectAdminPrivilege  = "current user has no admin privilege on this object"
-	noObjectEditorPrivilege = "current user has no editor privilege on this object"
+	noAdminPrivilege           = "current user has no admin privilege"
+	noObjectAdminPrivilege     = "current user has no admin privilege on this object"
+	noObjectEditorPrivilege    = "current user has no editor privilege on this object"
 	noObjectValidatorPrivilege = "current user has no validator privilege on this object"
 	noGoelandUserId            = "current user has no Goeland user id (external_id), cannot create or modify a tree"
 )
@@ -42,7 +42,6 @@ type Service struct {
 	Store  Storage
 	Server *goHttpEcho.Server
 }
-
 
 func (s Service) List(ctx echo.Context, params ListParams) error {
 	s.Log.Debug("entering List() params:%v\n", params)
