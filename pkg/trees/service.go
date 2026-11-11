@@ -34,7 +34,7 @@ const (
 	noObjectAdminPrivilege  = "current user has no admin privilege on this object"
 	noObjectEditorPrivilege = "current user has no editor privilege on this object"
 	noObjectValidatorPrivilege = "current user has no validator privilege on this object"
-	noGoelandUserId            = "current user has no Goeland user id (external_id), cannot create a tree"
+	noGoelandUserId            = "current user has no Goeland user id (external_id), cannot create or modify a tree"
 )
 
 type Service struct {
@@ -163,6 +163,11 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	if !(s.Store.IsObjectAdmin(currentUserId) || s.Store.IsObjectEditor(currentUserId)) {
 		return ctx.JSON(http.StatusForbidden, noObjectEditorPrivilege)
 	}
+	// last_modification_user holds the Goeland user id (go_user.external_id), like creator and id_validator
+	lastModificationUser := int32(claims.User.ExternalId)
+	if lastModificationUser < 1 {
+		return ctx.JSON(http.StatusForbidden, noGoelandUserId)
+	}
 	if !s.Store.Exist(objectId) {
 		msg := fmt.Sprintf("Update(%d) cannot modify this id, it does not exist !", objectId)
 		s.Log.Error(msg)
@@ -172,7 +177,7 @@ func (s Service) Update(ctx echo.Context, objectId int32) error {
 	if err := ctx.Bind(tree); err != nil {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("Update has invalid format [%v]", err))
 	}
-	lastModificationUser := int32(claims.User.ExternalId)
+	// set after Bind, otherwise a value sent in the request body would override the authenticated user
 	tree.LastModificationUser = &lastModificationUser
 	if len(tree.Name) < 1 {
 		return ctx.JSON(http.StatusBadRequest, "Tree name cannot be empty")
@@ -267,6 +272,10 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 	s.Log.Info("in SaveValidation : external UserId: %d", externalUserId)
 	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
 		return ctx.JSON(http.StatusForbidden, noObjectValidatorPrivilege)
+	}
+	// id_validator holds the Goeland user id (go_user.external_id), like creator and last_modification_user
+	if externalUserId < 1 {
+		return ctx.JSON(http.StatusForbidden, noGoelandUserId)
 	}
 
 	var validationList []TreesToValidate

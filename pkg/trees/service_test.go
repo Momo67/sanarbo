@@ -125,12 +125,14 @@ func TestServiceUpdatePermissions(t *testing.T) {
 		name            string
 		isAdmin         bool
 		isEditor        bool
+		externalId      int
 		wantStatusCode  int
 		wantUpdateCalls int
 	}{
-		{name: "user without admin or editor privilege is forbidden", wantStatusCode: http.StatusForbidden, wantUpdateCalls: 0},
-		{name: "editor can update", isEditor: true, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
-		{name: "admin can update", isAdmin: true, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
+		{name: "user without admin or editor privilege is forbidden", externalId: 1007, wantStatusCode: http.StatusForbidden, wantUpdateCalls: 0},
+		{name: "editor can update", isEditor: true, externalId: 1007, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
+		{name: "admin can update", isAdmin: true, externalId: 1007, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
+		{name: "editor without Goeland id cannot update", isEditor: true, externalId: 0, wantStatusCode: http.StatusForbidden, wantUpdateCalls: 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,7 +141,7 @@ func TestServiceUpdatePermissions(t *testing.T) {
 				Log:   l,
 				Store: store,
 				Server: &goHttpEcho.Server{
-					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: 1007}},
+					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: tt.externalId}},
 				},
 			}
 			e := echo.New()
@@ -214,6 +216,7 @@ func TestServiceSaveValidation(t *testing.T) {
 		name              string
 		body              string
 		validateErr       error
+		noGoelandId       bool
 		wantStatusCode    int
 		wantValidateCalls int
 		wantValidatedIds  []int32
@@ -259,15 +262,26 @@ func TestServiceSaveValidation(t *testing.T) {
 			wantValidateCalls: 1,
 			wantValidatedIds:  []int32{101},
 		},
+		{
+			name:              "validator without Goeland id cannot validate",
+			body:              `[{"external_id": 101, "is_validated": true}]`,
+			noGoelandId:       true,
+			wantStatusCode:    http.StatusForbidden,
+			wantValidateCalls: 0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := &fakeStorage{isAdmin: true, validateErr: tt.validateErr}
+			externalId := validatorExternalId
+			if tt.noGoelandId {
+				externalId = 0
+			}
 			s := Service{
 				Log:   l,
 				Store: store,
 				Server: &goHttpEcho.Server{
-					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: validatorExternalId}},
+					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: externalId}},
 				},
 			}
 			e := echo.New()
