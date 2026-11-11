@@ -125,12 +125,14 @@ func TestServiceUpdatePermissions(t *testing.T) {
 		name            string
 		isAdmin         bool
 		isEditor        bool
+		externalId      int
 		wantStatusCode  int
 		wantUpdateCalls int
 	}{
-		{name: "user without admin or editor privilege is forbidden", wantStatusCode: http.StatusForbidden, wantUpdateCalls: 0},
-		{name: "editor can update", isEditor: true, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
-		{name: "admin can update", isAdmin: true, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
+		{name: "user without admin or editor privilege is forbidden", externalId: 1007, wantStatusCode: http.StatusForbidden, wantUpdateCalls: 0},
+		{name: "editor can update", isEditor: true, externalId: 1007, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
+		{name: "admin can update", isAdmin: true, externalId: 1007, wantStatusCode: http.StatusOK, wantUpdateCalls: 1},
+		{name: "editor without Goeland id cannot update", isEditor: true, externalId: 0, wantStatusCode: http.StatusForbidden, wantUpdateCalls: 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,7 +141,7 @@ func TestServiceUpdatePermissions(t *testing.T) {
 				Log:   l,
 				Store: store,
 				Server: &goHttpEcho.Server{
-					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: 1007}},
+					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: tt.externalId}},
 				},
 			}
 			e := echo.New()
