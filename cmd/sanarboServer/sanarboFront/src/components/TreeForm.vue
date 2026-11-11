@@ -240,6 +240,9 @@ const Tree = reactive({
   create_time: '',
   creator: '',
   description: '',
+  // not editable here, but PUT replaces the whole tree: send them back unchanged
+  comment: null,
+  inactivation_reason: null,
   id: '',
   name: '',
   geom: '',
@@ -270,6 +273,8 @@ onMounted(async () => {
   Tree.create_time = tree.data.value.create_time;
   Tree.creator = tree.data.value.creator;
   Tree.description = tree.data.value.description;
+  Tree.comment = tree.data.value.comment ?? null;
+  Tree.inactivation_reason = tree.data.value.inactivation_reason ?? null;
   Tree.id = tree.data.value.id;
   Tree.name = tree.data.value.name;
   Tree.tree_attributes = tree.data.value.tree_attributes;
