@@ -192,9 +192,14 @@
             </v-textarea>
           </v-col>
         </v-row>
+        <v-row v-if="saveError">
+          <v-col cols="12">
+            <v-alert type="error" :text="saveError" closable @click:close="saveError = ''"></v-alert>
+          </v-col>
+        </v-row>
         <v-row>
           <v-col cols="12" md="2">
-            <v-btn color="success" type="submit" @click="submitForm">Sauver</v-btn>
+            <v-btn color="success" type="submit" :loading="saving">Sauver</v-btn>
           </v-col>
           <v-col cols="12" md="2">
             <v-btn color="error" type="button" @click="handleFormCanceled">Annuler</v-btn>
@@ -250,6 +255,25 @@ const Tree = reactive({
 });
 
 const statut = ref('');
+const saving = ref(false);
+const saveError = ref('');
+
+// saveErrorMessage explains in French why the backend refused to save the tree
+const saveErrorMessage = (status, message) => {
+  if (status === 0) {
+    return `La sauvegarde a échoué, le serveur est injoignable : ${message}`;
+  }
+  if (status === 401) {
+    return 'La sauvegarde a échoué : votre session a expiré, veuillez vous reconnecter.';
+  }
+  if (status === 403 && message.includes('Goeland')) {
+    return 'La sauvegarde a échoué : votre compte n\'a pas d\'identifiant Goéland, il ne peut pas modifier d\'arbre.';
+  }
+  if (status === 403) {
+    return 'La sauvegarde a échoué : vous n\'avez pas le droit de modifier cet arbre.';
+  }
+  return `La sauvegarde a échoué (erreur ${status}) : ${message}`;
+};
 
 // Get session storage token
 //const token = sessionStorage.getItem('token');
@@ -292,7 +316,18 @@ const submitForm = async () => {
     body: JSON.stringify(Tree)
   }
 
-  await useFetch(urlTrees + '/' + props.treeId, options)
+  saving.value = true;
+  saveError.value = '';
+  try {
+    const result = await useFetch(urlTrees + '/' + props.treeId, options);
+    if (result.hasError.value) {
+      // keep the form open, so the user sees why and does not lose the changes
+      saveError.value = saveErrorMessage(result.status.value, result.errorMessage.value);
+      return;
+    }
+  } finally {
+    saving.value = false;
+  }
 
   emit('formSubmitted', JSON.stringify(Tree));
 };
