@@ -107,6 +107,12 @@ func (f *fakeStorage) List(offset, limit int) ([]*TreeList, error) {
 	}
 	return []*TreeList{}, nil
 }
+func (f *fakeStorage) GetGroupByName(name string) (*Group, error) {
+	if f.getErr != nil {
+		return nil, f.getErr
+	}
+	return &Group{Id: 7, Name: name}, nil
+}
 func (f *fakeStorage) Get(id int32) (*Tree, error) {
 	if f.getErr != nil {
 		return nil, f.getErr
@@ -335,7 +341,8 @@ func TestServiceGet(t *testing.T) {
 	}
 }
 
-func TestServiceCenterAndCentroidNotFound(t *testing.T) {
+// TestServiceSingleObjectNotFound checks that handlers returning one object answer 404 when it does not exist.
+func TestServiceSingleObjectNotFound(t *testing.T) {
 	l, err := golog.NewLogger("simple", golog.ErrorLevel, "test_trees")
 	if err != nil {
 		t.Fatalf("cannot create logger: %v", err)
@@ -345,6 +352,7 @@ func TestServiceCenterAndCentroidNotFound(t *testing.T) {
 		"GetGestionComEmplacementsCentroidEmplacementId": func(s Service, ctx echo.Context) error {
 			return s.GetGestionComEmplacementsCentroidEmplacementId(ctx, 42)
 		},
+		"GetGroupByName": func(s Service, ctx echo.Context) error { return s.GetGroupByName(ctx, "object_validator") },
 	}
 	tests := []struct {
 		name           string

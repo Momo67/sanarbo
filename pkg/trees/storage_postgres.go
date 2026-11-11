@@ -475,13 +475,10 @@ func (P PGX) GetGroupByName(name string) (*Group, error) {
 	err := pgxscan.Get(context.Background(), P.con, res, groupByName, name)
 
 	if err != nil {
-		// Check specifically for sql.ErrNoRows
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			P.log.Info("GetGroupByName(%s) returned no results", name)
-			// Return a specific error indicating no record was found
-			return nil, errors.New(noRecords) // 'noRecords' should be a defined string constant
+			return nil, ErrNoRecordFound
 		}
-		// For any other error, log it as an error and return it
 		P.log.Error("GetGroupByName(%s) pgxscan.Get failed unexpectedly, error: %v", name, err)
 		return nil, err
 	}

@@ -398,10 +398,13 @@ func (s Service) GetStreets(ctx echo.Context) error {
 
 func (s *Service) GetGroupByName(ctx echo.Context, name string) error {
 	s.Log.Debug("entering GetGroupByName(%s)", name)
-	
-    group, err := s.Store.GetGroupByName(name)
-    if err != nil {
-        return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting group by name: %v", err))
-    }
-    return ctx.JSON(http.StatusOK, group)
+
+	group, err := s.Store.GetGroupByName(name)
+	if err != nil {
+		if errors.Is(err, ErrNoRecordFound) {
+			return ctx.JSON(http.StatusNotFound, fmt.Sprintf("GetGroupByName(%s) group does not exist", name))
+		}
+		return ctx.JSON(http.StatusInternalServerError, fmt.Sprintf("error getting group by name: %v", err))
+	}
+	return ctx.JSON(http.StatusOK, group)
 }

@@ -123,6 +123,26 @@ func TestGetUnknownTreeReturnsErrNoRecordFound(t *testing.T) {
 	}
 }
 
+func TestGetGroupByName(t *testing.T) {
+	w := WorkingEnv{}
+	assertWorkingEnvOK(t, w.Init())
+	defer w.dbConn.Close()
+
+	t.Run("unknown group returns ErrNoRecordFound", func(t *testing.T) {
+		group, err := w.storage.GetGroupByName("sanarbo-test-no-such-group")
+		if !errors.Is(err, ErrNoRecordFound) {
+			t.Fatalf("GetGroupByName should return ErrNoRecordFound, got group: %v, err: %v", group, err)
+		}
+	})
+	t.Run("group created by the migrations is found", func(t *testing.T) {
+		group, err := w.storage.GetGroupByName("object_validator")
+		assertNoError(t, err)
+		if group.Name != "object_validator" || group.Id < 1 {
+			t.Errorf("GetGroupByName(object_validator) returned %+v", group)
+		}
+	})
+}
+
 func TestGetBuildingCenterAndCentroidNotFound(t *testing.T) {
 	w := WorkingEnv{}
 	assertWorkingEnvOK(t, w.Init())
