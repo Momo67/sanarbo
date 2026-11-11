@@ -273,6 +273,10 @@ func (s *Service) SaveValidation(ctx echo.Context) error {
 	if !(s.Store.IsObjectAdmin(int32(currentUserId)) || s.Store.IsObjectValidator(int32(currentUserId))) {
 		return ctx.JSON(http.StatusForbidden, noObjectValidatorPrivilege)
 	}
+	// id_validator holds the Goeland user id (go_user.external_id), like creator and last_modification_user
+	if externalUserId < 1 {
+		return ctx.JSON(http.StatusForbidden, noGoelandUserId)
+	}
 
 	var validationList []TreesToValidate
 	if err := ctx.Bind(&validationList); err != nil {

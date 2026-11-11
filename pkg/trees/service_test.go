@@ -216,6 +216,7 @@ func TestServiceSaveValidation(t *testing.T) {
 		name              string
 		body              string
 		validateErr       error
+		noGoelandId       bool
 		wantStatusCode    int
 		wantValidateCalls int
 		wantValidatedIds  []int32
@@ -261,15 +262,26 @@ func TestServiceSaveValidation(t *testing.T) {
 			wantValidateCalls: 1,
 			wantValidatedIds:  []int32{101},
 		},
+		{
+			name:              "validator without Goeland id cannot validate",
+			body:              `[{"external_id": 101, "is_validated": true}]`,
+			noGoelandId:       true,
+			wantStatusCode:    http.StatusForbidden,
+			wantValidateCalls: 0,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			store := &fakeStorage{isAdmin: true, validateErr: tt.validateErr}
+			externalId := validatorExternalId
+			if tt.noGoelandId {
+				externalId = 0
+			}
 			s := Service{
 				Log:   l,
 				Store: store,
 				Server: &goHttpEcho.Server{
-					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: validatorExternalId}},
+					JwtCheck: fakeJwtChecker{user: &goHttpEcho.UserInfo{UserId: 7, ExternalId: externalId}},
 				},
 			}
 			e := echo.New()
