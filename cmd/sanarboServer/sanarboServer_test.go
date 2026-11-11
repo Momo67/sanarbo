@@ -123,9 +123,9 @@ func TestMainExec(t *testing.T) {
 			t.Fatalf("### ERROR http.NewRequest %s on [%s] error is :%v\n", method, url, err)
 		}
 		/*
-		if method == http.MethodPost {
-			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		}
+			if method == http.MethodPost {
+				r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			}
 		*/
 		r.Header.Set("Content-Type", contenttype)
 		return r
